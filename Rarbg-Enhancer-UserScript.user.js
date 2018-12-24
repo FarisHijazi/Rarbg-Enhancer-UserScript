@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         RARBG - Add Magnet Link & thumbnails!
+// @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
 // @version      0.5.10
-// @description  Add a magnet link shortcut and thumbnails of torrents.
-// @description  Also adds a google image saerch link in case you want to see more pics of the torrent.
+// @description  Add a magnet link shortcut and thumbnails of torrents,
+// @description  adds a image saerch link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi, with some code from https://greasyfork.org/en/users/2160-darkred
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
 // @include      https://rarbg.to/*
@@ -65,9 +65,10 @@
 // @grant        unsafeWindow
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_download
 // @icon         https://www.google.com/s2/favicons?domain=rarbg.com
 // @run-at       document-idle
-// @updateUrl
+// @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      http://code.jquery.com/jquery-latest.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
@@ -998,17 +999,6 @@ function appendPage(pageLink) {
         }
     };
 }
-
-// document.addEventListener("scroll", function () {
-//     console.log('scrolled');
-//
-//     var updateMeasurements = function() {
-//         this.windowHeight = window.innerHeight;
-//         var rect = this.element.getBoundingClientRect();
-//         this.top = rect.top + window.pageYOffset;
-//     };
-// });
-
 
 function addMagnetCell(torrent) {
     var url = torrent.href;

@@ -3,7 +3,7 @@
 // @namespace    https://github.com/buzamahmooza
 // @version      0.5.10
 // @description  Add a magnet link shortcut and thumbnails of torrents,
-// @description  adds a image saerch link in case you want to see more pics of the torrent, and more!
+// @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi, with some code from https://greasyfork.org/en/users/2160-darkred
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
 // @include      https://rarbg.to/*
@@ -74,10 +74,9 @@
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // @require      https://github.com/buzamahmooza/Helpful-Web-Userscripts/raw/master/download_script.user.js
-// @connect      *
+// @require      https://github.com/bevacqua/horsey/raw/master/dist/horsey.js
 // ==/UserScript==
 
-// @require      http://code.jquery.com/jquery-latest.min.js
 // AddColumn() and add magnetLinks() code taken from:      https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
 
 /**
@@ -108,7 +107,9 @@ const debugmode = false; // debug mode (setting this to false will disable the c
 const TORRENT_ICO = "https://dyncdn.me/static/20/img/16x16/download.png";
 const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
 const trackers = 'http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710';
+
 const singleTorrentPage = matchSite(/\/torrent\//);
+const isOnThreadDefencePage = /threat_defence/i.test(location.href);
 let currentDocument = document; // placeholder to keep track of the latest document object (since multiple documents are used)
 
 const Options = $.extend({
@@ -175,6 +176,7 @@ qa('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
 
 var torrents = qa('a[onmouseover][href^="/torrent/"]');
 
+//todo: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
 if (isPageBlockedKSA()) {
     location.assign(Options.mirrors[Math.floor(Math.random() * Options.mirrors.length)]);
 }
@@ -252,145 +254,9 @@ function updateSearch() {
     }
 }
 
-if (singleTorrentPage) {
-    // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
-    let mainTorrentLink = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
-    addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
-
-    var i = 0; // just for counting and debugging
-    for (const torrent of torrents) {
-        //creating and adding thumbnails
-        const cell = document.createElement('td'),
-            thumbnailLink = document.createElement('a'),
-            thumbnailImg = document.createElement('img');
-        thumbnailLink.href = torrent.href;
-
-        cell.classList.add('thumbnail-cell');
-        cell.appendChild(thumbnailLink);
-        // thumbnail
-        thumbnailImg.classList.add('preview-image');
-
-        let thumb = extractMouseoverThumbnail(torrents[i]);
-        createAndAddAttribute(thumbnailImg, 'smallSrc', thumb);
-        createAndAddAttribute(thumbnailImg, 'bigSrc', getLargeThumbnail(thumb));
-
-        setThumbnail(thumbnailImg);
-        thumbnailLink.appendChild(thumbnailImg);
-
-        torrent.closest('tr').after(cell);
-        thumbnailImg.style["width"] = "auto";
-        thumbnailImg.style["max-height"] = "none";
-        thumbnailImg.style["max-width"] = "none";
-
-        i++;
-    }
-    if (debugmode) console.log(`You should see ${i} thumbnails now.`);
-
-    // remove VPN row
-    const vpnR = q("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(2)");
-    if (vpnR) {
-        vpnR.remove();
-    }
-
-    // fullres for imagecurl.com
-    for (const imgcurlImg of qa('img[src^="https://imagecurl.com/images/"]')) {
-        if (imgcurlImg) {
-            const fullres = imgcurlImg.src.replace("_thumb", "");
-            imgcurlImg.src = fullres;
-            imgcurlImg.closest('a').href = fullres;
-            imgcurlImg.style["max-width"] = "100%";
-        }
-    }
-    // fullres for imagefruit.com
-    for (const imagefruitImg of qa('img[src*="/tn/t"]')) {
-        if (imagefruitImg) {
-            const fullres = imagefruitImg.src.replace("/tn/t", "/tn/i");
-            imagefruitImg.src = fullres;
-            imagefruitImg.closest('a').href = fullres;
-            imagefruitImg.style["max-width"] = "100%";
-        }
-    }
-
-    // putting the "Description:" row before the "Others:" row
-    getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
-
-    Mousetrap.bind("d", function (e) {
-        const torrent = q('[onmouseover="return overlib(\'Click here to download torrent\')"]');
-        torrent.click();
-
-        function getRow(rowText) {
-            return getElementsByXPath(`(//tr[contains(., "${rowText}")])[last()]`);
-        }
-    });
-
-    void (0);
-} else {
-    searchBox.onkeyup = updateSearch;
-
-
-    // todo: use horsey and fuzzysearch for string matching and for showing suggestions
-    // todo: try to put updateSearch() into the horsey source() option
-
-
-    if (Options.infiniteScrolling)
-        (function makeInfiniteScroll() {
-            const tableLvl2 = "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)";
-            const tbody = tableLvl2 + " > tbody";
-            const nav = "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
-
-            const container = getElementsByXPath("//table[@class='lista2t']")[0];
-            var infScroll = new InfiniteScroll(container, {
-                path: 'a[title="next page"]',
-                append: tbody, // the table
-                hideNav: nav,
-                scrollThreshold: 600
-            });
-
-            // upon appending a new page
-            infScroll.on('append', function (response, path, items) {
-                if (items.length) {
-                    const lista2s = items[0].querySelectorAll('.lista2');
-                    for (const lista2 of lista2s) {
-                        tbodyEl.appendChild(lista2);
-                        appendColumnSingle(lista2.childNodes[1]);
-                    }
-                }
-
-                // remove extra appended headers
-                tbodyEl.nextElementSibling.remove();
-                // filter the new torrents that just arrived
-                updateSearch();
-            });
-
-        })();
-}
-
-(function addColumnHeader() {
-    var nearHeader = q('.lista2t > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(3)'); // the first cell (header cell) of the new column
-    if (!nearHeader) {
-        console.warn("Problem: Header not found");
-        return;
-    }
-    var header = nearHeader.cloneNode(false);
-    nearHeader.before(header);
-    // noinspection JSUnusedAssignment
-    nearHeader = undefined; // clear memory
-
-    header.setAttribute('class', 'header6');
-    header.setAttribute('align', 'center');
-    header.setAttribute('id', 'DL-header');
-
-    var dlAnchor = createElement('<a>DL</a>');
-    header.addEventListener('click', downloadAllTorrents);
-    header.appendChild(dlAnchor);
-})();
-
-(function onLoad() {
-    console.log('loaded');
-
-    // check for captcha
-    if (/threat_defence/i.test(location.href) && q('#solve_string')) {
-        console.log('rarbg threat defence page');
+if (isOnThreadDefencePage) {// check for captcha
+    if (q('#solve_string')) {
+        console.log('Rarbg threat defence page');
         try {
             (function solveCaptcha() {
                 console.log('solving captcha...');
@@ -410,85 +276,278 @@ if (singleTorrentPage) {
                 submitBtn.click();
             })();
         } catch (e) {
-            console.error(e);
+            console.error("Error occurred while trying to solve captcha:", e);
+        }
+    }
+} else {
+    if (singleTorrentPage) {
+        // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
+        let mainTorrentLink = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
+        addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
+
+        var i = 0; // just for counting and debugging
+        for (const torrent of torrents) {
+            //creating and adding thumbnails
+            const cell = document.createElement('td'),
+                thumbnailLink = document.createElement('a'),
+                thumbnailImg = document.createElement('img');
+            thumbnailLink.href = torrent.href;
+
+            cell.classList.add('thumbnail-cell');
+            cell.appendChild(thumbnailLink);
+            // thumbnail
+            thumbnailImg.classList.add('preview-image');
+
+            let thumb = extractMouseoverThumbnail(torrents[i]);
+            createAndAddAttribute(thumbnailImg, 'smallSrc', thumb);
+            createAndAddAttribute(thumbnailImg, 'bigSrc', getLargeThumbnail(thumb));
+
+            setThumbnail(thumbnailImg);
+            thumbnailLink.appendChild(thumbnailImg);
+
+            torrent.closest('tr').after(cell);
+            thumbnailImg.style["width"] = "auto";
+            thumbnailImg.style["max-height"] = "none";
+            thumbnailImg.style["max-width"] = "none";
+
+            i++;
+        }
+        if (debugmode) console.log(`You should see ${i} thumbnails now.`);
+
+        // remove VPN row
+        const vpnR = q("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(2)");
+        if (vpnR) {
+            vpnR.remove();
+        }
+
+        // fullres for imagecurl.com
+        for (const imgcurlImg of qa('img[src^="https://imagecurl.com/images/"]')) {
+            if (imgcurlImg) {
+                const fullres = imgcurlImg.src.replace("_thumb", "");
+                imgcurlImg.src = fullres;
+                imgcurlImg.closest('a').href = fullres;
+                imgcurlImg.style["max-width"] = "100%";
+            }
+        }
+        // fullres for imagefruit.com
+        for (const imagefruitImg of qa('img[src*="/tn/t"]')) {
+            if (imagefruitImg) {
+                const fullres = imagefruitImg.src.replace("/tn/t", "/tn/i");
+                imagefruitImg.src = fullres;
+                imagefruitImg.closest('a').href = fullres;
+                imagefruitImg.style["max-width"] = "100%";
+            }
+        }
+
+        // putting the "Description:" row before the "Others:" row
+        getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
+
+        Mousetrap.bind("d", function (e) {
+            const torrent = q('[onmouseover="return overlib(\'Click here to download torrent\')"]');
+            torrent.click();
+
+            function getRow(rowText) {
+                return getElementsByXPath(`(//tr[contains(., "${rowText}")])[last()]`);
+            }
+
+            const torrentName = torrent.innerText;
+            const descriptionImgs = getElementsByXPath('(//tr[contains(., "Description\:")])[last()]//img');
+            const posterImg = getRow("Poster:")[0];
+            posterImg.alt = torrentName + "_poster";
+            var i = 1;
+            for (const descriptionImg of descriptionImgs) {
+                descriptionImg.alt = torrentName + "_description_" + (i++);
+            }
+            descriptionImgs.push(posterImg);
+            descriptionImgs.push({fileURL: torrent.href, fileName: torrentName});
+            var zip = zipFiles(descriptionImgs);
+            zip.file(document.title + ".html", new Blob([document.body.outerHTML], {type: 'text/plain'}));
+            const rowsObj = {};
+            ["Title:", "Genres:", "Actors:", "Stars:", "Series:", "Plot:", "Tags:"].forEach(row => {
+                let rowContent = getRow(row)[0];
+                if (rowContent)
+                    rowsObj[row] = rowContent.innerText;
+            });
+            const rowsText = JSON.stringify(rowsObj, null, 4);
+            console.debug('rowsObj: ', rowsObj);
+            let summary = document.title + "\n\n" + rowsText;
+            zip.file(document.title + " (summary).txt", new Blob([summary], {type: 'text/plain'}));
+
+            let zipped = false;
+            zip.onGenZip = function () {
+                zipped = true;
+            };
+
+            setTimeout(function () {
+                if (!zipped) {
+                    console.log('zip timed out, forcing download');
+                    zip.genZip();
+                }
+            }, 3000)
+        });
+
+        void (0);
+    } else {
+        searchBox.onkeyup = updateSearch;
+
+        // todo: use horsey and fuzzysearch for string matching and for showing suggestions
+        // todo: try to put updateSearch() into the horsey source() option
+        if (typeof (horsey) !== "undefined") {
+            const myHorsey = horsey(searchBox, {
+                source: [{
+                    list: torrentLinks.map(a => ({
+                        text: a.title || a.innerText,
+                        value: a
+                    }))
+                }],
+                getText: 'text',
+                getValue: 'value',
+                renderItem: function (li, suggestion) {
+                    console.debug(
+                        "Suggestion:", suggestion,
+                        "\nli:", li
+                    );
+                    var image = '<img class="suggestion-thumbnail" src="' +
+                        suggestion.value.closest('.lista2').querySelector('img.preview-image').src
+                        + '"  alt="' + suggestion.text + '"/>';
+                    li.innerHTML = `${image}<span>${suggestion.text}</span>`;
+                }
+            });
+        }
+
+
+        if (Options.infiniteScrolling) {
+            (function makeInfiniteScroll() {
+                const tableLvl2 = "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)";
+                const tbody = tableLvl2 + " > tbody";
+                const nav = "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
+
+                const container = getElementsByXPath("//table[@class='lista2t']")[0];
+                var infScroll = new InfiniteScroll(container, {
+                    path: 'a[title="next page"]',
+                    append: tbody, // the table
+                    hideNav: nav,
+                    scrollThreshold: 600
+                });
+
+                // upon appending a new page
+                infScroll.on('append', function (response, path, items) {
+                    if (items.length) {
+                        const lista2s = items[0].querySelectorAll('.lista2');
+                        for (const lista2 of lista2s) {
+                            tbodyEl.appendChild(lista2);
+                            appendColumnSingle(lista2.childNodes[1]);
+                        }
+                    }
+
+                    // remove extra appended headers
+                    tbodyEl.nextElementSibling.remove();
+                    // filter the new torrents that just arrived
+                    updateSearch();
+                });
+
+            })();
         }
     }
 
-
-    document.body.onclick = null; // remove annoying click listeners
-
-    // remove annoying search description
-    const searchDescription = q("#SearchDescription");
-    if (searchDescription) searchDescription.remove();
-
-    // remove annoying signup form that doesn't work
-    const signinForm = q('form[action="/login"]');
-    if (signinForm) signinForm.remove();
-    const signinTab = q('body > table:nth-child(5) > tbody > tr > td > table > tbody > tr > td.header4');
-    if (signinTab) signinTab.remove();
-
-
-    // remove recommended torrents
-    const recTor = q('tr > [valign="top"] > [onmouseout="return nd();"]');
-    if (recTor) recTor.closest('div').remove();
-
-    // remove "recommended torrents" title
-    const recTitle = getElementsByXPath('(//text()[contains(., "Recommended torrents \:")])/../../..')[0];
-    if (recTitle) recTitle.remove();
-
-    // scroll the table to view (top of screen will be the first torrent)
-    const mainTable = q("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t");
-    if (mainTable) mainTable.scrollIntoView();
-
-
-    // adding a dropdown list for mirrors
-    (function addMirrorsDropdown() {
-        const blankTab = q('td.header:nth-child(1)');
-        if (!blankTab) return;
-
-        const mirrorsTab = document.createElement('td');
-        mirrorsTab.className = 'header3';
-        mirrorsTab.innerText = "Switch to mirror site:";
-
-        const mirrorsSelect = document.createElement('select');
-        mirrorsSelect.onchange = function () {
-            if (!this.value) return;
-            const split = location.href.split('/').slice(2);
-            split[0] = this.value;
-            const newUrl = split.join('/');
-            location.assign(newUrl);
-        };
-        mirrorsTab.appendChild(mirrorsSelect);
-
-        for (const mirror of Options.mirrors) {
-            const option = document.createElement('option');
-            option.value = mirror;
-            option.innerText = new URL(mirror).hostname;
-            if (option.innerText === location.hostname)
-                continue;
-
-            mirrorsSelect.appendChild(option);
+    (function addColumnHeader() {
+        var nearHeader = q('.lista2t > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(3)'); // the first cell (header cell) of the new column
+        if (!nearHeader) {
+            console.warn("Problem: Header not found");
+            return;
         }
+        var header = nearHeader.cloneNode(false);
+        nearHeader.before(header);
+        // noinspection JSUnusedAssignment
+        nearHeader = undefined; // clear memory
 
-        const option = document.createElement('option');
-        option.innerText = location.hostname;
-        option.setAttribute('selected', "");
-        mirrorsSelect.appendChild(option);
+        header.setAttribute('class', 'header6');
+        header.setAttribute('align', 'center');
+        header.setAttribute('id', 'DL-header');
 
-        blankTab.after(mirrorsTab);
+        var dlAnchor = createElement('<a>DL</a>');
+        header.addEventListener('click', downloadAllTorrents);
+        header.appendChild(dlAnchor);
     })();
 
-    observeDocument((target) => {
-        dealWithTorrents(target);
+    (function onLoad() {
+        console.log('loaded');
 
-        // remove links for adds that cover the screen
-        for (const x of qa('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
-            console.log('removed redirect element:', x);
-            x.remove();
-        }
-    });
-})();
 
+        document.body.onclick = null; // remove annoying click listeners
+
+        // remove annoying search description
+        const searchDescription = q("#SearchDescription");
+        if (searchDescription) searchDescription.remove();
+
+        // remove annoying signup form that doesn't work
+        const signinForm = q('form[action="/login"]');
+        if (signinForm) signinForm.remove();
+        const signinTab = q('body > table:nth-child(5) > tbody > tr > td > table > tbody > tr > td.header4');
+        if (signinTab) signinTab.remove();
+
+
+        // remove recommended torrents
+        const recTor = q('tr > [valign="top"] > [onmouseout="return nd();"]');
+        if (recTor) recTor.closest('div').remove();
+
+        // remove "recommended torrents" title
+        const recTitle = getElementsByXPath('(//text()[contains(., "Recommended torrents \:")])/../../..')[0];
+        if (recTitle) recTitle.remove();
+
+        // scroll the table to view (top of screen will be the first torrent)
+        const mainTable = q("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t");
+        if (mainTable) mainTable.scrollIntoView();
+
+
+        // adding a dropdown list for mirrors
+        (function addMirrorsDropdown() {
+            const blankTab = q('td.header:nth-child(1)');
+            if (!blankTab) return;
+
+            const mirrorsTab = document.createElement('td');
+            mirrorsTab.className = 'header3';
+            mirrorsTab.innerText = "Switch to mirror site:";
+
+            const mirrorsSelect = document.createElement('select');
+            mirrorsSelect.onchange = function () {
+                if (!this.value) return;
+                const split = location.href.split('/').slice(2);
+                split[0] = this.value;
+                const newUrl = split.join('/');
+                location.assign(newUrl);
+            };
+            mirrorsTab.appendChild(mirrorsSelect);
+
+            for (const mirror of Options.mirrors) {
+                const option = document.createElement('option');
+                option.value = mirror;
+                option.innerText = new URL(mirror).hostname;
+                if (option.innerText === location.hostname)
+                    continue;
+
+                mirrorsSelect.appendChild(option);
+            }
+
+            const option = document.createElement('option');
+            option.innerText = location.hostname;
+            option.setAttribute('selected', "");
+            mirrorsSelect.appendChild(option);
+
+            blankTab.after(mirrorsTab);
+        })();
+
+        observeDocument((target) => {
+            dealWithTorrents(target);
+
+            // remove links for adds that cover the screen
+            for (const x of qa('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
+                console.log('removed redirect element:', x);
+                x.remove();
+            }
+        });
+    })();
+}
 
 let width = 150, maxwidth = 400, maxheight = 400;
 
@@ -622,29 +681,26 @@ a.torrent-ml > img, a.torrent-dl > img {
     width: 40px;
 }
 
-a.gs:link {
-    color: red;
-}
-
-a.gs:visited {
-    color: green;
-}
-
-a.gs:hover {
-    color: hotpink;
-}
-
-a.gs:active {
-    color: blue;
-}
-
-a.gs {
-    width: max-content;
-    font-size: 8px;
+.search {
+    font-size: 15px;
     padding: 20px;
     display: -webkit-box;
     background-color: #b7b7b73b;
     margin: 10px;
+    font-family: sans-serif;
+}
+
+a.search:link {
+    color: red;
+}
+a.search:visited {
+    color: green;
+}
+a.search:hover {
+    color: hotpink;
+}
+a.search:active {
+    color: blue;
 }
 
 .zoom {
@@ -891,7 +947,9 @@ function addImageSearchAnchor(torrentAnchor) {
     const searchTd = document.createElement('td'),
         searchLink = document.createElement('a')
     ;
-    searchTd.style = "border-top-width: 10px; padding-top: 10px;";
+    searchTd.classList.add("search");
+    searchTd.style["border-top-width"] = "10px";
+    searchTd.style["padding-top"] = "10px";
 
     let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText) //replacing common useless torrent terms
         // replace dates (numbers with dots between them)
@@ -934,17 +992,8 @@ function addImageSearchAnchor(torrentAnchor) {
         console.warn("unable to get category", searchLink);
     }
     if (debugmode) console.debug('search url:', searchLink.href);
-    searchLink.classList.add('gs');
+    searchLink.classList.add('search');
     searchLink.target = "_blank";
-    searchLink.style = `
-font-size: 15px;
-padding:5px 5px;
-padding: 20px;
-display: -webkit-box;
-background-color: #b7b7b73b;
-margin: 10px;
-font-family: sans-serif;`
-    ;
 
     var searchEngineText = document.createElement('p5');
     var qText = document.createElement('p6');
@@ -1105,7 +1154,7 @@ function addDlAndMl(torrentAnchor, cellNode) {
     // language=HTML
     torrentAnchor.appendChild(createElement('<a href="' + getTorrentDownloadLinkFromAnchor(cellNode.querySelector('a[title]')) +
         '" class="torrent-dl" target="_blank" >' +
-        '<img src="' + TORRENT_ICO + '">' +
+        '<img src="' + TORRENT_ICO + '" alt="Torrent">' +
         '</a>')); // torrent download
 
     // matches anything containing "over/*.jpg" *: anything
@@ -1133,15 +1182,13 @@ function getTorrentDownloadLinkFromAnchor(anchor) {
 }
 
 function loadBigPics() {
-    function tryBigImage(img) {
+    updateCss();
+    // Advised not to use as it uses XML requests and will get you banned form the site if you use it for a few pages.
+    for (const img of qa('.preview-image')) {
         img.addEventListener("error", bigThumbHandleError);
         img.oldSrc = img.src;
         img.src = getLargeThumbnail(img.src);
     }
-
-    updateCss();
-    // Advised not to use as it uses XML requests and will get you banned form the site if you use it for a few pages.
-    qa('.preview-image').forEach(tryBigImage);
 }
 
 // --- the below are just helpful functions that are not speicific to the rarbg script
@@ -1227,13 +1274,6 @@ function q(selector, node = document) {
     return node.querySelector(selector);
 }
 
-/** removes all coded functionality to the element by removing it and reappending it's outerHTML */
-function sanitizeElement(element) {
-    const outerHTML = element.outerHTML;
-    element.after(createElement(outerHTML));
-    element.remove();
-}
-
 function getElementsByXPath(xpath, parent) {
     let results = [];
     let query = document.evaluate(xpath,
@@ -1247,25 +1287,7 @@ function getElementsByXPath(xpath, parent) {
 }
 
 
-//todo:	remove searchEngine variable and use Options.searchEngine instead,
-//      this way you won't have to manually use GM_setValue and getValue for it
-//: add a search filter bar
-//~~: fix appended thumbnail magnet links (somtimes they have "undefined" in them)
-
-//done: remove extra header elements (the ones appended from infiniteScroll())
-//done: when choosing catergories with hotkeys, rather than pressing the category button,
-//      make it change the urlparams so that way seach terms won't be lost
-//done: maybe change hotkeys to Mousetrap
-//done: FIX random extra "DL ML" columns appearing
-//done: make script run independantly of other scripts
-//done: add an option to change what the thumbnail downloads (magnet link or torrent file)
-//done: maybe make the colors extra red/green depending on the seeds
-//done: add forward slash hotkey to go to the search bar
-//done: if there's no next page, scrolling down shouldn't append an extra link
-//done: complete category search
-
 // Cat. | File | Added | Size | S. | L. | comments	|   Uploader
-
 
 
 // this is one row

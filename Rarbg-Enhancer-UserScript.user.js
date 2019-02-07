@@ -254,7 +254,9 @@ function updateSearch() {
     }
 }
 
-if (isOnThreadDefencePage) {// check for captcha
+isOnIndexPage = searchBox !== null;
+
+if (isOnThreadDefencePage) { // check for captcha
     if (q('#solve_string')) {
         console.log('Rarbg threat defence page');
         try {
@@ -279,7 +281,7 @@ if (isOnThreadDefencePage) {// check for captcha
             console.error("Error occurred while trying to solve captcha:", e);
         }
     }
-} else {
+} else { // not OnThreadDefencePage
     if (singleTorrentPage) {
         // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
         let mainTorrentLink = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
@@ -387,7 +389,7 @@ if (isOnThreadDefencePage) {// check for captcha
         });
 
         void (0);
-    } else {
+    } else if (isOnIndexPage) { // if on torrent page (index)
         searchBox.onkeyup = updateSearch;
 
         // todo: use horsey and fuzzysearch for string matching and for showing suggestions
@@ -606,6 +608,7 @@ var snd = PlaySound("data:audio/wav;base64," + "//OAxAAAAAAAAAAAAFhpbmcAAAAPAAAA
         if (typeof URL !== "undefined") {
             const url = new URL(location.href);
             url.searchParams.set('category', '4');
+            url.pathname = "/torrents.php";
             location.assign(url.toString().replace('category=4', 'category=4;2'));
         } else {
             location.assign("/torrents.php?category=2;4");
@@ -951,8 +954,8 @@ function addImageSearchAnchor(torrentAnchor) {
     searchTd.style["border-top-width"] = "10px";
     searchTd.style["padding-top"] = "10px";
 
-    let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText) //replacing common useless torrent terms
-        // replace dates (numbers with dots between them)
+    //replacing common useless torrent terms
+    let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText)
             .replace(/\s\s+/g, ' ')	// removes double spaces
             .trim()
     ;
@@ -980,7 +983,7 @@ function addImageSearchAnchor(torrentAnchor) {
         if (catMap.hasOwnProperty(categoryCode)) {
             return catMap[categoryCode];
         } else {
-            if (debugmode) console.debug('Uknown category:', categoryCode);
+            if (debugmode) console.debug('Unkown category:', categoryCode);
         }
     }
 
@@ -998,11 +1001,11 @@ function addImageSearchAnchor(torrentAnchor) {
     var searchEngineText = document.createElement('p5');
     var qText = document.createElement('p6');
     searchEngineText.innerHTML = `${searchEngine.name} Image Search`;
-    qText.innerHTML = (Options.showGeneratedSearchQuery) ? ':\t' + searchQuery : '';
+    qText.innerHTML = (Options.showGeneratedSearchQuery) ? ': ' + searchQuery : '';
 
     let searchIcon = document.createElement('img');
     // searchIcon.src = SEARCH_ICON_URL;
-    searchIcon.src = "https://www.google.com/s2/favicons?domain=" + searchEngine.name + ".com";
+    searchIcon.src = "https://www.google.com/s2/favicons?domain=" + searchEngine.name.toLowerCase() + ".com";
 
     searchIcon.style.height = '20px';
     searchIcon.style.width = '20px';

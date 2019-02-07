@@ -3,7 +3,7 @@
 ## Installation
 
 - Install any [UserScript client](https://www.greasyfork.org/) to your browser (this script has only been tested on [Tampermonkey](https://tampermonkey.net/))
-- Click the [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js) link of the script to install it to your userscript client
+- Click the [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.meta.js) link of the script to install it to your userscript client
 - Open [rarbg](https://rarbg.to/) or any of its mirrors and the changes should be there
 
 ## Features
@@ -11,14 +11,15 @@
 - Show thumbnails
 - Show magnet link and torrent links
 - Add image search links for torrents
-- Color torrent rows red/green depending on seeders count<br />
+- Color torrent rows red/green depending on seeders count
 <img src="screenshots/Screenshot_Rarbg_general.png?raw=true" alt="General Screenshot" height="400"/>
 
-- Dropdown list to go to other Rarbg mirrors<br />
+- Dropdown list to go to other Rarbg mirrors
 <img src="screenshots/Screenshot_Rarbg_mirrorDropdown.png?raw=true" alt="Dropdown list to go to other Rarbg mirrors" height="300"/>
 
 - Auto-solve captcha, and bypass the "Click to verify browser" page
-- Download all torrrents button <img src="screenshots/Screenshot_Rarbg_download_all_torrents.png" alt="Download all torrrents button" height="350"/>
+- Download all torrrents button
+<img src="screenshots/Screenshot_Rarbg_download_all_torrents.png" alt="Download all torrrents button" height="350"/>
 
 - Infinite scrolling
 - Disable some adds/redirect links (where the entire page is covered with an invisible redirect button)
@@ -31,7 +32,14 @@
 - Press ``` ` ``` to toggle thumbnail sizes (to load small or large thumbnails, helpful for slow connections)
 - Press ```right arrow``` and ```left arrow``` to navigate between pages
 
-## Tasks Todo
+## Tasks
+
+### Todo
+
+- [ ] Add menu to change options
+- [ ] Add ability to change search engine
+- [ ] Add a search filter bar
+- [ ] Fix search filter, make it so that not each space is replaced with a disjunction, rather make it match the entire phrase, until we reach a `-`.
 
 ### Done
 
@@ -47,13 +55,6 @@
 - [x] Add forward slash hotkey to go to the search bar
 - [x] If there's no next page, scrolling down shouldn't append an extra link
 - [x] Complete category search
-
-### Incomplete
-
-- [ ] Add menu to change options
-- [ ] Add ability to change search engine
-- [ ] Add a search filter bar
-- [ ] Fix search filter, make it so that not each space is replaced with a disjunction, rather make it match the entire phrase, until we reach a `-`.
 
 ## Credits
 

@@ -71,7 +71,7 @@
 // @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      http://code.jquery.com/jquery-latest.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
-// @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
+// @require      https://raw.githubusercontent.com/naptha/tesseract.js/master/dist/tesseract.min.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // @require      https://github.com/buzamahmooza/Helpful-Web-Userscripts/raw/master/download_script.user.js
 // ==/UserScript==
@@ -110,6 +110,8 @@ const trackers = 'http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%
 const singleTorrentPage = matchSite(/\/torrent\//);
 const isOnThreadDefencePage = /threat_defence/i.test(location.href);
 let currentDocument = document; // placeholder to keep track of the latest document object (since multiple documents are used)
+
+var url = new URL(location.href);
 
 const Options = $.extend({
     thumbnailLink: "ml", //options:  "ml", "tor", "img", "page"
@@ -206,8 +208,8 @@ function updateSearch() {
     })();
 
     const regex = new RegExp(convertedQuery.replace(/-/g, '|')
-            .replace(/\|\|/g, '|')
-            .replace(/^\|/, ''),// '|' that is at the beginning of a word
+        .replace(/\|\|/g, '|')
+        .replace(/^\|/, ''),// '|' that is at the beginning of a word
         'ig');
 
 
@@ -255,29 +257,47 @@ function updateSearch() {
 
 isOnIndexPage = searchBox !== null;
 
+function solveCaptcha() {
+    console.log('solving captcha...');
+    var container = q('tbody > :nth-child(2)');
+    var img = container.querySelector('img');
+    var captcha = q('#solve_string');
+
+    if (img.naturalHeight === 0 && img.naturalWidth === 0) {
+        console.log("image hasn't loaded, refreshing to new captha page");
+        url.searchParams.set('defence', '1');
+        location.assign(url.toString());
+        void (0);
+        return;
+    }
+    var safeImage = (function getSafeImage() {
+        var canvas = document.createElement("canvas");
+        canvas.getContext("2d").drawImage(img, 0, 0);
+        return canvas;
+    })();
+
+    Tesseract.recognize(safeImage)
+        .progress(function (p) {
+            console.log('progress', p);
+        }).then(function (result) {
+            console.log('result', result);
+            var imageText = result;
+
+            captcha.value = imageText;
+
+            var submitBtn = q('#button_submit');
+            submitBtn.display = '';
+            submitBtn.click();
+        });
+}
+
 if (isOnThreadDefencePage) { // check for captcha
     if (q('#solve_string')) {
         console.log('Rarbg threat defence page');
         try {
-            (function solveCaptcha() {
-                console.log('solving captcha...');
-                var container = q('tbody > :nth-child(2)');
-                var img = container.querySelector('img');
-                var captcha = q('#solve_string');
-
-                var image = new Image();
-                image.src = img.src;
-                var imageText = OCRAD(image);
-
-                console.log('OCRAD result:', imageText);
-                captcha.value = imageText;
-
-                var submitBtn = q('#button_submit');
-                submitBtn.display = '';
-                submitBtn.click();
-            })();
+            solveCaptcha();
         } catch (e) {
-            console.error("Error occurred while trying to solve captcha:", e);
+            console.error("Error occurred while trying to solve captcha:\n", e);
         }
     }
 } else { // not OnThreadDefencePage
@@ -360,9 +380,9 @@ if (isOnThreadDefencePage) { // check for captcha
                 descriptionImg.alt = torrentName + "_description_" + (i++);
             }
             descriptionImgs.push(posterImg);
-            descriptionImgs.push({fileURL: torrent.href, fileName: torrentName});
+            descriptionImgs.push({ fileURL: torrent.href, fileName: torrentName });
             var zip = zipFiles(descriptionImgs);
-            zip.file(document.title + ".html", new Blob([document.body.outerHTML], {type: 'text/plain'}));
+            zip.file(document.title + ".html", new Blob([document.body.outerHTML], { type: 'text/plain' }));
             const rowsObj = {};
             ["Title:", "Genres:", "Actors:", "Stars:", "Series:", "Plot:", "Tags:"].forEach(row => {
                 let rowContent = getRow(row)[0];
@@ -372,7 +392,7 @@ if (isOnThreadDefencePage) { // check for captcha
             const rowsText = JSON.stringify(rowsObj, null, 4);
             console.debug('rowsObj: ', rowsObj);
             let summary = document.title + "\n\n" + rowsText;
-            zip.file(document.title + " (summary).txt", new Blob([summary], {type: 'text/plain'}));
+            zip.file(document.title + " (summary).txt", new Blob([summary], { type: 'text/plain' }));
 
             let zipped = false;
             zip.onGenZip = function () {
@@ -384,7 +404,7 @@ if (isOnThreadDefencePage) { // check for captcha
                     console.log('zip timed out, forcing download');
                     zip.genZip();
                 }
-            }, 3000)
+            }, 3000);
         });
 
         void (0);
@@ -579,7 +599,6 @@ var snd = PlaySound("data:audio/wav;base64," + "//OAxAAAAAAAAAAAAFhpbmcAAAAPAAAA
     });
     Mousetrap.bind(["x"], (e) => {
         if (typeof URL !== "undefined") {
-            const url = new URL(location.href);
             url.searchParams.set('category', '4');
             url.pathname = "/torrents.php";
             location.assign(url.toString().replace('category=4', 'category=4;2'));
@@ -799,7 +818,7 @@ function dealWithTorrents(node) {
         var column_Added = row.querySelector('td:nth-child(5)');
         var minutes = ((Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60)),
             hours = 0
-        ;
+            ;
         if (minutes > 60) {
             hours = Math.round(minutes / 60);
             minutes = minutes % 60;
@@ -922,16 +941,16 @@ function extractMouseoverThumbnail(torrentAnchor) {
 function addImageSearchAnchor(torrentAnchor) {
     const searchTd = document.createElement('td'),
         searchLink = document.createElement('a')
-    ;
+        ;
     searchTd.classList.add("search");
     searchTd.style["border-top-width"] = "10px";
     searchTd.style["padding-top"] = "10px";
 
     //replacing common useless torrent terms
     let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText)
-            .replace(/\s\s+/g, ' ')	// removes double spaces
-            .trim()
-    ;
+        .replace(/\s\s+/g, ' ')	// removes double spaces
+        .trim()
+        ;
 
     /**
      * @return {string} the category of the torrent (Movies, XXX, TV Shows, Games, Music, Software, Non XXX)
@@ -1226,7 +1245,7 @@ function hex2rgb(c) {
 }
 
 function makeTextFile(text) {
-    const data = new Blob([text], {type: 'text/plain'});
+    const data = new Blob([text], { type: 'text/plain' });
     var textFile = null;
     // If we are replacing a previously generated file we need to manually revoke the object URL to avoid memory leaks.
     if (textFile !== null) window.URL.revokeObjectURL(textFile);

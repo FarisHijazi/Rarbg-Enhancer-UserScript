@@ -105,7 +105,7 @@ if (Element.prototype.after === undefined) Element.prototype.after = function (n
 
 (function () {
 
-    const debugmode = false; // debug mode (setting this to false will disable the console logging)
+    const debugmode = true; // debug mode (setting this to false will disable the console logging)
 
     const TORRENT_ICO = "https://dyncdn.me/static/20/img/16x16/download.png";
     const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
@@ -279,10 +279,8 @@ tr.lista2 > td.lista > a[onmouseover] {
     if (!!fileColumnHeader) fileColumnHeader.parentElement.insertBefore(headCell, q('.lista2t tr:first-child td:nth-child(2)'));
 
 
-    /**
-     * Plays audio
-     * https://stackoverflow.com/a/17762789/7771202
-     */
+    /** Plays audio
+     * @author https://stackoverflow.com/a/17762789/7771202 */
     const PlaySound = (function () {
         const df = document.createDocumentFragment();
         return function Sound(src) {
@@ -331,9 +329,9 @@ tr.lista2 > td.lista > a[onmouseover] {
                     // thumbnail
                     thumbnailImg.classList.add('preview-image');
 
-                    let thumb = extractMouseoverThumbnail(torrents[i]);
-                    createAndAddAttribute(thumbnailImg, 'smallSrc', thumb);
-                    createAndAddAttribute(thumbnailImg, 'bigSrc', getLargeThumbnail(thumb));
+                    let thumb = extractThumbnailSrc(torrents[i]);
+                    thumbnailImg.setAttribute('smallSrc', thumb);
+                    thumbnailImg.setAttribute('bigSrc', getLargeThumbnail(thumb));
 
                     setThumbnail(thumbnailImg);
                     thumbnailLink.appendChild(thumbnailImg);
@@ -809,148 +807,151 @@ tr.lista2 > td.lista > a[onmouseover] {
         });
     }
 
-    /**
-     * @param numberOfSeeders
-     * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
-     */
-    function mapSeedersToAlpha(numberOfSeeders) {
-        const alpha = 0.013 * Math.log(1 + numberOfSeeders) / Math.log(1.15);
-        return Math.clamp(alpha, 0.1, 0.4);
-    }
-
     function dealWithTorrents(node) {
         torrents = node.querySelectorAll('.lista2 td:nth-child(2) [href^="/torrent/"]');
-        for (var i = 0; i < torrents.length; i++) {
-            //creating and adding the elements
-            const cell = document.createElement('td'),
-                thumbnailLink = document.createElement('a'),
-                thumbnailImg = document.createElement('img');
-
-            switch (Options.thumbnailLink) {
-                case "ml":
-                    try {
-                        thumbnailLink.href = mls[i];
-                        if (!/^magnet:\?/.test(thumbnailLink.href))  // noinspection ExceptionCaughtLocallyJS
-                            throw new Error("Not a magnet link");
-                    } catch (e) {
-                        thumbnailLink.href = getTorrentDownloadLinkFromAnchor(torrents[i]);
-                    }
-                    break;
-                case "tor":
-                    try {
-                        thumbnailLink.href = getTorrentDownloadLinkFromAnchor(torrents[i]);
-                    } catch (e) {
-                        thumbnailLink.href = mls[i];
-                        if (debugmode) console.debug('Using MagnetLink for torrent thumbnail since torrent failed:', mls[i]);
-                    }
-                    break;
-                case "page":
-                    thumbnailLink.href = torrents[i].href;
-                    break;
-                case "img":
-                    thumbnailLink.href = thumbnailImg.src;
-                    break;
-            }
-
-            cell.classList.add('thumbnail-cell');
-
-            cell.appendChild(thumbnailLink);
-
-            if (thumbnailLink.href.indexOf('undefined') >= 0)
-                if (debugmode) console.warn(
-                    "thumbnail Link:", thumbnailLink,
-                    "torrents[i]:", torrents[i].innerText,
-                    "getTorrentDownloadLinkFromAnchor(torrents[i])", getTorrentDownloadLinkFromAnchor(torrents[i])
-                );
-
-            // thumbnail
-            thumbnailImg.classList.add('preview-image');
-            thumbnailImg.classList.add('zoom');
-
-            thumbnailImg.onmouseover = function playSound() {
-                try {
-                    var snd = PlaySound("data:audio/wav;base64," + "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");
-                } catch (e) {
-                }
-            };
-
-            let thumb = extractMouseoverThumbnail(torrents[i]);
-            createAndAddAttribute(thumbnailImg, 'smallSrc', thumb);
-            createAndAddAttribute(thumbnailImg, 'bigSrc', getLargeThumbnail(thumb));
-
-            thumbnailLink.appendChild(thumbnailImg);
-            setThumbnail(thumbnailImg);
-
-            torrents[i].parentElement.before(cell);
-
+        for (let i = 0; i < torrents.length; i++) {
             var row = torrents[i].closest('tr');
-            var column_Added = row.querySelector('td:nth-child(5)');
-            var minutes = ((Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60)),
-                hours = 0
+
+
+            // = adding relative time to columns
+            (function createAndAddThumbnailCell() {
+
+                // = Creating and adding thumbnail cell
+                const cell = document.createElement('td'),
+                    thumbnailLink = document.createElement('a'),
+                    thumbnailImg = document.createElement('img');
+
+                cell.classList.add('thumbnail-cell');
+                cell.appendChild(thumbnailLink);
+                thumbnailLink.appendChild(thumbnailImg);
+
+                // thumbnail link
+                (function setLinkHref() {
+                    switch (Options.thumbnailLink) {
+                        case 'ml':
+                            try {
+                                thumbnailLink.href = mls[i];
+                                if (!/^magnet:\?/.test(thumbnailLink.href))  // noinspection ExceptionCaughtLocallyJS
+                                    throw new Error('Not a magnet link');
+                            } catch (e) {
+                                thumbnailLink.href = getTorrentDownloadLinkFromAnchor(torrents[i]);
+                            }
+                            break;
+                        case 'tor':
+                            try {
+                                thumbnailLink.href = getTorrentDownloadLinkFromAnchor(torrents[i]);
+                            } catch (e) {
+                                thumbnailLink.href = mls[i];
+                                if (debugmode) console.debug('Using MagnetLink for torrent thumbnail since torrent failed:', mls[i]);
+                            }
+                            break;
+                        case 'page':
+                            thumbnailLink.href = torrents[i].href;
+                            break;
+                    }
+                })();
+                if (thumbnailLink.href.indexOf('undefined') >= 0)
+                    console.warn(
+                        'thumbnail Link:', thumbnailLink,
+                        'torrents[i]:', torrents[i].innerText,
+                        'getTorrentDownloadLinkFromAnchor(torrents[i])', getTorrentDownloadLinkFromAnchor(torrents[i])
+                    );
+
+                // thumbnail
+                thumbnailImg.onmouseover = function playSound() {
+                    try {
+                        var snd = PlaySound('data:audio/wav;base64,' + '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');
+                    } catch (e) {
+                    }
+                };
+                thumbnailImg.classList.add('preview-image');
+                const src = extractThumbnailSrc(torrents[i]);
+                thumbnailImg.setAttribute('smallSrc', src);
+                thumbnailImg.setAttribute('bigSrc', getLargeThumbnail(src));
+                setThumbnail(thumbnailImg);
+
+                torrents[i].parentElement.before(cell);
+            })();
+
+            (function changeDateToRelativeTime() {
+                var column_Added = row.querySelector('td:nth-child(5)');
+                var minutes = ((Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60)),
+                    hours = 0
                 ;
-            if (minutes > 60) {
-                hours = Math.round(minutes / 60);
-                minutes = minutes % 60;
-            }
-            minutes = Math.round(minutes);
 
-            if (debugmode) console.log('column_Added:', column_Added);
-            column_Added.innerHTML =
-                column_Added.innerHTML + '<br>\n' + ((hours ? (hours + 'h') : '') + minutes ? (minutes + 'min') : '') + '&nbsp' + 'ago';
+                if (minutes > 60) {
+                    hours = Math.round(minutes / 60);
+                    minutes = minutes % 60;
+                }
+                minutes = Math.round(minutes);
 
+                if (debugmode) console.log('column_Added:', column_Added);
+
+                column_Added.innerHTML =
+                    column_Added.innerHTML + '<br>\n' + ((hours ? (hours + 'h') : '') + minutes ? (minutes + 'min') : '') + '&nbsp' + 'ago';
+            })();
 
             // color backgrounds depending on the number of seeders
-            const seedersFont = row.querySelector('font[color]');
-            var statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
-            const clampedAlpha = mapSeedersToAlpha(parseInt(seedersFont.innerText));
-            statusRGB.map(x => x * clampedAlpha * 10);
-            statusRGB.push(clampedAlpha); // add alpha channel
+            (function colorBackground() {
+                /**
+                 * @param numberOfSeeders
+                 * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
+                 */
+                const mapSeedersToAlpha = numberOfSeeders => {
+                    const alpha = 0.013 * Math.log(1 + numberOfSeeders) / Math.log(1.15);
+                    return Math.clamp(alpha, 0.1, 0.4);
+                };
 
-            row.style.background = 'rgb(' + statusRGB.join(', ') + ')';
+                const seedersFont = row.querySelector('font[color]');
+                const statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
+                const clampedAlpha = mapSeedersToAlpha(parseInt(seedersFont.innerText));
+                statusRGB.map(x => x * clampedAlpha * 10);
+                statusRGB.push(clampedAlpha); // add alpha channel
+
+                row.style.background = 'rgb(' + statusRGB.join(', ') + ')';
+            })();
         }
         torrents.forEach(addImageSearchAnchor);
     }
 
-    function setThumbnail(magnetImg) {
-        if (!magnetImg.src) {
-            magnetImg.src = magnetImg.getAttribute('smallSrc');
+    function setThumbnail(thumbnail) {
+        if (!thumbnail.src) {
+            thumbnail.src = thumbnail.getAttribute('smallSrc');
         }
 
         // creating image objects to add load listeners to them
         var smallImage = new Image();
-        smallImage.src = magnetImg.getAttribute('smallSrc');
+        smallImage.src = thumbnail.getAttribute('smallSrc');
         // set to small src when loading small image
         smallImage.onLoad = function () {
-            createAndAddAttribute(magnetImg, 'small-loaded');
-            magnetImg.src = magnetImg.getAttribute('smallSrc');
+            thumbnail.setAttribute('small-loaded', '');
+            thumbnail.src = thumbnail.getAttribute('smallSrc');
 
-            if (Options.largeThumbnails && magnetImg.getAttribute('big-loaded')) {
-                magnetImg.src = magnetImg.getAttribute('bigSrc');
+            if (Options.largeThumbnails && thumbnail.getAttribute('big-loaded')) {
+                thumbnail.src = thumbnail.getAttribute('bigSrc');
             }
         };
         // creating image objects to add load listeners to them
         var bigImage = new Image();
-        bigImage.src = magnetImg.getAttribute('bigSrc');
+        bigImage.src = thumbnail.getAttribute('bigSrc');
         // set to small src when loading small image
         bigImage.onLoad = function () {
-            createAndAddAttribute(magnetImg, 'big-loaded');
+            thumbnail.setAttribute('big-loaded', '');
 
             if (Options.largeThumbnails) {
-                magnetImg.src = magnetImg.getAttribute('bigSrc');
+                thumbnail.src = thumbnail.getAttribute('bigSrc');
             }
         };
 
-        // magnetImg.src = magnetImg.getAttribute((!Options.largeThumbnails ? 'smallSrc' : 'bigSrc'));
-        magnetImg.src = Options.largeThumbnails?
-            magnetImg.getAttribute('bigSrc'):
-            magnetImg.getAttribute('smallSrc');
+        // thumbnail.src = thumbnail.getAttribute((!Options.largeThumbnails ? 'smallSrc' : 'bigSrc'));
+        thumbnail.src = Options.largeThumbnails?
+            thumbnail.getAttribute('bigSrc'):
+            thumbnail.getAttribute('smallSrc');
 
         if (!Options.addThumbnails) {
-            if (magnetImg.closest('a').href.indexOf('magnet:?') === 0) {    // if magnet link
-                magnetImg.src = MAGNET_ICO;
-            } else {    // if torrent link
-                magnetImg.src = TORRENT_ICO;
-            }
+            thumbnail.src = thumbnail.closest('a').href.indexOf('magnet:?') === 0 ? // if magnet link
+                MAGNET_ICO : // magnet icon
+                TORRENT_ICO; // else, just put torrent icon
         }
     }
 
@@ -981,30 +982,20 @@ tr.lista2 > td.lista > a[onmouseover] {
             ;
     }
 
-    function createAndAddAttribute(node, attributeName, attributeValue) {
-        if (!node) {
-            console.error('Node is null, cannot add attribute.');
-            return;
-        }
-
-        var att = document.createAttribute(attributeName);
-        att.value = attributeValue;
-        node.setAttributeNode(att);
-    }
-
     /** @Return returns the extracted source url from the 'onmouseover' attribute */
-    function extractMouseoverThumbnail(torrentAnchor) {
+    function extractThumbnailSrc(torrentAnchor) {
         if (!torrentAnchor) console.warn('null torrent anchor:', torrentAnchor);
-        let thb = '';
+        let thumbnailSrc = '';
         try {
-            // thb = thb.match(/(?<=(return overlib('\<img src\=\')))(.*?)(?=(\' border\=0\>\'))/i)[0];
-            thb = torrentAnchor.getAttribute('onmouseover') || "";
-            thb = thb.substring("return overlib('<img src=\'".length + 1, thb.length - "\' border=0>'".length - 2);
+            // thumbnailSrc = thumbnailSrc.match(/(?<=(return overlib('\<img src\=\')))(.*?)(?=(\' border\=0\>\'))/i)[0];
+            thumbnailSrc = torrentAnchor.getAttribute('onmouseover') || "";
+            thumbnailSrc = thumbnailSrc.substring("return overlib('<img src=\'".length + 1, thumbnailSrc.length - "\' border=0>'".length - 2);
         } catch (r) {
-            thb = MAGNET_ICO;
-            if (debugmode) console.error('getMouseoverThumbnail error:', r);
+            thumbnailSrc = MAGNET_ICO;
+            console.error('extractThumbnailSrc error:', r);
         }
-        return thb;
+        debugmode && console.debug('extractThumbnailSrc(', torrentAnchor, ')->', thumbnailSrc);
+        return thumbnailSrc;
     }
 
     function addImageSearchAnchor(torrentAnchor) {
@@ -1255,115 +1246,6 @@ tr.lista2 > td.lista > a[onmouseover] {
         }
     }
 
-    // === the below are just helpful functions that are not speicific to the rarbg script ===
-
-    function matchSite(siteRegex) {
-        let result = location.href.match(siteRegex);
-        if (result) if (debugmode) console.log("Site matched regex: " + siteRegex);
-        return result;
-    }
-
-    function anchorClick(href, downloadValue, target) {
-        downloadValue = downloadValue || '_untitled';
-        var a = document.createElement('a');
-        a.setAttribute('href', href);
-        a.setAttribute('download', downloadValue);
-        a.target = target;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-    }
-
-    function saveByAnchor(url, dlName) {
-        anchorClick(url, dlName);
-    }
-
-    function removeDoubleSpaces(str) {
-        return !!str ? str.replace(/(\s\s+)/g, " ") : str;
-    }
-
-    function clearSymbolsFromString(str) {
-        function clearDatesFromString(str) {
-            return !!str ? removeDoubleSpaces(str.replace(/\d+([.\-])(\d+)([.\-])\d*/g, ' ')) : str;
-        }
-
-        return str && removeDoubleSpaces(clearDatesFromString(str).replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, ' ')
-            .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, " ")).trim();
-    }
-
-    function isPageBlockedKSA() {
-        const msgText = document.querySelector('#r4 > td[dir="ltr"].english');
-        return !!msgText && msgText.innerText === "If you believe the requested page should not be blocked please click here." &&
-            !!document.querySelector('[href^="http://www.internet.gov.sa/resources-ar/block-unblock-request-ar/view?set_language"]');
-    }
-
-    /** Create an element by HTML.
-     example:   var myAnchor = createElement('<a href="https://example.com">Go to example.com</a>');*/
-    function createElement(html) {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        return div.childNodes[0];
-    }
-
-    function hex2rgb(c) {
-        if (c[0] === '#') c = c.substr(1);
-        const r = parseInt(c.slice(0, 2), 16),
-            g = parseInt(c.slice(2, 4), 16),
-            b = parseInt(c.slice(4, 6), 16);
-        return [r, g, b];
-    }
-
-    function makeTextFile(text) {
-        const data = new Blob([text], { type: 'text/plain' });
-        var textFile = null;
-        // If we are replacing a previously generated file we need to manually revoke the object URL to avoid memory leaks.
-        if (textFile !== null) window.URL.revokeObjectURL(textFile);
-        textFile = window.URL.createObjectURL(data);
-        return textFile;
-    }
-
-    /**abbreviation for querySelectorAll()
-     * @param selector
-     * @param node
-     * @return {NodeListOf<HTMLElement>} */
-    function qa(selector, node = document) {
-        return node.querySelectorAll(selector);
-    }
-
-    /**abbreviation for querySelector()
-     * @param selector
-     * @param node
-     * @return {HTMLElement} */
-    function q(selector, node = document) {
-        return node.querySelector(selector);
-    }
-
-    function getElementsByXPath(xpath, parent) {
-        let results = [];
-        let query = document.evaluate(xpath,
-            parent || document,
-            null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-
-        for (let i = 0, length = query.snapshotLength; i < length; ++i) {
-            results.push(query.snapshotItem(i));
-        }
-        return results;
-    }
-
-    function addCss(cssStr, id='') {
-        // check if already exists
-        const style = id && document.getElementById(id) || document.createElement('style');
-
-        if (style.styleSheet) {
-            style.styleSheet.cssText = cssStr;
-        } else {
-            style.innerText = cssStr;
-        }
-        if (!!id) style.id = id;
-        style.classList.add('addCss');
-        return document.getElementsByTagName('head')[0].appendChild(style);
-    }
-
 
     // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
 
@@ -1390,5 +1272,117 @@ tr.lista2 > td.lista > a[onmouseover] {
     <td align="center" className="lista">Scene</td>
 </tr>
     */
-
 })();
+
+// == general helper functions, not specific to this script ==
+
+function matchSite(siteRegex) {
+    let result = location.href.match(siteRegex);
+    if (result) console.debug("Site matched regex: " + siteRegex);
+    return result;
+}
+
+function anchorClick(href, downloadValue, target) {
+    downloadValue = downloadValue || '_untitled';
+    var a = document.createElement('a');
+    a.setAttribute('href', href);
+    a.setAttribute('download', downloadValue);
+    a.target = target;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}
+
+function saveByAnchor(url, dlName) {
+    anchorClick(url, dlName);
+}
+
+function removeDoubleSpaces(str) {
+    return !!str ? str.replace(/(\s\s+)/g, " ") : str;
+}
+
+function clearSymbolsFromString(str) {
+    function clearDatesFromString(str) {
+        return !!str ? removeDoubleSpaces(str.replace(/\d+([.\-])(\d+)([.\-])\d*/g, ' ')) : str;
+    }
+
+    return str && removeDoubleSpaces(clearDatesFromString(str).replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, ' ')
+        .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, " ")).trim();
+}
+
+function isPageBlockedKSA() {
+    const msgText = document.querySelector('#r4 > td[dir="ltr"].english');
+    return !!msgText && msgText.innerText === "If you believe the requested page should not be blocked please click here." &&
+        !!document.querySelector('[href^="http://www.internet.gov.sa/resources-ar/block-unblock-request-ar/view?set_language"]');
+}
+
+function hex2rgb(c) {
+    if (c[0] === '#') c = c.substr(1);
+    const r = parseInt(c.slice(0, 2), 16),
+        g = parseInt(c.slice(2, 4), 16),
+        b = parseInt(c.slice(4, 6), 16);
+    return [r, g, b];
+}
+
+function makeTextFile(text) {
+    const data = new Blob([text], { type: 'text/plain' });
+    var textFile = null;
+    // If we are replacing a previously generated file we need to manually revoke the object URL to avoid memory leaks.
+    if (textFile !== null) window.URL.revokeObjectURL(textFile);
+    textFile = window.URL.createObjectURL(data);
+    return textFile;
+}
+/** Create an element by HTML.
+ example:   var myAnchor = createElement('<a href="https://example.com">Go to example.com</a>');*/
+function createElement(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.childNodes[0];
+}
+
+function htmlToElements(html) {
+    return new DOMParser().parseFromString(html, 'text/html').body.childNodes
+}
+
+/**abbreviation for querySelectorAll()
+ * @param selector
+ * @param node
+ * @return {NodeListOf<HTMLElement>} */
+function qa(selector, node = document) {
+    return node.querySelectorAll(selector);
+}
+
+/**abbreviation for querySelector()
+ * @param selector
+ * @param node
+ * @return {HTMLElement} */
+function q(selector, node = document) {
+    return node.querySelector(selector);
+}
+
+function getElementsByXPath(xpath, parent) {
+    let results = [];
+    let query = document.evaluate(xpath,
+        parent || document,
+        null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+
+    for (let i = 0, length = query.snapshotLength; i < length; ++i) {
+        results.push(query.snapshotItem(i));
+    }
+    return results;
+}
+
+function addCss(cssStr, id='') {
+    // check if already exists
+    const style = id && document.getElementById(id) || document.createElement('style');
+
+    if (style.styleSheet) {
+        style.styleSheet.cssText = cssStr;
+    } else {
+        style.innerText = cssStr;
+    }
+    if (!!id) style.id = id;
+    style.classList.add('addCss');
+    return document.getElementsByTagName('head')[0].appendChild(style);
+}
+

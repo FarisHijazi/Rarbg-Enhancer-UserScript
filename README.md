@@ -4,7 +4,7 @@
 
 - Install any [UserScript client](https://www.greasyfork.org/) to your browser (this script has only been tested on [Tampermonkey](https://tampermonkey.net/))
 - Click the [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.meta.js) link of the script to install it to your userscript client
-- Open [rarbg](https://rarbg.to/) or any of its mirrors and the changes should be there
+- Open [Rarbg.to](https://rarbg.to/) or any of its mirrors and the changes should be there
 
 ## Features
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      0.5.11
+// @version      0.5.12
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi, with some code from https://greasyfork.org/en/users/2160-darkred
@@ -547,20 +547,38 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                     const mirrorsTab = document.createElement('td');
                     mirrorsTab.className = 'header3';
-                    mirrorsTab.innerText = "Switch to mirror site:";
+                    mirrorsTab.innerText = 'Switch to mirror site:';
+
+                    function openAllMirrors() {
+                        console.log('opening all mirrors');
+
+                        for (const hostnames of mirrorsTab.querySelectorAll('option.mirrors-option')) {
+                            window.open(extractUrlFromMirrorHost(hostnames), '_blank');
+                        }
+                    }
+                    function extractUrlFromMirrorHost(hostnameText) {
+                        const split = location.href.split('/').slice(2);
+                        split[0] = hostnameText;
+                        return split.join('/');
+                    }
 
                     const mirrorsSelect = document.createElement('select');
                     mirrorsSelect.onchange = function () {
-                        if (!this.value) return;
-                        const split = location.href.split('/').slice(2);
-                        split[0] = this.value;
-                        const newUrl = split.join('/');
-                        location.assign(newUrl);
+                        if(!this.value) return;
+
+                        console.log('this:', this);
+
+                        if (this.value === 'Open ALL mirrors') {
+                            openAllMirrors();
+                        } else {
+                            location.assign(extractUrlFromMirrorHost(this.value));
+                        }
                     };
                     mirrorsTab.appendChild(mirrorsSelect);
 
                     for (const mirror of Options.mirrors) {
                         const option = document.createElement('option');
+                        option.className = 'mirrors-option';
                         option.value = mirror;
                         option.innerText = new URL(mirror).hostname;
                         if (option.innerText === location.hostname)
@@ -569,10 +587,21 @@ tr.lista2 > td.lista > a[onmouseover] {
                         mirrorsSelect.appendChild(option);
                     }
 
-                    const option = document.createElement('option');
-                    option.innerText = location.hostname;
-                    option.setAttribute('selected', "");
-                    mirrorsSelect.appendChild(option);
+                    // adding another last one (which would be THIS hostsname's url)
+                    const option_thisHostname = document.createElement('option');
+                    option_thisHostname.innerText = location.hostname;
+                    option_thisHostname.setAttribute('selected', "");
+                    mirrorsSelect.appendChild(option_thisHostname);
+
+                    // another option to open ALL the hostnames in the new tab
+                    const option_openAllMirrors = document.createElement('option');
+                    option_openAllMirrors.innerText = 'Open ALL mirrors';
+                    option_openAllMirrors.id = 'open-all-mirrors';
+                    option_openAllMirrors.setAttribute('selected', "");
+                    option_openAllMirrors.onclick = openAllMirrors;
+                    mirrorsSelect.appendChild(option_openAllMirrors);
+
+                    mirrorsSelect.selectedIndex--;
 
                     blankTab.after(mirrorsTab);
                 })();
@@ -642,7 +671,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 torrents: torrentJsons
             };
 
-            const tableOuterHTML = getElementsByXPath("//table[@class='lista2t']")[0].outerHTML;
+            const tableOuterHTML = getElementsByXPath("//table[@class='lista']")[0].outerHTML;
             const summaryHTML = `<html lang="en">${document.head.outerHTML}<body>${tableOuterHTML}</body></html>`;
 
             anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + ' [' + rows.length + ']' + ' info.json');
@@ -865,6 +894,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                     }
                 };
                 thumbnailImg.classList.add('preview-image');
+                thumbnailImg.classList.add('zoom');
                 const src = extractThumbnailSrc(torrents[i]);
                 thumbnailImg.setAttribute('smallSrc', src);
                 thumbnailImg.setAttribute('bigSrc', getLargeThumbnail(src));

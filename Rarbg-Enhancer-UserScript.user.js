@@ -992,15 +992,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         updateCss();
         if (debugmode) console.log('toggling thumbnail sizes. Options.largeThumbnails = ', Options.largeThumbnails);
     }
-
-    function bigThumbHandleError() {
-        this.removeEventListener("error", bigThumbHandleError);
-        this.src = this.oldSrc;
-        console.warn('Failed to load big thumbnail for', this.src, ' Attempting xml request');
-        addMagnetCell(this.parentElement);
-    }
-
-    // gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
+// gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
     function getLargeThumbnail(smallThumbUrl) {
         // Movie example
         // Small pic:   http://dyncdn.me/mimages/316661/over_opt.jpg
@@ -1265,19 +1257,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     function getTorrentDownloadLinkFromAnchor(anchor) {
         return anchor.href.replace('torrent/', 'download.php?id=') + '&f=' + encodeURI(anchor.innerText) + '-[rarbg.com].torrent';
     }
-
-    function loadBigPics() {
-        updateCss();
-        // Advised not to use as it uses XML requests and will get you banned form the site if you use it for a few pages.
-        for (const img of qa('.preview-image')) {
-            img.addEventListener("error", bigThumbHandleError);
-            img.oldSrc = img.src;
-            img.src = getLargeThumbnail(img.src);
-        }
-    }
-
-
-    // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
+// Cat. | File | Added | Size | S. | L. | comments  |   Uploader
 
     // this is one row
     /*

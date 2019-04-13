@@ -69,7 +69,7 @@
 // @icon         https://www.google.com/s2/favicons?domain=rarbg.com
 // @run-at       document-idle
 // @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
-// @require      http://code.jquery.com/jquery-latest.min.js
+// @require      https://code.jquery.com/jquery-3.4.0.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
@@ -92,20 +92,25 @@
 console.log('Rarbg script running');
 
 // adding Element.before() and Element.after() (since some browsers like MS Edge don't already have them)
-if (Element.prototype.before === undefined) Element.prototype.before = function (newNode) {
-    if (this.parentElement) {
-        return this.parentElement.insertBefore(newNode, this);
-    }
-};
-if (Element.prototype.after === undefined) Element.prototype.after = function (newNode) {
-    if (this.parentElement) {
-        return this.parentElement.insertBefore(newNode, this.nextSibling);
-    }
-};
+if (Element.prototype.before === undefined) {
+    Element.prototype.before = function (newNode) {
+        if (this.parentElement) {
+            return this.parentElement.insertBefore(newNode, this);
+        }
+    };
+}
+if (Element.prototype.after === undefined) {
+    Element.prototype.after = function (newNode) {
+        if (this.parentElement) {
+            return this.parentElement.insertBefore(newNode, this.nextSibling);
+        }
+    };
+}
 
+// main
 (function () {
 
-    const debugmode = true; // debug mode (setting this to false will disable the console logging)
+    const debug = true; // debug mode (setting this to false will disable the console logging)
 
     const TORRENT_ICO = "https://dyncdn.me/static/20/img/16x16/download.png";
     const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
@@ -137,7 +142,8 @@ if (Element.prototype.after === undefined) Element.prototype.after = function (n
             "http://rarbg-to.proxydude.xyz",
             "http://rarbg.com.torrentprox.com",
             "http://rarbg-to.pbproxy2.co",
-            "https://www.rarbg.is"]
+            "https://www.rarbg.is"],
+        colorBackground: false,
     }, GM_getValue("RarbgOptions"));
 
     // write back the Options to the storage (in the case that they changed)
@@ -172,14 +178,12 @@ if (Element.prototype.after === undefined) Element.prototype.after = function (n
     if (!tbodyEl) console.warn("tbody element not found!");
 
 
-    const title = 'DL&nbsp;ML',
-        mls = appendColumn();
+    // const mls = appendColumnG('DL ML');
+
     var appendedPageNum = 1;
 
     // click to verify browser
     qa('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
-
-    var torrents = qa('a[onmouseover][href^="/torrent/"]');
 
     //todo: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
     if (isPageBlockedKSA()) {
@@ -187,7 +191,7 @@ if (Element.prototype.after === undefined) Element.prototype.after = function (n
     }
 
     const searchBox = document.querySelector('#searchinput');
-    const torrentLinks = Array.from(document.querySelectorAll('table > tbody > tr.lista2 a[title]'));
+    const getTorrentLinks = () => Array.from(document.querySelectorAll('table > tbody > tr.lista2 a[title]'));
 
     let isOnIndexPage = searchBox !== null;
 
@@ -267,17 +271,6 @@ tr.lista2 > td.lista > a[onmouseover] {
     );
     updateCss();
 
-    var headCell = document.createElement('td');
-    headCell.innerHTML = 'Thumbnails';
-    headCell.classList.add('header6');
-    headCell.classList.add('header40');
-
-    // Adds the click functionality to the Thumbnails header
-    headCell.addEventListener('click', toggleThumbnailSize);
-
-    var fileColumnHeader = q('.lista2t tr:first-child td:nth-child(2)');
-    if (!!fileColumnHeader) fileColumnHeader.parentElement.insertBefore(headCell, q('.lista2t tr:first-child td:nth-child(2)'));
-
 
     /** Plays audio
      * @author https://stackoverflow.com/a/17762789/7771202 */
@@ -299,7 +292,6 @@ tr.lista2 > td.lista > a[onmouseover] {
 
     // === end of variable declarations ===
 
-
     $(document).ready(function main() {
         if (isOnThreatDefencePage) { // check for captcha
             if (q('#solve_string')) {
@@ -316,12 +308,11 @@ tr.lista2 > td.lista > a[onmouseover] {
                 let mainTorrentLink = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
 
-                var i = 0;
-                for (const torrent of torrents) {
+                for (const torrent of qa('a[title][href^="/torrent/"]')) {
                     //creating and adding thumbnails
-                    const cell = document.createElement('td'),
-                        thumbnailLink = document.createElement('a'),
-                        thumbnailImg = document.createElement('img');
+                    const cell = document.createElement('td');
+                    const thumbnailLink = document.createElement('a');
+                    const thumbnailImg = document.createElement('img');
                     thumbnailLink.href = torrent.href;
 
                     cell.classList.add('thumbnail-cell');
@@ -329,7 +320,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                     // thumbnail
                     thumbnailImg.classList.add('preview-image');
 
-                    let thumb = extractThumbnailSrc(torrents[i]);
+                    let thumb = extractThumbnailSrc(torrent);
                     thumbnailImg.setAttribute('smallSrc', thumb);
                     thumbnailImg.setAttribute('bigSrc', getLargeThumbnail(thumb));
 
@@ -340,8 +331,6 @@ tr.lista2 > td.lista > a[onmouseover] {
                     thumbnailImg.style.width = "auto";
                     thumbnailImg.style["max-height"] = "none";
                     thumbnailImg.style["max-width"] = "none";
-
-                    i++;
                 }
 
                 // remove VPN row
@@ -386,7 +375,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
 
                 Mousetrap.bind("d", function (e) {
-                    const torrent = q('[onmouseover="return overlib(\'Click here to download torrent\')"]');
+                    const torrent = q('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
                     torrent.click();
 
                     function getRow(rowText) {
@@ -433,6 +422,8 @@ tr.lista2 > td.lista > a[onmouseover] {
             } else if (isOnIndexPage) { // if on torrent page (index)
                 searchBox.onkeyup = updateSearch;
 
+                appendColumnG('ML DL', 'File', addDlAndMl);
+
                 if (Options.infiniteScrolling) { // infiniteScrolling
                     (function makeInfiniteScroll() {
                         const tableLvl2 = "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)";
@@ -453,7 +444,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                                 const lista2s = items[0].querySelectorAll('.lista2');
                                 for (const lista2 of lista2s) {
                                     tbodyEl.appendChild(lista2);
-                                    appendColumnSingle(lista2.childNodes[1]);
+                                    appendColumnCell(lista2.childNodes[1]);
                                 }
                             }
 
@@ -462,7 +453,6 @@ tr.lista2 > td.lista > a[onmouseover] {
                             // filter the new torrents that just arrived
                             updateSearch();
                         });
-
                     })();
                 }
 
@@ -471,7 +461,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 if (typeof (horsey) !== "undefined") {
                     const myHorsey = horsey(searchBox, {
                         source: [{
-                            list: torrentLinks.map(a => ({
+                            list: getTorrentLinks().map(a => ({
                                 text: a.title || a.innerText,
                                 value: a
                             }))
@@ -491,26 +481,6 @@ tr.lista2 > td.lista > a[onmouseover] {
                     });
                 }
             }
-
-            (function addColumnHeader() {
-                var nearHeader = q('.lista2t > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(3)'); // the first cell (header cell) of the new column
-                if (!nearHeader) {
-                    console.warn("Problem: Header not found");
-                    return;
-                }
-                var header = nearHeader.cloneNode(false);
-                nearHeader.before(header);
-                // noinspection JSUnusedAssignment
-                nearHeader = undefined; // clear memory
-
-                header.setAttribute('class', 'header6');
-                header.setAttribute('align', 'center');
-                header.setAttribute('id', 'DL-header');
-
-                var dlAnchor = createElement('<a>DL</a>');
-                header.addEventListener('click', downloadAllTorrents);
-                header.appendChild(dlAnchor);
-            })();
 
             (function onLoad() {
                 console.log('loaded');
@@ -581,10 +551,9 @@ tr.lista2 > td.lista > a[onmouseover] {
                         option.className = 'mirrors-option';
                         option.value = mirror;
                         option.innerText = new URL(mirror).hostname;
-                        if (option.innerText === location.hostname)
-                            continue;
-
-                        mirrorsSelect.appendChild(option);
+                        if (option.innerText !== location.hostname) {
+                            mirrorsSelect.appendChild(option);
+                        }
                     }
 
                     // adding another last one (which would be THIS hostsname's url)
@@ -606,16 +575,19 @@ tr.lista2 > td.lista > a[onmouseover] {
                     blankTab.after(mirrorsTab);
                 })();
 
-                observeDocument((target) => {
-                    dealWithTorrents(target);
-
-                    // remove links for adds that cover the screen
-                    for (const x of qa('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
-                        console.log('removed redirect element:', x);
-                        x.remove();
-                    }
-                });
             })();
+
+            observeDocument((target) => {
+                dealWithTorrents(target);
+
+                appendColumnG('Thumbnails', 'Cat.', addThumbnailColumn);
+
+                // remove links for adds that cover the screen
+                for (const x of qa('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
+                    console.log('removed redirect element:', x);
+                    x.remove();
+                }
+            });
         }
 
     });
@@ -623,7 +595,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     (function bindKeys() {
         if (typeof Mousetrap === "undefined") return;
         Mousetrap.bind(["space"], (e) => {
-            appendPage(currentDocument.querySelector('a[title="next page"]'));
+            // appendPage(currentDocument.querySelector('a[title="next page"]'));
             solveCaptcha(); // todo: remove this, this is just for debugging
         });
         Mousetrap.bind(["/"], (e) => {
@@ -679,6 +651,66 @@ tr.lista2 > td.lista > a[onmouseover] {
         });
     })();
 
+    function addThumbnailColumn(cell, torrent, row) {
+        // = Creating and adding thumbnail cell
+        // var cell = document.createElement('td');
+        const thumbnailLink = document.createElement('a');
+        const thumbnailImg = document.createElement('img');
+
+        cell.classList.add('thumbnail-cell');
+        cell.appendChild(thumbnailLink);
+        thumbnailLink.appendChild(thumbnailImg);
+
+        const ml = row.querySelector('a.torrent-ml');
+        const dl = row.querySelector('a.torrent-dl') || getTorrentDownloadLinkFromAnchor(torrent);
+
+        // thumbnail link
+        (function setLinkHref() {
+            switch (Options.thumbnailLink) {
+                case 'ml':
+                    try {
+                        thumbnailLink.href = ml;
+                        if (!/^magnet:\?/.test(thumbnailLink.href))  // noinspection ExceptionCaughtLocallyJS
+                            throw new Error('Not a magnet link');
+                    } catch (e) {
+                        thumbnailLink.href = dl;
+                    }
+                    break;
+                case 'tor':
+                    try {
+                        thumbnailLink.href = dl;
+                    } catch (e) {
+                        thumbnailLink.href = ml;
+                        if (debug) console.debug('Using MagnetLink for torrent thumbnail since torrent failed:', ml);
+                    }
+                    break;
+                case 'page':
+                    thumbnailLink.href = torrent.href;
+                    break;
+            }
+        })();
+
+        if (thumbnailLink.href.indexOf('undefined') >= 0)
+            console.warn(
+                'thumbnail Link:', thumbnailLink,
+                'torrent:', torrent.innerText,
+                'dl', dl
+            );
+
+        // thumbnail
+        thumbnailImg.onmouseover = function playSound() {
+            try {
+                var snd = PlaySound('data:audio/wav;base64,' + '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');
+            } catch (e) {
+            }
+        };
+        thumbnailImg.classList.add('preview-image');
+        thumbnailImg.classList.add('zoom');
+        const src = extractThumbnailSrc(torrent);
+        thumbnailImg.setAttribute('smallSrc', src);
+        thumbnailImg.setAttribute('bigSrc', getLargeThumbnail(src));
+        setThumbnail(thumbnailImg);
+    };
 
     function solveCaptcha() {
         console.log('solving captcha...');
@@ -754,7 +786,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     function updateSearch() {
         if (!searchBox) throw new Error("Search box not found");
         const query = searchBox.value.trim();
-        torrents = document.querySelectorAll('table > tbody > tr.lista2 a[title]');
+        const torrents = document.querySelectorAll('table > tbody > tr.lista2 a[title]');
         const convertedQuery = query.replace(/[!$%^&*()_+|~=`{}\[\]:";'<>?,.\/]+/g, '.').trim()
             .replace(/\s+/, '|');
 
@@ -779,38 +811,21 @@ tr.lista2 > td.lista > a[onmouseover] {
         );
 
         for (const a of torrents) {
-            const title = a.title || a.innerText;
-            if (!title) continue; // skip if empty title
+            var match = (a.title || a.innerText).match(regex);
+            if (match) {
+                const matches = (!!match) ? Array.from(match) : [];
+                var negativeMatches = matches.filter(group => // tests if it's a negative match (if there is a '-' before the search term)
+                    group && new RegExp('-' + group, 'ig').test(query)
+                );
+                var positiveMatches = matches.filter(group => // tests if it's a negative match (if there is a '-' before the search term)
+                    group && !new RegExp('-' + group, 'ig').test(query)
+                );
+                const hideCondition = query && (completelyNegativeQuery ? negativeMatches.length :
+                    negativeMatches.length || !positiveMatches.length);
+                a.closest('.lista2').style.display = hideCondition ? 'none' : '';
+            } // skip if empty title
 
             // done: make it so that it doesn't just check if "query" starts with '-', rather, check each match and check if it starts with '-'
-            var match = title.match(regex);
-
-            // collect negative matches
-            const matches = (!!match) ? Array.from(match) : [];
-            var negativeMatches = matches.filter(group => // tests if it's a negative match (if there is a '-' before the search term)
-                group && new RegExp('-' + group, 'ig').test(query)
-            );
-            var positiveMatches = matches.filter(group => // tests if it's a negative match (if there is a '-' before the search term)
-                group && !new RegExp('-' + group, 'ig').test(query)
-            );
-
-            /*
-            * in the case of a completelyNegativeQuery,
-            * we want to show elements that don't have negativeMatches,
-            * even if they have no positiveMatches
-            */
-            const hideCondition = query && (completelyNegativeQuery ? negativeMatches.length :
-                negativeMatches.length || !positiveMatches.length);
-
-            /*console.debug(
-                `[${hideCondition ? 'hide' : 'show'}]   "${title}"`,
-                '\nmatches:', matches,
-                '\npositiveMatches:', positiveMatches,
-                '\nnegativeMatches:', negativeMatches
-            );*/
-
-            // hide or do not hide depending on hideCondition
-            a.closest('.lista2').style.display = hideCondition ? 'none' : '';
         }
     }
 
@@ -827,8 +842,9 @@ tr.lista2 > td.lista > a[onmouseover] {
         callback(document.body);
         new MutationObserver(function (mutations) {
             for (var i = 0; i < mutations.length; i++) {
-                if (!mutations[i].addedNodes.length) continue;
-                callback(mutations[i].target);
+                if (mutations[i].addedNodes.length) {
+                    callback(mutations[i].target);
+                }
             }
         }).observe(document.body, {
             childList: true, subtree: true,
@@ -837,74 +853,14 @@ tr.lista2 > td.lista > a[onmouseover] {
     }
 
     function dealWithTorrents(node) {
-        torrents = node.querySelectorAll('.lista2 td:nth-child(2) [href^="/torrent/"]');
-        for (let i = 0; i < torrents.length; i++) {
-            var row = torrents[i].closest('tr');
+        const torrents = node.querySelectorAll('.lista2 td:nth-child(2) [href^="/torrent/"]');
 
+        for(const torrent of torrents) {
+            const row = torrent.closest('tr.lista2');
 
             // = adding relative time to columns
-            (function createAndAddThumbnailCell() {
-
-                // = Creating and adding thumbnail cell
-                const cell = document.createElement('td'),
-                    thumbnailLink = document.createElement('a'),
-                    thumbnailImg = document.createElement('img');
-
-                cell.classList.add('thumbnail-cell');
-                cell.appendChild(thumbnailLink);
-                thumbnailLink.appendChild(thumbnailImg);
-
-                // thumbnail link
-                (function setLinkHref() {
-                    switch (Options.thumbnailLink) {
-                        case 'ml':
-                            try {
-                                thumbnailLink.href = mls[i];
-                                if (!/^magnet:\?/.test(thumbnailLink.href))  // noinspection ExceptionCaughtLocallyJS
-                                    throw new Error('Not a magnet link');
-                            } catch (e) {
-                                thumbnailLink.href = getTorrentDownloadLinkFromAnchor(torrents[i]);
-                            }
-                            break;
-                        case 'tor':
-                            try {
-                                thumbnailLink.href = getTorrentDownloadLinkFromAnchor(torrents[i]);
-                            } catch (e) {
-                                thumbnailLink.href = mls[i];
-                                if (debugmode) console.debug('Using MagnetLink for torrent thumbnail since torrent failed:', mls[i]);
-                            }
-                            break;
-                        case 'page':
-                            thumbnailLink.href = torrents[i].href;
-                            break;
-                    }
-                })();
-                if (thumbnailLink.href.indexOf('undefined') >= 0)
-                    console.warn(
-                        'thumbnail Link:', thumbnailLink,
-                        'torrents[i]:', torrents[i].innerText,
-                        'getTorrentDownloadLinkFromAnchor(torrents[i])', getTorrentDownloadLinkFromAnchor(torrents[i])
-                    );
-
-                // thumbnail
-                thumbnailImg.onmouseover = function playSound() {
-                    try {
-                        var snd = PlaySound('data:audio/wav;base64,' + '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');
-                    } catch (e) {
-                    }
-                };
-                thumbnailImg.classList.add('preview-image');
-                thumbnailImg.classList.add('zoom');
-                const src = extractThumbnailSrc(torrents[i]);
-                thumbnailImg.setAttribute('smallSrc', src);
-                thumbnailImg.setAttribute('bigSrc', getLargeThumbnail(src));
-                setThumbnail(thumbnailImg);
-
-                torrents[i].parentElement.before(cell);
-            })();
-
             (function changeDateToRelativeTime() {
-                var column_Added = row.querySelector('td:nth-child(5)');
+                var column_Added = row.querySelector('td:nth-child(' + (getColumnIndex('Added') + 1) + ')');
                 var minutes = ((Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60)),
                     hours = 0
                 ;
@@ -915,33 +871,36 @@ tr.lista2 > td.lista > a[onmouseover] {
                 }
                 minutes = Math.round(minutes);
 
-                if (debugmode) console.log('column_Added:', column_Added);
+                // if (debug) console.log('column_Added:', column_Added);
 
                 column_Added.innerHTML =
                     column_Added.innerHTML + '<br>\n' + ((hours ? (hours + 'h') : '') + minutes ? (minutes + 'min') : '') + '&nbsp' + 'ago';
             })();
 
             // color backgrounds depending on the number of seeders
-            (function colorBackground() {
-                /**
-                 * @param numberOfSeeders
-                 * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
-                 */
-                const mapSeedersToAlpha = numberOfSeeders => {
-                    const alpha = 0.013 * Math.log(1 + numberOfSeeders) / Math.log(1.15);
-                    return Math.clamp(alpha, 0.1, 0.4);
-                };
+            if (Options.colorBackground) {
+                (function colorBackground() {
+                    /**
+                     * @param numberOfSeeders
+                     * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
+                     */
+                    const mapSeedersToAlpha = numberOfSeeders => {
+                        const alpha = 0.013 * Math.log(1 + numberOfSeeders) / Math.log(1.15);
+                        return Math.clamp(alpha, 0.1, 0.4);
+                    };
 
-                const seedersFont = row.querySelector('font[color]');
-                const statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
-                const clampedAlpha = mapSeedersToAlpha(parseInt(seedersFont.innerText));
-                statusRGB.map(x => x * clampedAlpha * 10);
-                statusRGB.push(clampedAlpha); // add alpha channel
+                    const seedersFont = row.querySelector('font[color]');
+                    const statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
+                    const clampedAlpha = mapSeedersToAlpha(parseInt(seedersFont.innerText));
+                    statusRGB.map(x => x * clampedAlpha * 10);
+                    statusRGB.push(clampedAlpha); // add alpha channel
 
-                row.style.background = 'rgb(' + statusRGB.join(', ') + ')';
-            })();
+                    row.style.background = 'rgb(' + statusRGB.join(', ') + ')';
+                })();
+            }
+
+            addImageSearchAnchor(torrent);
         }
-        torrents.forEach(addImageSearchAnchor);
     }
 
     function setThumbnail(thumbnail) {
@@ -990,7 +949,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         console.log('toggleThumbnailSize(' + (Options.largeThumbnails ? 'large' : 'small') + ')');
         qa('.preview-image').forEach(setThumbnail);
         updateCss();
-        if (debugmode) console.log('toggling thumbnail sizes. Options.largeThumbnails = ', Options.largeThumbnails);
+        if (debug) console.log('toggling thumbnail sizes. Options.largeThumbnails = ', Options.largeThumbnails);
     }
 // gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
     function getLargeThumbnail(smallThumbUrl) {
@@ -1016,7 +975,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             thumbnailSrc = MAGNET_ICO;
             console.error('extractThumbnailSrc error:', r);
         }
-        debugmode && console.debug('extractThumbnailSrc(', torrentAnchor, ')->', thumbnailSrc);
+        debug && console.debug('extractThumbnailSrc(', torrentAnchor, ')->', thumbnailSrc);
         return thumbnailSrc;
     }
 
@@ -1057,7 +1016,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             if (catMap.hasOwnProperty(categoryCode)) {
                 return catMap[categoryCode];
             } else {
-                if (debugmode) console.debug('Unkown category:', categoryCode);
+                if (debug) console.debug('Unkown category:', categoryCode);
             }
         }
 
@@ -1068,7 +1027,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         } catch (e) {
             console.warn("unable to get category", searchLink);
         }
-        if (debugmode) console.debug('search url:', searchLink.href);
+        if (debug) console.debug('search url:', searchLink.href);
         searchLink.classList.add('search');
         searchLink.target = "_blank";
 
@@ -1118,9 +1077,9 @@ tr.lista2 > td.lista > a[onmouseover] {
                 var lista2s = currentDocument.querySelectorAll('tbody>.lista2');
                 for (const e of lista2s) {
                     tbodyEl.appendChild(e);
-                    appendColumnSingle(e.childNodes[1]);
+                    appendColumnCell(e.childNodes[1]);
                 }
-                if (debugmode) console.log('Added lista2 elements:', lista2s);
+                if (debug) console.log('Added lista2 elements:', lista2s);
                 history.pushState(history.state, "", pageLink.href);
             }
         };
@@ -1175,91 +1134,206 @@ tr.lista2 > td.lista > a[onmouseover] {
         }
     }
 
+    function getColumnIndex(headerTitle) {
+        const allHeaders = tbodyEl.querySelectorAll('tr > td.header6');
+        headerTitle = Array.from(allHeaders).map(header => header.innerText).indexOf(headerTitle);
+        return headerTitle;
+    }
+    /**
+     * @author https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
+     * @param {string} title -
+     * @param {number|string} colIndex - A number specifying the column index to be inserted after (to the right of) (starts from zero).
+     *  or a string of one of the other headers (search will be performed automatically)
+     *      So for example, appendColumnGeneral("Between 0 and 1", 1) would come between the first and second columns
+     * @param {Function} callback - paremeters: callback(newCell, anchor, row)
+     */
+    function appendColumnG(title, colIndex = 2, callback = (cell, anchor, row) => true) {
+        if (typeof colIndex === 'string') {
+            colIndex = getColumnIndex(colIndex);
+        }
+
+        // const sanitizedTitle = title.replace(/[^\w\d]/g, ' ').trim().replace(/\s+/g, '-');
+        const sanitizedTitle = $.escapeSelector(title.replace(/\s/g, '')).replace(/\s/g, '');
+
+        /**
+         * Make and insert column cell
+         * @param {HTMLTableDataCellElement=} oldCell - if provided, new cell will be placed afterend
+         * @returns {HTMLElement}
+         */
+        function makeCell(oldCell) {
+            const cell = document.createElement('td');
+            // cell.innerText = title;
+            cell.classList.add('lista');
+            if (sanitizedTitle) cell.classList.add(sanitizedTitle);
+            cell.setAttribute('width', '50px');
+            cell.setAttribute('align', 'center');
+
+            if (oldCell) {
+                oldCell.insertAdjacentElement('afterend', cell);
+            }
+            return cell;
+        }
+
+        // the initial column, after of which the extra column will be appended
+        let tbodySelector = '.lista2t > tbody';
+        const oldColumnEntries = document.querySelectorAll(tbodySelector + ' > tr > td:nth-child(' + (colIndex + 1) + ')');
+
+        // header: the first cell (the header cell) of the new column
+        var header;
+        header = document.querySelector('#' + sanitizedTitle + '-head');
+        // if this column has already been added
+        if (!header) {
+            header = document.createElement('td');
+            header.innerHTML = title;
+            header.setAttribute('align', 'center');
+            header.classList.add('header6');
+            header.id = sanitizedTitle + '-head';
+            oldColumnEntries[0].insertAdjacentElement('afterend', header);
+            debug && console.log('header:', header);
+        }
+
+
+        // creation of the extra column
+        const newColumn = Array.from(oldColumnEntries).slice(1).filter( // exclude rows that already have this column
+            oldCol => !oldCol.closest('tr.lista2').querySelector('.' + $.escapeSelector(sanitizedTitle))
+        ).map(makeCell);
+
+        // fire callback
+        for (let cell of newColumn) {
+            let row = cell.closest('tr.lista2');
+            let anchor = row.querySelector('a[title]');
+            callback(cell, anchor, row);
+        }
+        return newColumn;
+    }
+
+    // unsafeWindow.appendColumnG = appendColumnG;
+    unsafeWindow.$ = $;
+
     // the magnet and url buttons
     // @source: https://greasyfork.org/scripts/23493-rarbg-torrent-and-magnet-links/code/
     // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
-    function appendColumn() {
+    function appendColumn(title) {
         // the initial column 'Files' after of which the extra column will be appended
-        /*qa('.lista2t > tbody > tr > td:nth-child(2)').forEach(function(entry){        // creation of the extra column
-            entry.insertAdjacentHTML('afterend', `<td>` + title + `</td>`);
-        });*/
 
         // the rest cells of the new column
         qa('.lista2t > tbody > tr[class="lista2"] > td:nth-child(3)')
-            .forEach(fixCellCss);
+            .forEach(function (cell) {
+                cell.setAttribute('class', 'lista');
+                cell.setAttribute('width', '50px');
+                cell.setAttribute('align', 'center');
+            });
 
-        var oldColumn = Array.from(qa('.lista2t > tbody > tr[class="lista2"] > td a[title]'))
+        var oldColumns = Array.from(qa('.lista2t > tbody > tr[class="lista2"] > td a[title]'))
             .map(a => a.parentElement);     // torrent links row
         // populate the cells in the new column with DL and ML links
-        return Array.from(oldColumn).map(appendColumnSingle);
+        return Array.from(oldColumns).map(appendColumnCell);
     }
 
     /**
-     * @param torrentLink
+     * @param prevColCell
      * @return {*}
      */
-    function appendColumnSingle(torrentLink) {
-        if (torrentLink.closest('tr.lista2').querySelector('.has-torrent-DL-ML')) // check that the same row doesn't already have DL-ML
+    function appendColumnCell(prevColCell) {
+        if (prevColCell.closest('tr.lista2').querySelector('.has-torrent-DL-ML')) // check that the same row doesn't already have DL-ML
             return;
         // the initial column 'Files' after of which the extra column will be appended
         // creation of the extra column
 
-        torrentLink.insertAdjacentHTML('afterend', `<td>${title}</td>`);
-        torrentLink.classList.add('has-torrent-DL-ML');
+        prevColCell.insertAdjacentHTML('afterend', '<td></td>');
+        prevColCell.classList.add('has-torrent-DL-ML');
 
         // the rest cells of the new column
-        fixCellCss(torrentLink.nextSibling);
+        prevColCell.nextSibling.setAttribute('class', 'lista');
+        prevColCell.nextSibling.setAttribute('width', '50px');
+        prevColCell.nextSibling.setAttribute('align', 'center');
 
         // populate the cells in the new column with DL and ML links
-        return (addDlAndMl(torrentLink.nextSibling, torrentLink));
+        return addDlAndMl(prevColCell.nextSibling, prevColCell);
     }
 
     /**
-     * sets the following attributes:
-     *  class: lista
-     *  width: 50px
-     *  align: center
+     * The actual function calls have `cell, fileTd` swapped
      * @param cell
+     * @param fileTd
+     * @returns {string}
      */
-    function fixCellCss(cell) {
-        cell.setAttribute('class', 'lista');
-        cell.setAttribute('width', '50px');
-        cell.setAttribute('align', 'center');
-    }
+    function addDlAndMl(cell, fileTd) {
+        console.log('cell, fileTd:\n', cell, '\n', fileTd);
+        var row = fileTd.closest('tr.lista2');
 
-    function addDlAndMl(torrentAnchor, cellNode) {
+        let anchor = row.querySelector('a[title]');
+
         // language=HTML
-        torrentAnchor.appendChild(createElement('<a href="' + getTorrentDownloadLinkFromAnchor(cellNode.querySelector('a[title]')) +
-            '" class="torrent-dl" target="_blank" >' +
+        let downloadLink = createElement(
+            '<a  data-href="' + anchor.href + '" href="' + getTorrentDownloadLinkFromAnchor(anchor) + '" class="torrent-dl" target="_blank" >' +
             '<img src="' + TORRENT_ICO + '" alt="Torrent">' +
-            '</a>')); // torrent download
+            '</a>'
+        );
+        cell.appendChild(downloadLink); // torrent download
+
+        // real:
+        //     https://rarbgaccess.org/download.php?id=fu3cqha&h=120&f=MilfsLikeItBig%20-%20Jessica%20Jade%20-%20You%20Splashed%20My%20Snatch-[rarbg.to].torrent
+        //     https://rarbgaccess.org/download.php?id=fu3cqha&      f=MilfsLikeItBig%20-%20Jessica%20Jade%20-%20You%20Splashed%20My%20Snatch-[rarbg.com].torrent
+        // https://www.rarbgaccess.org/download.php?id=fu3cqha&h=120&f=MilfsLikeItBig%20-%20Jessica%20Jade%20-%20You%20Splashed%20My%20Snatch-[rarbg.to].torrent
 
         // matches anything containing "over/*.jpg" *: anything
-        const anchorOuterHTML = cellNode.firstChild.outerHTML;
+        const anchorOuterHTML = anchor.outerHTML;
         const hash = (/over\/(.*)\.jpg\\/).test(anchorOuterHTML) ?
             anchorOuterHTML.match(/over\/(.*)\.jpg\\/)[1] :
             undefined;
 
-        const title = cellNode.firstChild.innerText;
+        const title = anchor.innerText;
 
         const magnetUriStr = `magnet:?xt=urn:btih:${hash}&dn=${title}&tr=${trackers}`;
 
-        const ml = createElement(hash !== undefined ?
-            (`<a class="torrent-ml" href="${magnetUriStr}"><img src="${MAGNET_ICO}" alt=""></a>`) :
-            '&nbsp;&nbsp;&nbsp;&nbsp;'
-        );
+        const ml = createElement(`<a class="torrent-ml" data-href="${anchor.href}" href="${magnetUriStr}"><img src="${MAGNET_ICO}" alt=""></a>`);
+        if(hash === undefined) {
+            ml.href = 'javascript:void(0);';
+            addMouseoverListener(ml, 'ml');
+        }
+
         // console.log('magnetLink button:', ml);
-        torrentAnchor.appendChild(ml); // magnet ink
+        cell.appendChild(ml); // magnet ink
 
         return magnetUriStr;
     }
 
     function getTorrentDownloadLinkFromAnchor(anchor) {
-        return anchor.href.replace('torrent/', 'download.php?id=') + '&f=' + encodeURI(anchor.innerText) + '-[rarbg.com].torrent';
+        return anchor.href.replace('torrent/', 'download.php?id=') + '&f=' + encodeURI(anchor.innerText) + '-[rarbg.to].torrent';
     }
+
+    function addMouseoverListener(link, type) {
+        link.addEventListener('mouseover', function (event) {
+            event.preventDefault();
+
+            if (this.href === 'javascript:void(0);') {
+                console.log('actually addMouseoverListener()', link);
+                let tUrl = this.getAttribute('data-href');
+                console.log('fetching ', tUrl);
+
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', tUrl, true);	// XMLHttpRequest.open(method, url, async)
+                xhr.onload = function () {
+                    let container = document.implementation.createHTMLDocument().documentElement;
+                    container.innerHTML = xhr.responseText;
+                    console.debug('xhr.responseText', xhr.responseText);
+
+                    let retrievedLink = type === 'dl' ? container.querySelector('a[href^="/download.php"]') : // download link
+                        container.querySelector('a[href^="magnet:"]'); // magnet link
+
+                    if (retrievedLink)
+                        link.href = retrievedLink.href;
+                };
+                xhr.send();
+            }
+        }, false);
+    }
+
 // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
 
     // this is one row
+
     /*
 <tr className="lista2">
     <td align="left" className="lista" width="48" style="width:48px;">
@@ -1284,7 +1358,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     */
 })();
 
-// == general helper functions, not specific to this script ==
+// == below are general helper functions, not specific to this script ==
 
 function matchSite(siteRegex) {
     let result = location.href.match(siteRegex);
@@ -1339,8 +1413,7 @@ function makeTextFile(text) {
     var textFile = null;
     // If we are replacing a previously generated file we need to manually revoke the object URL to avoid memory leaks.
     if (textFile !== null) window.URL.revokeObjectURL(textFile);
-    textFile = window.URL.createObjectURL(data);
-    return textFile;
+    return window.URL.createObjectURL(data);
 }
 /** Create an element by HTML.
  example:   var myAnchor = createElement('<a href="https://example.com">Go to example.com</a>');*/

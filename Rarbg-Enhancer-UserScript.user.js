@@ -112,8 +112,8 @@ if (Element.prototype.after === undefined) {
 
     const debug = true; // debug mode (setting this to false will disable the console logging)
 
-    const TORRENT_ICO = "https://dyncdn.me/static/20/img/16x16/download.png";
-    const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
+    const TORRENT_ICO = 'https://dyncdn.me/static/20/img/16x16/download.png';
+    const MAGNET_ICO = 'https://dyncdn.me/static/20/img/magnet.gif';
     const trackers = 'http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710';
 
     const isOnSingleTorrentPage = matchSite(/\/torrent\//);
@@ -123,32 +123,32 @@ if (Element.prototype.after === undefined) {
     const url = new URL(location.href);
 
     const Options = $.extend({
-        thumbnailLink: "ml", //options:  "ml", "tor", "img", "page"
+        thumbnailLink: 'ml', //options:  "ml", "tor", "img", "page"
         addThumbnails: true, // if set to false, the content thumbnails will not be used, magnet or torrent thumbnails will be used isntead
         showGeneratedSearchQuery: false,
         addCategoryWithSearch: true, // when searching for a movie title like "X-men", will become "X-mex movie"
         largeThumbnails: true,
-        defaultImageSearchEngine: "google",
+        defaultImageSearchEngine: 'google',
         cycleTorrentsIfBlocked: true,
         infiniteScrolling: true,
-        mirrors: ["http://rarbgmirror.xyz",
-            "https://rarbgproxy.org",
-            "https://rarbgunblock.com",
-            "http://rarbg-to.proxydude.red",
-            "https://rarbgprx.org",
-            "http://rarbg-to.pbproxy.red",
-            "http://rarbg.bypassed.team",
-            "https://rarbg.unblocker.win",
-            "http://rarbg-to.proxydude.xyz",
-            "http://rarbg.com.torrentprox.com",
-            "http://rarbg-to.pbproxy2.co",
-            "https://www.rarbg.is"],
+        mirrors: ['http://rarbgmirror.xyz',
+            'https://rarbgproxy.org',
+            'https://rarbgunblock.com',
+            'http://rarbg-to.proxydude.red',
+            'https://rarbgprx.org',
+            'http://rarbg-to.pbproxy.red',
+            'http://rarbg.bypassed.team',
+            'https://rarbg.unblocker.win',
+            'http://rarbg-to.proxydude.xyz',
+            'http://rarbg.com.torrentprox.com',
+            'http://rarbg-to.pbproxy2.co',
+            'https://www.rarbg.is'],
         colorBackground: false,
-    }, GM_getValue("RarbgOptions"));
+    }, GM_getValue('RarbgOptions'));
 
     // write back the Options to the storage (in the case that they changed)
-    window.addEventListener("unload", function () {
-        GM_setValue("RarbgOptions", Options);
+    window.addEventListener('unload', function () {
+        GM_setValue('RarbgOptions', Options);
     });
 
     Math.clamp = function (a, min, max) {
@@ -158,15 +158,15 @@ if (Element.prototype.after === undefined) {
 
     const SearchEngines = {
         google: {
-            name: "Google",
+            name: 'Google',
             imageSearchUrl: (q) => `https://www.google.com/search?&hl=en&tbm=isch&q=${encodeURIComponent(q)}`
         },
         ddg: {
-            name: "DuckDuckGo",
+            name: 'DuckDuckGo',
             imageSearchUrl: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}&atb=v73-5__&iar=images&iax=images&ia=images`
         },
         yandex: {
-            name: "Yandex",
+            name: 'Yandex',
             imageSearchUrl: (q) => `https://yandex.com/images/search?text=${encodeURIComponent(q)}`
         }
     };
@@ -194,10 +194,10 @@ if (Element.prototype.after === undefined) {
     var row_others = getElementsByXPath('(//tr[contains(., "Others\:")])[last()]');
     row_others = row_others.pop();
 
-    var tbodyEl = isOnSingleTorrentPage && row_others?
-        row_others.parentElement.querySelector('tbody'):
+    var tbodyEl = isOnSingleTorrentPage && row_others ?
+        row_others.parentElement.querySelector('tbody') :
         q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
-    if (!tbodyEl) console.warn("tbody element not found!");
+    if (!tbodyEl) console.warn('tbody element not found!');
 
 
     let width = 150, maxwidth = 400, maxheight = 300;
@@ -292,7 +292,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         }
     }());
     // sound file from: http://freesound.org/data/previews/166/166186_3034894-lq.mp3
-    var snd = PlaySound("data:audio/wav;base64," + "//OAxAAAAAAAAAAAAFhpbmcAAAAPAAAABwAABpwAIyMjIyMjIyMjIyMjIyNiYmJiYmJiYmJiYmJiYoaGhoaGhoaGhoaGhoaGs7Ozs7Ozs7Ozs7Ozs7Oz19fX19fX19fX19fX19f7+/v7+/v7+/v7+/v7+///////////////////AAAAOUxBTUUzLjk4cgJuAAAAACxtAAAURiQEPiIAAEYAAAacNLR+MgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/zgMQALgJKEAVceAEvDWSMMdDU1bDzruVPa709biTpr5M/jQ3RMD9vzP38U8LPTe65NBlcxiE041bC8AGAaC7/IYAAAAIAFxGSOmCkAyBIBcB6CcGgoKqxWRIafOc0zTOs6FA8ze+GBDCdlzNND1e/ve9KPGBWKxWMkT0/97v36sVjyJr/FH79+/fv49/e/9KUpS99//5u8eUpTX//+b3vf///+lH78P/+AAAAOAP6HhgB4/APDw98MP////+IAO/MR4ePAwggCEEBhlgu6Yz/87DEC08cMg1xn9gAUFGpgKgI8YZyf4mAmgxxgXaoyfOykqmKxmJhs74sUAAkAyBkZoMB1AejExQ1wwfcDgMFkANDAFQA8FB1g8ALmfoxhjKcxftxg6UudRxoxUmEloGBEyY0Ky6eMNHLJhBGZEMlAKDhGXz4oFOPDkMCoAi0IQoxUSSnBQEh3v+n+3+dH1bbQ+gEOAwcOA8jBgGhSMAOsmPZZ3o9FKV/qf+ylaqOymKmCmzSlAmRrDffwlX7xoeZZWIZxt26tmfdnTuyyIxWCqty1Ko1hzKzv8eYfq7jdzlGGGPc+fnUxoZVXpc6Wkmb1B9qmwtXe/v7mu7/HX8/m+W//D88N/v/5zCtnVxq4Vb1bH8sss8vs/Vwv939q1vWv1+9/++fr9Y6z3v+fy9vDnPta1zWOOt7v/OGusQqIYBGAuGA4gPRgKoCWYIUDPmEzB9Ji+xBObVsQ7GCXgaRgKQKyYHCAXGAeAHZgf/zgMQuOXr6CAPfoAH0AdmAmANJgHwBCAgBVejUn0jsOSx745R34tLB4ICRUug0UiAo2TUumpXNDcsmxUIEBQKQ4c5RJIGyyaKhVIaH6idjE3RQLpifZRiZibSJmJfSnFHHMnMSJJoGNFSa0lOdINrNzibuYOqank2OrW1NSRsmydabOpVMySUi7LXRTTWpjdDuz1JvdJNZrRUs2SspSSS6aFFC6JgepKhgJaH/XfYtMr3+kinu7+vO0SdXtgCRW+T/74ZPIbgEARJQKAaCiYD/85DECznDlgAS8w1xgE4YIIuJiNPGHGH/mYMYzBgohNmCuBaPCQGNGFURBpCwACTSsEgiEAtdcGkbtuS3pbGrbi6EAAI8AnOQ/BsFSmdkk5NxqGhUASH8OROljFy/RSuXxNXhJNyErYUMPvkQ1EMZ2dSJHXWIomnSqv7z+Gry3NuboB23/L5NIkblFlTkefY88Xc+hrCq+7A+U6Vq5X2NXyxE/FzzIHk8pGki6Nge+WGRqyoUSpUsovx9LRpJp0tMu2jWQrcO7RbT287sQ/+p0/Zn2P8K2ah68b8iYfeuva7yTjP08JiMFkFACA8A2HAqGDWCCUCamT2NodzfBxmwhkmIIFT/84DEHDesQfgC8w0dGBoDIYLYXpiaBLgACJpbMILcppb034fmaHGWtdh1/pfDENM+GgElJ/CvOENQbQH1C2GZNiZWR9H1/4zWO+7dc8SvOkbZqnb3sWxLfe1Ly3W1jcFfflePRRge3ptHW7TlLTq3Zd1pmO5drPOW+lt+lLM525XBdGHwPQHBoK0CtE6dIrjlRBmRm3KEuXic5/OsuMt6qsiOYW+PFNuo1pC0TWqinrGLw8qU23L7s05+zIvSCntp1ethSHTNMtKlT4SLhsk6//OAxAAweyXsPOpHHAkpzAEKjBoHSUAzFoVTEUgjNKmz5rGTUQxjLsQTD8GzBkmjI8IjA4BZUiawV3ZI7LWXFvSqNRqm3TWspqHo6JaohZpZEiRPFK5LFDHyksqz1UPvP/GlmpETUUKGMc8UOkJKzZC6V7KSKVbREQikUoWVmsAYMikUoYoSUsKmZXGJCSoWf5LSjiyIhCopIUOfVvVQESq0qqqqr6qq5dVS/+qq////qsDCn9NYLB0jIkSz6sqCoNAUBBUFn56DRpKgaeSX8f/zEMQBATgFEAAARgCCws02TEFNRTMuOTgu");
+    var snd = PlaySound('data:audio/wav;base64,' + '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');
 
 
     // === end of variable declarations ===
@@ -304,7 +304,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 try {
                     solveCaptcha();
                 } catch (e) {
-                    console.error("Error occurred while trying to solve captcha:\n", e);
+                    console.error('Error occurred while trying to solve captcha:\n', e);
                 }
             }
         } else { // not OnThreadDefencePage
@@ -334,13 +334,13 @@ tr.lista2 > td.lista > a[onmouseover] {
                     thumbnailLink.appendChild(thumbnailImg);
 
                     torrent.closest('tr').after(cell);
-                    thumbnailImg.style.width = "auto";
-                    thumbnailImg.style["max-height"] = "none";
-                    thumbnailImg.style["max-width"] = "none";
+                    thumbnailImg.style.width = 'auto';
+                    thumbnailImg.style['max-height'] = 'none';
+                    thumbnailImg.style['max-width'] = 'none';
                 }
 
                 // remove VPN row
-                const vpnR = q("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(2)");
+                const vpnR = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(2)');
                 if (vpnR) {
                     vpnR.remove();
                 }
@@ -348,10 +348,10 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // fullres for imagecurl.com
                 for (const imgcurlImg of qa('img[src^="https://imagecurl.com/images/"]')) {
                     if (imgcurlImg) {
-                        const fullres = imgcurlImg.src.replace("_thumb", "");
+                        const fullres = imgcurlImg.src.replace('_thumb', '');
                         imgcurlImg.src = fullres;
                         imgcurlImg.closest('a').href = fullres;
-                        imgcurlImg.style["max-width"] = "100%";
+                        imgcurlImg.style['max-width'] = '100%';
                     }
                 }
                 // fullres for imgprime.com
@@ -361,26 +361,26 @@ tr.lista2 > td.lista > a[onmouseover] {
                     console.log('replacing img: ', imgprime);
                     if (imgprime) {
                         const a = imgprime.closest('a');
-                        const fullres = a.href.replace(/(imga-)|(\.html)/g, "");
+                        const fullres = a.href.replace(/(imga-)|(\.html)/g, '');
                         imgprime.src = fullres;
                         a.href = fullres;
-                        imgprime.style["max-width"] = "100%";
+                        imgprime.style['max-width'] = '100%';
                     }
                 }
                 // fullres for imagefruit.com
                 for (const imagefruitImg of qa('img[src*="/tn/t"]')) {
                     if (imagefruitImg) {
-                        const fullres = imagefruitImg.src.replace("/tn/t", "/tn/i");
+                        const fullres = imagefruitImg.src.replace('/tn/t', '/tn/i');
                         imagefruitImg.src = fullres;
                         imagefruitImg.closest('a').href = fullres;
-                        imagefruitImg.style["max-width"] = "100%";
+                        imagefruitImg.style['max-width'] = '100%';
                     }
                 }
 
                 // putting the "Description:" row before the "Others:" row
                 getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
 
-                Mousetrap.bind("d", function (e) {
+                Mousetrap.bind('d', function (e) {
                     const torrent = q('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
                     torrent.click();
 
@@ -390,26 +390,26 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                     const torrentName = torrent.innerText;
                     const descriptionImgs = getElementsByXPath('(//tr[contains(., "Description\:")])[last()]//img');
-                    const posterImg = getRow("Poster:")[0];
-                    posterImg.alt = torrentName + "_poster";
+                    const posterImg = getRow('Poster:')[0];
+                    posterImg.alt = torrentName + '_poster';
                     var i = 1;
                     for (const descriptionImg of descriptionImgs) {
-                        descriptionImg.alt = torrentName + "_description_" + (i++);
+                        descriptionImg.alt = torrentName + '_description_' + (i++);
                     }
                     descriptionImgs.push(posterImg);
-                    descriptionImgs.push({ fileURL: torrent.href, fileName: torrentName });
+                    descriptionImgs.push({fileURL: torrent.href, fileName: torrentName});
                     var zip = zipFiles(descriptionImgs);
-                    zip.file(document.title + ".html", new Blob([document.body.outerHTML], { type: 'text/plain' }));
+                    zip.file(document.title + '.html', new Blob([document.body.outerHTML], {type: 'text/plain'}));
                     const rowsObj = {};
-                    ["Title:", "Genres:", "Actors:", "Stars:", "Series:", "Plot:", "Tags:"].forEach(row => {
+                    ['Title:', 'Genres:', 'Actors:', 'Stars:', 'Series:', 'Plot:', 'Tags:'].forEach(row => {
                         let rowContent = getRow(row)[0];
                         if (rowContent)
                             rowsObj[row] = rowContent.innerText;
                     });
                     const rowsText = JSON.stringify(rowsObj, null, 4);
                     console.debug('rowsObj: ', rowsObj);
-                    let summary = document.title + "\n\n" + rowsText;
-                    zip.file(document.title + " (summary).txt", new Blob([summary], { type: 'text/plain' }));
+                    let summary = document.title + '\n\n' + rowsText;
+                    zip.file(document.title + ' (summary).txt', new Blob([summary], {type: 'text/plain'}));
 
                     let zipped = false;
                     zip.onGenZip = function () {
@@ -435,11 +435,11 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 if (Options.infiniteScrolling) { // infiniteScrolling
                     (function makeInfiniteScroll() {
-                        const tableLvl2 = "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)";
-                        const tbody = tableLvl2 + " > tbody";
-                        const nav = "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
+                        const tableLvl2 = 'div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)';
+                        const tbody = tableLvl2 + ' > tbody';
+                        const nav = 'td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)';
 
-                        const container = getElementsByXPath("//table[@class='lista2t']")[0];
+                        const container = getElementsByXPath('//table[@class=\'lista2t\']')[0];
                         var infScroll = new InfiniteScroll(container, {
                             path: 'a[title="next page"]',
                             append: tbody, // the table
@@ -467,7 +467,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 // todo: use horsey and fuzzysearch for string matching and for showing suggestions
                 // todo: try to put updateSearch() into the horsey source() option
-                if (typeof (horsey) !== "undefined") {
+                if (typeof (horsey) !== 'undefined') {
                     const myHorsey = horsey(searchBox, {
                         source: [{
                             list: getTorrentLinks().map(a => ({
@@ -479,8 +479,8 @@ tr.lista2 > td.lista > a[onmouseover] {
                         getValue: 'value',
                         renderItem: function (li, suggestion) {
                             console.debug(
-                                "Suggestion:", suggestion,
-                                "\nli:", li
+                                'Suggestion:', suggestion,
+                                '\nli:', li
                             );
                             var image = '<img class="suggestion-thumbnail" src="' +
                                 suggestion.value.closest('.lista2').querySelector('img.preview-image').src
@@ -505,7 +505,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 document.body.onclick = null; // remove annoying click listeners
 
                 // remove annoying search description
-                const searchDescription = q("#SearchDescription");
+                const searchDescription = q('#SearchDescription');
                 if (searchDescription) searchDescription.remove();
 
                 // remove annoying signup form that doesn't work
@@ -524,7 +524,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 if (recTitle) recTitle.remove();
 
                 // scroll the table to view (top of screen will be the first torrent)
-                const mainTable = q("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t");
+                const mainTable = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t');
                 if (mainTable) mainTable.scrollIntoView();
 
 
@@ -552,7 +552,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                     const mirrorsSelect = document.createElement('select');
                     mirrorsSelect.onchange = function () {
-                        if(!this.value) return;
+                        if (!this.value) return;
 
                         console.log('this:', this);
 
@@ -577,14 +577,14 @@ tr.lista2 > td.lista > a[onmouseover] {
                     // adding another last one (which would be THIS hostsname's url)
                     const option_thisHostname = document.createElement('option');
                     option_thisHostname.innerText = location.hostname;
-                    option_thisHostname.setAttribute('selected', "");
+                    option_thisHostname.setAttribute('selected', '');
                     mirrorsSelect.appendChild(option_thisHostname);
 
                     // another option to open ALL the hostnames in the new tab
                     const option_openAllMirrors = document.createElement('option');
                     option_openAllMirrors.innerText = 'Open ALL mirrors';
                     option_openAllMirrors.id = 'open-all-mirrors';
-                    option_openAllMirrors.setAttribute('selected', "");
+                    option_openAllMirrors.setAttribute('selected', '');
                     option_openAllMirrors.onclick = openAllMirrors;
                     mirrorsSelect.appendChild(option_openAllMirrors);
 
@@ -609,33 +609,33 @@ tr.lista2 > td.lista > a[onmouseover] {
     });
 
     (function bindKeys() {
-        if (typeof Mousetrap === "undefined") return;
-        Mousetrap.bind(["space"], (e) => {
+        if (typeof Mousetrap === 'undefined') return;
+        Mousetrap.bind(['space'], (e) => {
             // appendPage(currentDocument.querySelector('a[title="next page"]'));
             solveCaptcha(); // todo: remove this, this is just for debugging
         });
-        Mousetrap.bind(["/"], (e) => {
+        Mousetrap.bind(['/'], (e) => {
             console.log('clicking search input');
 
             e.preventDefault();
-            const searchBar = q("#searchinput");
+            const searchBar = q('#searchinput');
             searchBar.click();
             searchBar.scrollIntoView();
             searchBar.select();
             searchBar.setSelectionRange(searchBar.value.length, searchBar.value.length);
         });
-        Mousetrap.bind(["x"], (e) => {
-            if (typeof URL !== "undefined") {
+        Mousetrap.bind(['x'], (e) => {
+            if (typeof URL !== 'undefined') {
                 const url = new URL(location.href);
                 url.searchParams.set('category', '4');
-                url.pathname = "/torrents.php";
+                url.pathname = '/torrents.php';
                 location.assign(url.toString().replace('category=4', 'category=4;2'));
             } else {
-                location.assign("/torrents.php?category=2;4");
+                location.assign('/torrents.php?category=2;4');
             }
         });
-        Mousetrap.bind(["`"], toggleThumbnailSize);
-        Mousetrap.bind(["ctrl+s"], (e) => {// saves an html file containing the data
+        Mousetrap.bind(['`'], toggleThumbnailSize);
+        Mousetrap.bind(['ctrl+s'], (e) => {// saves an html file containing the data
             const rows = qa('table > tbody > tr.lista2');
             var torrentJsons = Array.from(rows).map(row => {
                 try {
@@ -648,7 +648,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                         page: a.href,
                         torrentLink: torrentLink ? torrentLink.href : '',
                         magnetLink: ml ? encodeURI(ml.href) : '',
-                        thumbnailSrc: thumbnail ? thumbnail.src : ""
+                        thumbnailSrc: thumbnail ? thumbnail.src : ''
                     };
                 } catch (e) {
                 }
@@ -659,7 +659,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 torrents: torrentJsons
             };
 
-            const tableOuterHTML = getElementsByXPath("//table[@class='lista']")[0].outerHTML;
+            const tableOuterHTML = getElementsByXPath('//table[@class=\'lista\']')[0].outerHTML;
             const summaryHTML = `<html lang="en">${document.head.outerHTML}<body>${tableOuterHTML}</body></html>`;
 
             anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + ' [' + rows.length + ']' + ' info.json');
@@ -736,7 +736,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         const submitBtn = q('#button_submit');
 
         if (img.naturalHeight === 0 && img.naturalWidth === 0) {
-            console.log("image hasn't loaded, refreshing to new captha page");
+            console.log('image hasn\'t loaded, refreshing to new captha page');
             url.searchParams.set('defence', '1');
             location.assign(url.toString());
             void (0);
@@ -758,7 +758,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 image.src = uri;
             });
         }
-        function getBase64Image(img, excludeUrlProtocol=false) {
+        function getBase64Image(img, excludeUrlProtocol = false) {
             // Create an empty canvas element
             var canvas = document.createElement('canvas');
             canvas.width = img.width;
@@ -800,7 +800,7 @@ tr.lista2 > td.lista > a[onmouseover] {
      *      and then you can iterate and hide them later
      */
     function updateSearch() {
-        if (!searchBox) throw new Error("Search box not found");
+        if (!searchBox) throw new Error('Search box not found');
         const query = searchBox.value.trim();
         const torrents = document.querySelectorAll('table > tbody > tr.lista2 a[title]');
         const convertedQuery = query.replace(/[!$%^&*()_+|~=`{}\[\]:";'<>?,.\/]+/g, '.').trim()
@@ -815,8 +815,8 @@ tr.lista2 > td.lista > a[onmouseover] {
         })();
 
         const regex = new RegExp(convertedQuery.replace(/-/g, '|')
-            .replace(/\|\|/g, '|')
-            .replace(/^\|/, ''),// '|' that is at the beginning of a word
+                .replace(/\|\|/g, '|')
+                .replace(/^\|/, ''),// '|' that is at the beginning of a word
             'ig');
 
 
@@ -848,10 +848,10 @@ tr.lista2 > td.lista > a[onmouseover] {
     function updateCss() {
         thumbnailsCssBlock.innerText =
             'td.thumbnail-cell > a > img.preview-image {' +
-    ' max-width: ' + maxwidth + 'px;' +
-    ' max-height: ' + maxheight + 'px; ' +
-'}';
-    // width: ${!Options.addThumbnails ? width * 0.5 : (!Options.largeThumbnails ? width : width * 2)}px;
+            ' max-width: ' + maxwidth + 'px;' +
+            ' max-height: ' + maxheight + 'px; ' +
+            '}';
+        // width: ${!Options.addThumbnails ? width * 0.5 : (!Options.largeThumbnails ? width : width * 2)}px;
     }
 
     function observeDocument(callback) {
@@ -869,7 +869,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     }
 
     function dealWithTorrents(node) {
-        for(const torrent of node.querySelectorAll('tr.lista2 > td > a[title][href^="/torrent/"]')) {
+        for (const torrent of node.querySelectorAll('tr.lista2 > td > a[title][href^="/torrent/"]')) {
             const row = torrent.closest('tr');
             debug && console.log('dealWithTorrents', torrent);
 
@@ -948,8 +948,8 @@ tr.lista2 > td.lista > a[onmouseover] {
         };
 
         // thumbnail.src = thumbnail.getAttribute((!Options.largeThumbnails ? 'smallSrc' : 'bigSrc'));
-        thumbnail.src = Options.largeThumbnails?
-            thumbnail.getAttribute('bigSrc'):
+        thumbnail.src = Options.largeThumbnails ?
+            thumbnail.getAttribute('bigSrc') :
             thumbnail.getAttribute('smallSrc');
 
         if (!Options.addThumbnails) {
@@ -984,8 +984,8 @@ tr.lista2 > td.lista > a[onmouseover] {
         let thumbnailSrc = '';
         try {
             // thumbnailSrc = thumbnailSrc.match(/(?<=(return overlib('\<img src\=\')))(.*?)(?=(\' border\=0\>\'))/i)[0];
-            thumbnailSrc = torrentAnchor.getAttribute('onmouseover') || "";
-            thumbnailSrc = thumbnailSrc.substring("return overlib('<img src=\'".length + 1, thumbnailSrc.length - "\' border=0>'".length - 2);
+            thumbnailSrc = torrentAnchor.getAttribute('onmouseover') || '';
+            thumbnailSrc = thumbnailSrc.substring('return overlib(\'<img src=\''.length + 1, thumbnailSrc.length - '\' border=0>\''.length - 2);
         } catch (r) {
             thumbnailSrc = MAGNET_ICO;
             console.error('extractThumbnailSrc error:', r);
@@ -997,16 +997,16 @@ tr.lista2 > td.lista > a[onmouseover] {
     function addImageSearchAnchor(torrentAnchor) {
         const searchTd = document.createElement('td'),
             searchLink = document.createElement('a')
-            ;
-        searchTd.classList.add("search");
-        searchTd.style["border-top-width"] = "10px";
-        searchTd.style["padding-top"] = "10px";
+        ;
+        searchTd.classList.add('search');
+        searchTd.style['border-top-width'] = '10px';
+        searchTd.style['padding-top'] = '10px';
 
         //replacing common useless torrent terms
         let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText)
             .replace(/\s\s+/g, ' ') // removes double spaces
             .trim()
-            ;
+        ;
 
         /**
          * @return {string} the category of the torrent (Movies, XXX, TV Shows, Games, Music, Software, Non XXX)
@@ -1023,10 +1023,10 @@ tr.lista2 > td.lista > a[onmouseover] {
             // a map of the
             const catMap = {
                 'Movies': 'Movies',
-                '4': "XXX",
-                '23': "Music",
-                '18': "TV show",
-                '33': "Software",
+                '4': 'XXX',
+                '23': 'Music',
+                '18': 'TV show',
+                '33': 'Software',
             };
             if (catMap.hasOwnProperty(categoryCode)) {
                 return catMap[categoryCode];
@@ -1038,13 +1038,13 @@ tr.lista2 > td.lista > a[onmouseover] {
         searchLink.href = searchEngine.imageSearchUrl(searchQuery);
         try {
             if (Options.addCategoryWithSearch && !new RegExp(getCategory(torrentAnchor)).test(searchLink.href))
-                searchLink.href += " " + getCategory(torrentAnchor);
+                searchLink.href += ' ' + getCategory(torrentAnchor);
         } catch (e) {
-            console.warn("unable to get category", searchLink);
+            console.warn('unable to get category', searchLink);
         }
         if (debug) console.debug('search url:', searchLink.href);
         searchLink.classList.add('search');
-        searchLink.target = "_blank";
+        searchLink.target = '_blank';
 
         var searchEngineText = document.createElement('p5');
         var qText = document.createElement('p6');
@@ -1053,7 +1053,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
         let searchIcon = document.createElement('img');
         // searchIcon.src = SEARCH_ICON_URL;
-        searchIcon.src = "https://www.google.com/s2/favicons?domain=" + searchEngine.name.toLowerCase() + ".com";
+        searchIcon.src = 'https://www.google.com/s2/favicons?domain=' + searchEngine.name.toLowerCase() + '.com';
 
         searchIcon.style.height = '20px';
         searchIcon.style.width = '20px';
@@ -1095,7 +1095,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                     appendColumnCell(e.childNodes[1]);
                 }
                 if (debug) console.log('Added lista2 elements:', lista2s);
-                history.pushState(history.state, "", pageLink.href);
+                history.pushState(history.state, '', pageLink.href);
             }
         };
     }
@@ -1109,7 +1109,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             if (req.readyState === 4) {
                 var pageHTML = req.responseText;
                 var magnetURL = pageHTML.match(/href="(magnet[:_\-+%?=&;.0-9a-zA-Z]*)"/)[1]; //match magnet URL
-                var thumbURLs = pageHTML.match("src\=\"((.?)*\.jpg)\"");
+                var thumbURLs = pageHTML.match('src\="((.?)*\.jpg)"');
 
                 //creating and adding the elements
                 var magnetCell = document.createElement('td'),
@@ -1128,7 +1128,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     }
 
     function initSearchEngine() {
-        const searchEngineValue = GM_getValue("ImageSearchEngine", Options.defaultImageSearchEngine);
+        const searchEngineValue = GM_getValue('ImageSearchEngine', Options.defaultImageSearchEngine);
         if (SearchEngines.hasOwnProperty(searchEngineValue)) {
             searchEngine = SearchEngines[searchEngineValue];
             console.log('search engine:', searchEngineValue, searchEngine);
@@ -1280,7 +1280,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         const magnetUriStr = `magnet:?xt=urn:btih:${hash}&dn=${title}&tr=${trackers}`;
 
         const ml = createElement(`<a class="torrent-ml" data-href="${anchor.href}" href="${magnetUriStr}"><img src="${MAGNET_ICO}" alt=""></a>`);
-        if(hash === undefined) {
+        if (hash === undefined) {
             ml.href = 'javascript:void(0);';
             addMouseoverListener(ml, 'ml');
         }
@@ -1352,7 +1352,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
 function matchSite(siteRegex) {
     let result = location.href.match(siteRegex);
-    if (result) console.debug("Site matched regex: " + siteRegex);
+    if (result) console.debug('Site matched regex: ' + siteRegex);
     return result;
 }
 
@@ -1372,7 +1372,7 @@ function saveByAnchor(url, dlName) {
 }
 
 function removeDoubleSpaces(str) {
-    return !!str ? str.replace(/(\s\s+)/g, " ") : str;
+    return !!str ? str.replace(/(\s\s+)/g, ' ') : str;
 }
 
 function clearSymbolsFromString(str) {
@@ -1381,12 +1381,12 @@ function clearSymbolsFromString(str) {
     }
 
     return str && removeDoubleSpaces(clearDatesFromString(str).replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, ' ')
-        .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, " ")).trim();
+        .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, ' ')).trim();
 }
 
 function isPageBlockedKSA() {
     const msgText = document.querySelector('#r4 > td[dir="ltr"].english');
-    return !!msgText && msgText.innerText === "If you believe the requested page should not be blocked please click here." &&
+    return !!msgText && msgText.innerText === 'If you believe the requested page should not be blocked please click here.' &&
         !!document.querySelector('[href^="http://www.internet.gov.sa/resources-ar/block-unblock-request-ar/view?set_language"]');
 }
 
@@ -1399,7 +1399,7 @@ function hex2rgb(c) {
 }
 
 function makeTextFile(text) {
-    const data = new Blob([text], { type: 'text/plain' });
+    const data = new Blob([text], {type: 'text/plain'});
     var textFile = null;
     // If we are replacing a previously generated file we need to manually revoke the object URL to avoid memory leaks.
     if (textFile !== null) window.URL.revokeObjectURL(textFile);
@@ -1445,7 +1445,7 @@ function getElementsByXPath(xpath, parent) {
     return results;
 }
 
-function addCss(cssStr, id='') {
+function addCss(cssStr, id = '') {
     // check if already exists
     const style = id && document.getElementById(id) || document.createElement('style');
 

@@ -116,7 +116,7 @@ if (Element.prototype.after === undefined) {
     const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
     const trackers = 'http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710';
 
-    const singleTorrentPage = matchSite(/\/torrent\//);
+    const isOnSingleTorrentPage = matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
     let currentDocument = document; // placeholder to keep track of the latest document object (since multiple documents are used)
 
@@ -174,11 +174,7 @@ if (Element.prototype.after === undefined) {
     initSearchEngine();
 
 
-    var tbodyEl = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
-    if (!tbodyEl) console.warn("tbody element not found!");
-
-
-    // const mls = appendColumnG('DL ML');
+    // const mls = appendColumn('DL ML');
 
     var appendedPageNum = 1;
 
@@ -191,9 +187,18 @@ if (Element.prototype.after === undefined) {
     }
 
     const searchBox = document.querySelector('#searchinput');
+    let isOnIndexPage = searchBox !== null;
+
     const getTorrentLinks = () => Array.from(document.querySelectorAll('table > tbody > tr.lista2 a[title]'));
 
-    let isOnIndexPage = searchBox !== null;
+    var row_others = getElementsByXPath('(//tr[contains(., "Others\:")])[last()]');
+    row_others = row_others.pop();
+
+    var tbodyEl = isOnSingleTorrentPage && row_others?
+        row_others.parentElement.querySelector('tbody'):
+        q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
+    if (!tbodyEl) console.warn("tbody element not found!");
+
 
     let width = 150, maxwidth = 400, maxheight = 300;
 
@@ -303,12 +308,13 @@ tr.lista2 > td.lista > a[onmouseover] {
                 }
             }
         } else { // not OnThreadDefencePage
-            if (singleTorrentPage) {
+            if (isOnSingleTorrentPage) {
                 // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
                 let mainTorrentLink = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
 
-                for (const torrent of qa('a[title][href^="/torrent/"]')) {
+                // adding thumbnails
+                for (const torrent of qa('a[href^="/torrent/"]')) {
                     //creating and adding thumbnails
                     const cell = document.createElement('td');
                     const thumbnailLink = document.createElement('a');
@@ -422,7 +428,10 @@ tr.lista2 > td.lista > a[onmouseover] {
             } else if (isOnIndexPage) { // if on torrent page (index)
                 searchBox.onkeyup = updateSearch;
 
-                appendColumnG('ML DL', 'File', addDlAndMl);
+                appendColumn('ML DL', 'File', addDlAndMl);
+                observeDocument((target) => {
+                    appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
+                });
 
                 if (Options.infiniteScrolling) { // infiniteScrolling
                     (function makeInfiniteScroll() {
@@ -480,6 +489,15 @@ tr.lista2 > td.lista > a[onmouseover] {
                         }
                     });
                 }
+
+                // click sort by seeds
+                Mousetrap.bind('s', function (e) {
+                    let columnIndex = getColumnIndex('S.');
+                    if (columnIndex !== -1) {
+                        tbodyEl.querySelectorAll('tr > td.header6')[columnIndex].querySelector('a').click();
+                    }
+                });
+
             }
 
             (function onLoad() {
@@ -580,8 +598,6 @@ tr.lista2 > td.lista > a[onmouseover] {
             observeDocument((target) => {
                 dealWithTorrents(target);
 
-                appendColumnG('Thumbnails', 'Cat.', addThumbnailColumn);
-
                 // remove links for adds that cover the screen
                 for (const x of qa('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
                     console.log('removed redirect element:', x);
@@ -606,7 +622,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             searchBar.click();
             searchBar.scrollIntoView();
             searchBar.select();
-            searchBar.setSelectionRange(0, searchBar.value.length); // this one is for compatability
+            searchBar.setSelectionRange(searchBar.value.length, searchBar.value.length);
         });
         Mousetrap.bind(["x"], (e) => {
             if (typeof URL !== "undefined") {
@@ -662,7 +678,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         thumbnailLink.appendChild(thumbnailImg);
 
         const ml = row.querySelector('a.torrent-ml');
-        const dl = row.querySelector('a.torrent-dl') || getTorrentDownloadLinkFromAnchor(torrent);
+        const dl = row.querySelector('a.torrent-dl') || extractTorrentDL(torrent);
 
         // thumbnail link
         (function setLinkHref() {
@@ -710,7 +726,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         thumbnailImg.setAttribute('smallSrc', src);
         thumbnailImg.setAttribute('bigSrc', getLargeThumbnail(src));
         setThumbnail(thumbnailImg);
-    };
+    }
 
     function solveCaptcha() {
         console.log('solving captcha...');
@@ -853,10 +869,9 @@ tr.lista2 > td.lista > a[onmouseover] {
     }
 
     function dealWithTorrents(node) {
-        const torrents = node.querySelectorAll('.lista2 td:nth-child(2) [href^="/torrent/"]');
-
-        for(const torrent of torrents) {
-            const row = torrent.closest('tr.lista2');
+        for(const torrent of node.querySelectorAll('tr.lista2 > td > a[title][href^="/torrent/"]')) {
+            const row = torrent.closest('tr');
+            debug && console.log('dealWithTorrents', torrent);
 
             // = adding relative time to columns
             (function changeDateToRelativeTime() {
@@ -1147,7 +1162,7 @@ tr.lista2 > td.lista > a[onmouseover] {
      *      So for example, appendColumnGeneral("Between 0 and 1", 1) would come between the first and second columns
      * @param {Function} callback - paremeters: callback(newCell, anchor, row)
      */
-    function appendColumnG(title, colIndex = 2, callback = (cell, anchor, row) => true) {
+    function appendColumn(title, colIndex = 2, callback = (cell, anchor, row) => true) {
         if (typeof colIndex === 'string') {
             colIndex = getColumnIndex(colIndex);
         }
@@ -1207,28 +1222,6 @@ tr.lista2 > td.lista > a[onmouseover] {
         return newColumn;
     }
 
-    // unsafeWindow.appendColumnG = appendColumnG;
-    unsafeWindow.$ = $;
-
-    // the magnet and url buttons
-    // @source: https://greasyfork.org/scripts/23493-rarbg-torrent-and-magnet-links/code/
-    // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
-    function appendColumn(title) {
-        // the initial column 'Files' after of which the extra column will be appended
-
-        // the rest cells of the new column
-        qa('.lista2t > tbody > tr[class="lista2"] > td:nth-child(3)')
-            .forEach(function (cell) {
-                cell.setAttribute('class', 'lista');
-                cell.setAttribute('width', '50px');
-                cell.setAttribute('align', 'center');
-            });
-
-        var oldColumns = Array.from(qa('.lista2t > tbody > tr[class="lista2"] > td a[title]'))
-            .map(a => a.parentElement);     // torrent links row
-        // populate the cells in the new column with DL and ML links
-        return Array.from(oldColumns).map(appendColumnCell);
-    }
 
     /**
      * @param prevColCell
@@ -1259,23 +1252,22 @@ tr.lista2 > td.lista > a[onmouseover] {
      * @returns {string}
      */
     function addDlAndMl(cell, fileTd) {
-        console.log('cell, fileTd:\n', cell, '\n', fileTd);
         var row = fileTd.closest('tr.lista2');
 
         let anchor = row.querySelector('a[title]');
 
         // language=HTML
         let downloadLink = createElement(
-            '<a  data-href="' + anchor.href + '" href="' + getTorrentDownloadLinkFromAnchor(anchor) + '" class="torrent-dl" target="_blank" >' +
+            '<a  data-href="' + anchor.href + '" href="' + extractTorrentDL(anchor) + '" class="torrent-dl" target="_blank" >' +
             '<img src="' + TORRENT_ICO + '" alt="Torrent">' +
             '</a>'
         );
         cell.appendChild(downloadLink); // torrent download
 
         // real:
-        //     https://rarbgaccess.org/download.php?id=fu3cqha&h=120&f=MilfsLikeItBig%20-%20Jessica%20Jade%20-%20You%20Splashed%20My%20Snatch-[rarbg.to].torrent
-        //     https://rarbgaccess.org/download.php?id=fu3cqha&      f=MilfsLikeItBig%20-%20Jessica%20Jade%20-%20You%20Splashed%20My%20Snatch-[rarbg.com].torrent
-        // https://www.rarbgaccess.org/download.php?id=fu3cqha&h=120&f=MilfsLikeItBig%20-%20Jessica%20Jade%20-%20You%20Splashed%20My%20Snatch-[rarbg.to].torrent
+        //     https://rarbgaccess.org/download.php?id=...&h=120&f=...-[rarbg.to].torrent
+        //     https://rarbgaccess.org/download.php?id=...&      f=...-[rarbg.com].torrent
+        // https://www.rarbgaccess.org/download.php?id=...&h=120&f=...-[rarbg.to].torrent
 
         // matches anything containing "over/*.jpg" *: anything
         const anchorOuterHTML = anchor.outerHTML;
@@ -1299,7 +1291,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         return magnetUriStr;
     }
 
-    function getTorrentDownloadLinkFromAnchor(anchor) {
+    function extractTorrentDL(anchor) {
         return anchor.href.replace('torrent/', 'download.php?id=') + '&f=' + encodeURI(anchor.innerText) + '-[rarbg.to].torrent';
     }
 
@@ -1330,10 +1322,8 @@ tr.lista2 > td.lista > a[onmouseover] {
         }, false);
     }
 
-// Cat. | File | Added | Size | S. | L. | comments  |   Uploader
-
+    // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
     // this is one row
-
     /*
 <tr className="lista2">
     <td align="left" className="lista" width="48" style="width:48px;">

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      0.5.12
+// @version      0.5.13
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi, with some code from https://greasyfork.org/en/users/2160-darkred
@@ -110,7 +110,7 @@ if (Element.prototype.after === undefined) {
 // main
 (function () {
 
-    const debug = true; // debug mode (setting this to false will disable the console logging)
+    const debug = true; // debugmode (setting this to false will disable the console logging)
 
     const TORRENT_ICO = 'https://dyncdn.me/static/20/img/16x16/download.png';
     const MAGNET_ICO = 'https://dyncdn.me/static/20/img/magnet.gif';
@@ -289,7 +289,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             });
             snd.play();
             return snd;
-        }
+        };
     }());
     // sound file from: http://freesound.org/data/previews/166/166186_3034894-lq.mp3
     var snd = PlaySound('data:audio/wav;base64,' + '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');
@@ -428,9 +428,13 @@ tr.lista2 > td.lista > a[onmouseover] {
             } else if (isOnIndexPage) { // if on torrent page (index)
                 searchBox.onkeyup = updateSearch;
 
-                appendColumn('ML DL', 'File', addDlAndMl);
+                var mldlCol = appendColumn('ML DL', 'File', addDlAndMl);
+                mldlCol.header.addEventListener('click', downloadAllTorrents);
+
                 observeDocument((target) => {
-                    appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
+                    var newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
+
+                    newCol.header.addEventListener('click', toggleThumbnailSize);
                 });
 
                 if (Options.infiniteScrolling) { // infiniteScrolling
@@ -483,8 +487,8 @@ tr.lista2 > td.lista > a[onmouseover] {
                                 '\nli:', li
                             );
                             var image = '<img class="suggestion-thumbnail" src="' +
-                                suggestion.value.closest('.lista2').querySelector('img.preview-image').src
-                                + '"  alt="' + suggestion.text + '"/>';
+                                suggestion.value.closest('.lista2').querySelector('img.preview-image').src +
+                                '"  alt="' + suggestion.text + '"/>';
                             li.innerHTML = `${image}<span>${suggestion.text}</span>`;
                         }
                     });
@@ -1150,18 +1154,24 @@ tr.lista2 > td.lista > a[onmouseover] {
         }
     }
 
+    /**
+     * @param {string} headerTitle - td.header6 element
+     * @returns {number} the index of the column given the column header text
+     */
     function getColumnIndex(headerTitle) {
         const allHeaders = tbodyEl.querySelectorAll('tr > td.header6');
-        headerTitle = Array.from(allHeaders).map(header => header.innerText).indexOf(headerTitle);
-        return headerTitle;
+        const idx = Array.from(allHeaders).map(header => header.innerText).indexOf(headerTitle);
+        return idx;
     }
     /**
+     * Adds a column to the torrents table. Safe to call this function multiple times for the same column, it will not add duplicate cells to a row that already has this header.
      * @author https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
      * @param {string} title -
-     * @param {number|string} colIndex - A number specifying the column index to be inserted after (to the right of) (starts from zero).
+     * @param {(number|string)=2} colIndex - A number specifying the column index to be inserted after (to the right of) (starts from zero).
      *  or a string of one of the other headers (search will be performed automatically)
      *      So for example, appendColumnGeneral("Between 0 and 1", 1) would come between the first and second columns
-     * @param {Function} callback - paremeters: callback(newCell, anchor, row)
+     * @param {Function} callback - paremeters: callback(newCell, anchor, row). will be called on the added cells, will not be called on cells that already exist.
+     * @returns {HTMLTableDataCellElement[]} - returns the added elements (excluding the header, and excluding)
      */
     function appendColumn(title, colIndex = 2, callback = (cell, anchor, row) => true) {
         if (typeof colIndex === 'string') {
@@ -1220,6 +1230,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             let anchor = row.querySelector('a[title]');
             callback(cell, anchor, row);
         }
+        newColumn.__defineGetter__('header', () => header);
         return newColumn;
     }
 
@@ -1415,7 +1426,7 @@ function createElement(html) {
 }
 
 function htmlToElements(html) {
-    return new DOMParser().parseFromString(html, 'text/html').body.childNodes
+    return new DOMParser().parseFromString(html, 'text/html').body.childNodes;
 }
 
 /**abbreviation for querySelectorAll()

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      0.5.13
+// @version      0.5.14
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi, with some code from https://greasyfork.org/en/users/2160-darkred
@@ -110,7 +110,7 @@ if (Element.prototype.after === undefined) {
 // main
 (function () {
 
-    const debug = true; // debugmode (setting this to false will disable the console logging)
+    const debug = false; // debugmode (setting this to false will disable the console logging)
 
     const TORRENT_ICO = 'https://dyncdn.me/static/20/img/16x16/download.png';
     const MAGNET_ICO = 'https://dyncdn.me/static/20/img/magnet.gif';
@@ -236,7 +236,7 @@ a.torrent-ml > img, a.torrent-dl > img {
 .search {
     font-size: 15px;
     padding: 20px;
-    display: -webkit-box;
+    display: inline-block;
     background-color: #b7b7b73b;
     margin: 10px;
     font-family: sans-serif;
@@ -268,7 +268,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     width: max-content;
     font-size: 15px !important;
     padding: 20px !important;
-    display: -webkit-box !important;
+    /*display: -webkit-box !important;*/
     background-color: rgba(183, 183, 183, 0.23) !important;
     margin: 10px !important;
     font-family: sans-serif !important;
@@ -302,7 +302,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             if (q('#solve_string')) {
                 console.log('Rarbg threat defence page');
                 try {
-                    solveCaptcha();
+                    unsafeEval(solveCaptcha);
                 } catch (e) {
                     console.error('Error occurred while trying to solve captcha:\n', e);
                 }
@@ -379,6 +379,14 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 // putting the "Description:" row before the "Others:" row
                 getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
+
+                // add error listener to use a proxy if an image fails to load
+                var tbl = document.querySelector('table.lista-rounded');
+                if(tbl) tbl.querySelectorAll('img[src]').forEach(img => {
+                    img.onerror = function() {
+                        img.src = (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(img.src)}&f=1`);
+                    };
+                });
 
                 Mousetrap.bind('d', function (e) {
                     const torrent = q('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
@@ -807,7 +815,8 @@ tr.lista2 > td.lista > a[onmouseover] {
         if (!searchBox) throw new Error('Search box not found');
         const query = searchBox.value.trim();
         const torrents = document.querySelectorAll('table > tbody > tr.lista2 a[title]');
-        const convertedQuery = query.replace(/[!$%^&*()_+|~=`{}\[\]:";'<>?,.\/]+/g, '.').trim()
+        const convertedQuery = query.replace(/[!$%^&*()_+|~=`{}\[\]:";'<>?,.\/]+/g, '.')
+            .trim()
             .replace(/\s+/, '|');
 
         const completelyNegativeQuery = (function () {
@@ -1045,7 +1054,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             if (Options.addCategoryWithSearch && !new RegExp(getCategory(torrentAnchor)).test(searchLink.href))
                 searchLink.href += ' ' + getCategory(torrentAnchor);
         } catch (e) {
-            console.warn('unable to get category', searchLink);
+            if(debug) console.warn('unable to get category', searchLink);
         }
         if (debug) console.debug('search url:', searchLink.href);
         searchLink.classList.add('search');
@@ -1063,13 +1072,10 @@ tr.lista2 > td.lista > a[onmouseover] {
         searchIcon.style.height = '20px';
         searchIcon.style.width = '20px';
         searchLink.style.padding = '20px';
-        // searchTd.appendChild(searchLink);
         searchLink.appendChild(searchIcon);
-        searchLink.appendChild(searchEngineText);
+        // searchLink.appendChild(searchEngineText);
         searchLink.appendChild(qText);
-
-        // torrentAnchor.after(searchTd);
-        torrentAnchor.parentElement.appendChild(searchLink);
+        torrentAnchor.after(searchLink);
     }
 
     /**
@@ -1361,6 +1367,11 @@ tr.lista2 > td.lista > a[onmouseover] {
 })();
 
 // == below are general helper functions, not specific to this script ==
+
+function unsafeEval(func, ...arguments) {
+    let body = 'return (' + func + ').apply(this, arguments)';
+    unsafeWindow.Function(body).apply(unsafeWindow, arguments);
+}
 
 function matchSite(siteRegex) {
     let result = location.href.match(siteRegex);

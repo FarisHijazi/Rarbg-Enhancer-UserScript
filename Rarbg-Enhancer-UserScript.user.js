@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      0.5.14
+// @version      1.0
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
-// @author       Faris Hijazi, with some code from https://greasyfork.org/en/users/2160-darkred
+// @author       Faris Hijazi
+//               with some code from https://greasyfork.org/en/users/2160-darkred
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
 // @include      https://rarbg.to/*
 // @include      http://rarbgmirror.xyz/*
@@ -77,7 +78,6 @@
 // @require      https://github.com/bevacqua/horsey/raw/master/dist/horsey.js
 // ==/UserScript==
 
-// @require      https://raw.githubusercontent.com/naptha/tesseract.js/master/dist/tesseract.min.js
 // AddColumn() and add magnetLinks() code taken from:      https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
 
 /**
@@ -477,8 +477,8 @@ tr.lista2 > td.lista > a[onmouseover] {
                     })();
                 }
 
-                // todo: use horsey and fuzzysearch for string matching and for showing suggestions
-                // todo: try to put updateSearch() into the horsey source() option
+                // TODO: use horsey and fuzzysearch for string matching and for showing suggestions
+                // TODO: try to put updateSearch() into the horsey source() option
                 if (typeof (horsey) !== 'undefined') {
                     const myHorsey = horsey(searchBox, {
                         source: [{

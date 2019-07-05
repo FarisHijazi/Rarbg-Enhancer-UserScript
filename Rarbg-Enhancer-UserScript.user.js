@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      1.0
+// @version      1.1
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -131,7 +131,9 @@ if (Element.prototype.after === undefined) {
         defaultImageSearchEngine: 'google',
         cycleTorrentsIfBlocked: true,
         infiniteScrolling: true,
-        mirrors: ['http://rarbgmirror.xyz',
+        mirrors: [
+            'https://rarbgaccess.org',
+            'http://rarbgmirror.xyz',
             'https://rarbgproxy.org',
             'https://rarbgunblock.com',
             'http://rarbg-to.proxydude.red',
@@ -142,7 +144,8 @@ if (Element.prototype.after === undefined) {
             'http://rarbg-to.proxydude.xyz',
             'http://rarbg.com.torrentprox.com',
             'http://rarbg-to.pbproxy2.co',
-            'https://www.rarbg.is'],
+            'https://www.rarbg.is',
+        ],
         colorBackground: false,
     }, GM_getValue('RarbgOptions'));
 

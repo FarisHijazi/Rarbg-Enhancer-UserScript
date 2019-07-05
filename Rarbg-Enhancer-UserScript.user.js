@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      1.1
+// @version      1.2
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -109,7 +109,7 @@ if (Element.prototype.after === undefined) {
 
 // main
 (function () {
-
+	'use strict';
     const debug = false; // debugmode (setting this to false will disable the console logging)
 
     const TORRENT_ICO = 'https://dyncdn.me/static/20/img/16x16/download.png';
@@ -126,7 +126,7 @@ if (Element.prototype.after === undefined) {
         thumbnailLink: 'ml', //options:  "ml", "tor", "img", "page"
         addThumbnails: true, // if set to false, the content thumbnails will not be used, magnet or torrent thumbnails will be used isntead
         showGeneratedSearchQuery: false,
-        addCategoryWithSearch: true, // when searching for a movie title like "X-men", will become "X-mex movie"
+        addCategoryWithSearch: true, // when searching for a movie title like "X-men", will become "X-men movie"
         largeThumbnails: true,
         defaultImageSearchEngine: 'google',
         cycleTorrentsIfBlocked: true,
@@ -162,7 +162,7 @@ if (Element.prototype.after === undefined) {
     const SearchEngines = {
         google: {
             name: 'Google',
-            imageSearchUrl: (q) => `https://www.google.com/search?&hl=en&tbm=isch&q=${encodeURIComponent(q)}`
+            imageSearchUrl: (q) => `https://ipv4.google.com/search?&hl=en&tbm=isch&q=${encodeURIComponent(q)}`
         },
         ddg: {
             name: 'DuckDuckGo',
@@ -182,7 +182,7 @@ if (Element.prototype.after === undefined) {
     var appendedPageNum = 1;
 
     // click to verify browser
-    qa('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
+    document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
 
     //todo: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
     if (isPageBlockedKSA()) {
@@ -199,7 +199,7 @@ if (Element.prototype.after === undefined) {
 
     var tbodyEl = isOnSingleTorrentPage && row_others ?
         row_others.parentElement.querySelector('tbody') :
-        q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
+        document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
     if (!tbodyEl) console.warn('tbody element not found!');
 
 
@@ -302,10 +302,10 @@ tr.lista2 > td.lista > a[onmouseover] {
 
     $(document).ready(function main() {
         if (isOnThreatDefencePage) { // check for captcha
-            if (q('#solve_string')) {
+            if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');
                 try {
-                    unsafeEval(solveCaptcha);
+                    unsafeEval(solveCaptcha, OCRAD);
                 } catch (e) {
                     console.error('Error occurred while trying to solve captcha:\n', e);
                 }
@@ -313,11 +313,11 @@ tr.lista2 > td.lista > a[onmouseover] {
         } else { // not OnThreadDefencePage
             if (isOnSingleTorrentPage) {
                 // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
-                let mainTorrentLink = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
+                let mainTorrentLink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
 
                 // adding thumbnails
-                for (const torrent of qa('a[href^="/torrent/"]')) {
+                for (const torrent of document.querySelectorAll('a[href^="/torrent/"]')) {
                     //creating and adding thumbnails
                     const cell = document.createElement('td');
                     const thumbnailLink = document.createElement('a');
@@ -343,13 +343,13 @@ tr.lista2 > td.lista > a[onmouseover] {
                 }
 
                 // remove VPN row
-                const vpnR = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(2)');
+                const vpnR = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(2)');
                 if (vpnR) {
                     vpnR.remove();
                 }
 
                 // fullres for imagecurl.com
-                for (const imgcurlImg of qa('img[src^="https://imagecurl.com/images/"]')) {
+                for (const imgcurlImg of document.querySelectorAll('img[src^="https://imagecurl.com/images/"]')) {
                     if (imgcurlImg) {
                         const fullres = imgcurlImg.src.replace('_thumb', '');
                         imgcurlImg.src = fullres;
@@ -360,7 +360,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // fullres for imgprime.com
                 // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
                 // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-                for (const imgprime of qa('img[src^="https://imgprime.com/u/s/"]')) {
+                for (const imgprime of document.querySelectorAll('img[src^="https://imgprime.com/u/s/"]')) {
                     console.log('replacing img: ', imgprime);
                     if (imgprime) {
                         const a = imgprime.closest('a');
@@ -371,7 +371,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                     }
                 }
                 // fullres for imagefruit.com
-                for (const imagefruitImg of qa('img[src*="/tn/t"]')) {
+                for (const imagefruitImg of document.querySelectorAll('img[src*="/tn/t"]')) {
                     if (imagefruitImg) {
                         const fullres = imagefruitImg.src.replace('/tn/t', '/tn/i');
                         imagefruitImg.src = fullres;
@@ -392,7 +392,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 });
 
                 Mousetrap.bind('d', function (e) {
-                    const torrent = q('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
+                    const torrent = document.querySelector('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
                     torrent.click();
 
                     function getRow(rowText) {
@@ -520,18 +520,18 @@ tr.lista2 > td.lista > a[onmouseover] {
                 document.body.onclick = null; // remove annoying click listeners
 
                 // remove annoying search description
-                const searchDescription = q('#SearchDescription');
+                const searchDescription = document.querySelector('#SearchDescription');
                 if (searchDescription) searchDescription.remove();
 
                 // remove annoying signup form that doesn't work
-                const signinForm = q('form[action="/login"]');
+                const signinForm = document.querySelector('form[action="/login"]');
                 if (signinForm) signinForm.remove();
-                const signinTab = q('body > table:nth-child(5) > tbody > tr > td > table > tbody > tr > td.header4');
+                const signinTab = document.querySelector('body > table:nth-child(5) > tbody > tr > td > table > tbody > tr > td.header4');
                 if (signinTab) signinTab.remove();
 
 
                 // remove recommended torrents
-                const recTor = q('tr > [valign="top"] > [onmouseout="return nd();"]');
+                const recTor = document.querySelector('tr > [valign="top"] > [onmouseout="return nd();"]');
                 if (recTor) recTor.closest('div').remove();
 
                 // remove "recommended torrents" title
@@ -539,13 +539,13 @@ tr.lista2 > td.lista > a[onmouseover] {
                 if (recTitle) recTitle.remove();
 
                 // scroll the table to view (top of screen will be the first torrent)
-                const mainTable = q('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t');
+                const mainTable = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t');
                 if (mainTable) mainTable.scrollIntoView();
 
 
                 // adding a dropdown list for mirrors
                 (function addMirrorsDropdown() {
-                    const blankTab = q('td.header:nth-child(1)');
+                    const blankTab = document.querySelector('td.header:nth-child(1)');
                     if (!blankTab) return;
 
                     const mirrorsTab = document.createElement('td');
@@ -614,7 +614,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 dealWithTorrents(target);
 
                 // remove links for adds that cover the screen
-                for (const x of qa('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
+                for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
                     console.log('removed redirect element:', x);
                     x.remove();
                 }
@@ -633,7 +633,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             console.log('clicking search input');
 
             e.preventDefault();
-            const searchBar = q('#searchinput');
+            const searchBar = document.querySelector('#searchinput');
             searchBar.click();
             searchBar.scrollIntoView();
             searchBar.select();
@@ -651,7 +651,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         });
         Mousetrap.bind(['`'], toggleThumbnailSize);
         Mousetrap.bind(['ctrl+s'], (e) => {// saves an html file containing the data
-            const rows = qa('table > tbody > tr.lista2');
+            const rows = document.querySelectorAll('table > tbody > tr.lista2');
             var torrentJsons = Array.from(rows).map(row => {
                 try {
                     const a = row.querySelector('a[onmouseover]');
@@ -743,12 +743,13 @@ tr.lista2 > td.lista > a[onmouseover] {
         setThumbnail(thumbnailImg);
     }
 
-    function solveCaptcha() {
+    function solveCaptcha(OCRAD) {
         console.log('solving captcha...');
-        const container = q('tbody > :nth-child(2)');
+        const container = document.querySelector('tbody > :nth-child(2)');
         const img = container.querySelector('img');
-        const captcha = q('#solve_string');
-        const submitBtn = q('#button_submit');
+        const captcha = document.querySelector('#solve_string');
+        const submitBtn = document.querySelector('#button_submit');
+		const url = new URL(location.href);
 
         if (img.naturalHeight === 0 && img.naturalWidth === 0) {
             console.log('image hasn\'t loaded, refreshing to new captha page');
@@ -773,6 +774,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 image.src = uri;
             });
         }
+
         function getBase64Image(img, excludeUrlProtocol = false) {
             // Create an empty canvas element
             var canvas = document.createElement('canvas');
@@ -791,12 +793,6 @@ tr.lista2 > td.lista > a[onmouseover] {
 
             return excludeUrlProtocol && dataURL.replace(/^data:image\/(png|jpg);base64,/, '') || dataURL;
         }
-
-        var imageText = OCRAD(getBase64Image(img));
-        console.log('OCRAD result:', imageText);
-        captcha.value = imageText;
-        submitBtn.display = '';
-        submitBtn.click();
 
         uriToImageData(getBase64Image(img)).then((imageData) => {
             var imageText = OCRAD(imageData);
@@ -979,7 +975,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     function toggleThumbnailSize() {
         Options.largeThumbnails = !Options.largeThumbnails;
         console.log('toggleThumbnailSize(' + (Options.largeThumbnails ? 'large' : 'small') + ')');
-        qa('.preview-image').forEach(setThumbnail);
+        document.querySelectorAll('.preview-image').forEach(setThumbnail);
         updateCss();
         if (debug) console.log('toggling thumbnail sizes. Options.largeThumbnails = ', Options.largeThumbnails);
     }
@@ -1443,21 +1439,6 @@ function htmlToElements(html) {
     return new DOMParser().parseFromString(html, 'text/html').body.childNodes;
 }
 
-/**abbreviation for querySelectorAll()
- * @param selector
- * @param node
- * @return {NodeListOf<HTMLElement>} */
-function qa(selector, node = document) {
-    return node.querySelectorAll(selector);
-}
-
-/**abbreviation for querySelector()
- * @param selector
- * @param node
- * @return {HTMLElement} */
-function q(selector, node = document) {
-    return node.querySelector(selector);
-}
 
 function getElementsByXPath(xpath, parent) {
     let results = [];

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      1.2
+// @version      1.3
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -67,6 +67,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_download
+// @grant        GM_xmlhttpRequest
 // @icon         https://www.google.com/s2/favicons?domain=rarbg.com
 // @run-at       document-idle
 // @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js

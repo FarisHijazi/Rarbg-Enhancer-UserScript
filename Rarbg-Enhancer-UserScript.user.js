@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      1.3
+// @version      1.4
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -72,6 +72,7 @@
 // @run-at       document-idle
 // @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      https://code.jquery.com/jquery-3.4.0.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
@@ -616,7 +617,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 // remove links for adds that cover the screen
                 for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
-                    console.log('removed redirect element:', x);
+                    console.debug('removed redirect element:', x);
                     x.remove();
                 }
             });
@@ -833,7 +834,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             'ig');
 
 
-        console.log(
+        console.debug(
             'regex:', regex,
             '\nconverted query:', convertedQuery,
             '\ncompletelyNegativeQuery:', completelyNegativeQuery
@@ -1303,7 +1304,6 @@ tr.lista2 > td.lista > a[onmouseover] {
             addMouseoverListener(ml, 'ml');
         }
 
-        // console.log('magnetLink button:', ml);
         cell.appendChild(ml); // magnet ink
 
         return magnetUriStr;
@@ -1318,7 +1318,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             event.preventDefault();
 
             if (this.href === 'javascript:void(0);') {
-                console.log('actually addMouseoverListener()', link);
+                if (debug) console.log('actually addMouseoverListener()', link);
                 let tUrl = this.getAttribute('data-href');
                 console.log('fetching ', tUrl);
 

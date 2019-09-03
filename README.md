@@ -50,6 +50,10 @@ The script is written by me, however I have encorperated some code form other th
   - I originally got the idea from [this script](https://greasyfork.org/en/scripts/12648-rarbg-add-magnet-link) by the user [Cisco](https://greasyfork.org/en/users/16455-cisco).
   - This is just a shoutout to Cisco for inspiring me to start, as there was no contribution.
 
+## Licence
+
+This project licenced under the [MIT](/LICENCE) licence, this script is for educational purposes, I am NOT promoting piracy, this is just a tool to improve a website's UI.
+
 ----
 
 ## Todo

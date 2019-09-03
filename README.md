@@ -52,7 +52,7 @@ The script is written by me, however I have encorperated some code form other th
 
 ## Licence
 
-This project licenced under the [MIT](/LICENCE) licence, this script is for educational purposes, I am NOT promoting piracy, this is just a tool to improve a website's UI.
+This project licenced under the [MIT](LICENSE) license, this script is for educational purposes, I am NOT promoting piracy, this is just a tool to improve a website's UI.
 
 ----
 

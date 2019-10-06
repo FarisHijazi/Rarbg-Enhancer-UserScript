@@ -192,7 +192,8 @@ if (Element.prototype.after === undefined) {
     }
 
     const searchBox = document.querySelector('#searchinput');
-    let isOnIndexPage = searchBox !== null;
+    const isOnIndexPage = searchBox !== null;
+    const isOnWrongTorrentLinkPage = getElementsByXPath('(/html/body/table[3]/tbody/tr/td[2]/div/table/tbody/tr[2]/td/div[contains(., "The link you followed is wrong. Please try again!")])').length > 0;
 
     const getTorrentLinks = () => Array.from(document.querySelectorAll('table > tbody > tr.lista2 a[title]'));
 
@@ -515,6 +516,25 @@ tr.lista2 > td.lista > a[onmouseover] {
                     }
                 });
 
+            } else if (isOnWrongTorrentLinkPage) {
+                // this torrent link has failed, then we have to go to the torrent page and download it
+                const torrentPageUrl = new URL(location.href).searchParams.get('tpageurl'); // get the previously injected page url here
+                if (torrentPageUrl) {
+                    fetch(torrentPageUrl).then(r => r.text().then(t => {
+                        document.write(t);
+                        document.close();
+                        var torrentlink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
+                        console.log(torrentlink.href);
+
+                        torrentlink.dispatchEvent(new Event('click'));
+                        torrentlink.click();
+                        unsafeWindow.location.assign(torrenturl.href);
+                        unsafeWindow.open(torrenturl.href, '_blank');
+                    }));
+                } else {
+                    console.warn('"tpageurl" is not in the location params!');
+                    window.close();
+                }
             }
 
             (function onLoad() {

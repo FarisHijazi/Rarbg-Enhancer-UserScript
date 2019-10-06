@@ -889,20 +889,21 @@ tr.lista2 > td.lista > a[onmouseover] {
             // = adding relative time to columns
             (function changeDateToRelativeTime() {
                 var column_Added = row.querySelector('td:nth-child(' + (getColumnIndex('Added') + 1) + ')');
-                var minutes = ((Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60)),
-                    hours = 0
-                ;
 
-                if (minutes > 60) {
-                    hours = Math.round(minutes / 60);
-                    minutes = minutes % 60;
+                const diffInMinutes = (Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60);
+
+                var diffFinal = diffInMinutes + ' minutes';
+
+                if (diffInMinutes / (60 * 24) >= 365 * 2) { // > 2years
+                    diffFinal = Math.round(diffInMinutes / (60 * 24 * 365)) + ' years';
+                } else if (diffInMinutes / (60 * 24) >= 2) { // > 2days
+                    diffFinal = Math.round(diffInMinutes / (60 * 24)) + ' days';
+                } else if (diffInMinutes / (60) >= 2) {
+                    diffFinal = Math.round(diffInMinutes / (60)) + ' hours';
                 }
-                minutes = Math.round(minutes);
 
-                // if (debug) console.log('column_Added:', column_Added);
-
-                column_Added.innerHTML =
-                    column_Added.innerHTML + '<br>\n' + ((hours ? (hours + 'h') : '') + minutes ? (minutes + 'min') : '') + '&nbsp' + 'ago';
+                if (debug) console.log('column_Added:', column_Added);
+                column_Added.innerHTML = (column_Added.innerHTML + '<br>\n' + (diffFinal + ' ago').replace(' ', '&nbsp'));
             })();
 
             // color backgrounds depending on the number of seeders

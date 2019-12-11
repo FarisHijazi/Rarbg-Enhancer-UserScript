@@ -351,37 +351,40 @@ tr.lista2 > td.lista > a[onmouseover] {
                     vpnR.remove();
                 }
 
-                // fullres for imagecurl.com
-                for (const imgcurlImg of document.querySelectorAll('img[src^="https://imagecurl.com/images/"]')) {
-                    if (imgcurlImg) {
-                        const fullres = imgcurlImg.src.replace('_thumb', '');
-                        imgcurlImg.src = fullres;
-                        imgcurlImg.closest('a').href = fullres;
-                        imgcurlImg.style['max-width'] = '100%';
+                /**
+                 * replaces common thumbnails to originals from hosting sites like imagecurl.com...
+                 *
+                 * @param {string} imgCommonUrl - the segment of the URL that's unique to this replacement, example: "https://imagecurl.com/images/"
+                 * @param {string|regex} regex - what to replace
+                 * @param {string} replacement - replacement
+                 */
+                function replaceImageHostImageWithOriginal(imgCommonUrl, regex, replacement) {
+                    for (const img of document.querySelectorAll('img[src*="'+imgCommonUrl+'"]')) {
+                        if (img) {
+                            console.log('replacing thumbnail:', img.src, img);
+                            const fullres = img.src.replace(regex, replacement);
+                            img.src = fullres;
+                            img.closest('a').href = fullres;
+                            img.style['max-width'] = '100%';
+                        }
                     }
                 }
+                
                 // fullres for imgprime.com
                 // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
                 // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-                for (const imgprime of document.querySelectorAll('img[src^="https://imgprime.com/u/s/"]')) {
-                    console.log('replacing img: ', imgprime);
-                    if (imgprime) {
-                        const a = imgprime.closest('a');
-                        const fullres = a.href.replace(/(imga-)|(\.html)/g, '');
-                        imgprime.src = fullres;
-                        a.href = fullres;
-                        imgprime.style['max-width'] = '100%';
-                    }
-                }
-                // fullres for imagefruit.com
-                for (const imagefruitImg of document.querySelectorAll('img[src*="/tn/t"]')) {
-                    if (imagefruitImg) {
-                        const fullres = imagefruitImg.src.replace('/tn/t', '/tn/i');
-                        imagefruitImg.src = fullres;
-                        imagefruitImg.closest('a').href = fullres;
-                        imagefruitImg.style['max-width'] = '100%';
-                    }
-                }
+                replaceImageHostImageWithOriginal("https://imgprime.com/u/s/", /(imga-)|(\.html)/g, '');
+                replaceImageHostImageWithOriginal("https://imgprime.com/uploads/small", '/small/', '/big/');
+                // imagecurl.com
+                replaceImageHostImageWithOriginal("https://imagecurl.com/images/", '_thumb', '');
+                // imagefruit.com
+                replaceImageHostImageWithOriginal("/tn/t", '/tn/t', '/tn/i');
+                // 22pixx.xyz
+                replaceImageHostImageWithOriginal("https://22pixx.xyz/os/", '22pixx.xyz/os/', '22pixx.xyz/o/');
+                replaceImageHostImageWithOriginal("https://22pixx.xyz/s/", '22pixx.xyz/s/', '22pixx.xyz/i/');
+                // trueimg.xyz
+                replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", 'trueimg.xyz/s/', 'trueimg.xyz/b/');
+
 
                 // putting the "Description:" row before the "Others:" row
                 getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);

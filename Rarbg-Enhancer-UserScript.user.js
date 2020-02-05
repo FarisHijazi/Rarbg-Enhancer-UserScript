@@ -366,47 +366,58 @@ tr.lista2 > td.lista > a[onmouseover] {
                  * replaces common thumbnails to originals from hosting sites like imagecurl.com...
                  *
                  * @param {string} imgCommonUrl - the segment of the URL that's unique to this replacement, example: "https://imagecurl.com/images/"
-                 * @param {string|regex} regex - what to replace
-                 * @param {string} replacement - replacement
+                 * @param {object|Function} replaceMethod - replaceMethod(src)->newSrc a function that passes back the new string or a replacement map
                  */
-                function replaceImageHostImageWithOriginal(imgCommonUrl, regex, replacement) {
-                    for (const img of document.querySelectorAll('img[src*="'+imgCommonUrl+'"]')) {
+                function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
+                    const callback = typeof (replaceMethod) === 'function' ? replaceMethod :
+                        src => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src) // if object
+                        ;
+                    for (const img of document.querySelectorAll('img[src*="' + imgCommonUrl + '"]')) {
                         if (img) {
-                            console.log('replacing thumbnail:', img.src, img);
-                            const fullres = img.src.replace(regex, replacement);
+                            const fullres = callback(img.src);
+                            console.log('replacing thumbnail:', img.src, '->', fullres, '\n', img);
                             img.src = fullres;
                             img.closest('a').href = fullres;
                             img.style['max-width'] = '100%';
+                            // img.style['max-height'] = '400px';
                         }
                     }
                 }
-                
+
                 // fullres for imgprime.com
                 // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
                 // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-                replaceImageHostImageWithOriginal("https://imgprime.com/u/s/", /(imga-)|(\.html)/g, '');
-                replaceImageHostImageWithOriginal("https://imgprime.com/uploads/small", '/small/', '/big/');
+                replaceImageHostImageWithOriginal("https://imgprime.com/u/s/", {
+                    'imga-': '',
+                    '.html': '',
+                    '/small/': '/big/',
+                    '/u/s/': '/u/b/',
+                });
                 // imagecurl.com
-                replaceImageHostImageWithOriginal("https://imagecurl.com/images/", '_thumb', '');
+                replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { '_thumb': '' });
                 // imagefruit.com
-                replaceImageHostImageWithOriginal("/tn/t", '/tn/t', '/tn/i');
+                replaceImageHostImageWithOriginal("/tn/t", { '/tn/t': '/tn/i' });
                 // 22pixx.xyz
-                replaceImageHostImageWithOriginal("https://22pixx.xyz/os/", '22pixx.xyz/os/', '22pixx.xyz/o/');
-                replaceImageHostImageWithOriginal("https://22pixx.xyz/s/", '22pixx.xyz/s/', '22pixx.xyz/i/');
+                replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
+                    '22pixx.xyz/os/': '22pixx.xyz/o/',
+                    '22pixx.xyz/s/': '22pixx.xyz/i/',
+                });
                 // trueimg.xyz
-                replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", 'trueimg.xyz/s/', 'trueimg.xyz/b/');
+                replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
+                    'trueimg.xyz/s/': 'trueimg.xyz/b/',
+                });
 
 
                 // putting the "Description:" row before the "Others:" row
-                getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
+                getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].appendChild(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
 
                 // add error listener to use a proxy if an image fails to load
-                var tbl = document.querySelector('table.lista-rounded');
-                if(tbl) tbl.querySelectorAll('img[src]').forEach(img => {
-                    img.onerror = function() {
-                        img.src = (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(img.src)}&f=1`);
-                    };
-                });
+                // var tbl = document.querySelector('table.lista-rounded');
+                // if (tbl) tbl.querySelectorAll('img[src]').forEach(img => {
+                //     img.onerror = function () {
+                //         img.src = (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(img.src)}&f=1`);
+                //     };
+                // });
 
                 Mousetrap.bind('d', function (e) {
                     const torrent = document.querySelector('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
@@ -425,9 +436,9 @@ tr.lista2 > td.lista > a[onmouseover] {
                         descriptionImg.alt = torrentName + '_description_' + (i++);
                     }
                     descriptionImgs.push(posterImg);
-                    descriptionImgs.push({fileURL: torrent.href, fileName: torrentName});
+                    descriptionImgs.push({ fileURL: torrent.href, fileName: torrentName });
                     var zip = zipFiles(descriptionImgs);
-                    zip.file(document.title + '.html', new Blob([document.body.outerHTML], {type: 'text/plain'}));
+                    zip.file(document.title + '.html', new Blob([document.body.outerHTML], { type: 'text/plain' }));
                     const rowsObj = {};
                     ['Title:', 'Genres:', 'Actors:', 'Stars:', 'Series:', 'Plot:', 'Tags:'].forEach(row => {
                         let rowContent = getRow(row)[0];
@@ -437,7 +448,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                     const rowsText = JSON.stringify(rowsObj, null, 4);
                     console.debug('rowsObj: ', rowsObj);
                     let summary = document.title + '\n\n' + rowsText;
-                    zip.file(document.title + ' (summary).txt', new Blob([summary], {type: 'text/plain'}));
+                    zip.file(document.title + ' (summary).txt', new Blob([summary], { type: 'text/plain' }));
 
                     let zipped = false;
                     zip.onGenZip = function () {

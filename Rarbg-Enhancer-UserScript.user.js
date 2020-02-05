@@ -120,7 +120,7 @@ if (Element.prototype.after === undefined) {
 
 // main
 (function () {
-	'use strict';
+    'use strict';
     const debug = false; // debugmode (setting this to false will disable the console logging)
 
     const TORRENT_ICO = 'https://dyncdn.me/static/20/img/16x16/download.png';
@@ -140,7 +140,6 @@ if (Element.prototype.after === undefined) {
         addCategoryWithSearch: true, // when searching for a movie title like "X-men", will become "X-men movie"
         largeThumbnails: true,
         defaultImageSearchEngine: 'google',
-        cycleTorrentsIfBlocked: true,
         infiniteScrolling: true,
         mirrors: [
             'https://rarbgaccess.org',
@@ -313,7 +312,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     // === end of variable declarations ===
 
     $(document).ready(function main() {
-        if (isOnThreatDefencePage) { // check for captcha
+        if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
             if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');
                 try {
@@ -322,7 +321,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                     console.error('Error occurred while trying to solve captcha:\n', e);
                 }
             }
-        } else { // not OnThreadDefencePage
+        } else { // on torrent(s) page
             if (isOnSingleTorrentPage) {
                 // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
                 let mainTorrentLink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
@@ -331,13 +330,16 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // adding thumbnails
                 for (const torrent of document.querySelectorAll('a[href^="/torrent/"]')) {
                     //creating and adding thumbnails
+                    const row = torrent.closest('tr.lista_related');
                     const cell = document.createElement('td');
                     const thumbnailLink = document.createElement('a');
                     const thumbnailImg = document.createElement('img');
                     thumbnailLink.href = torrent.href;
 
                     cell.classList.add('thumbnail-cell');
+                    cell.classList.add('preview-image');
                     cell.appendChild(thumbnailLink);
+
                     // thumbnail
                     thumbnailImg.classList.add('preview-image');
 
@@ -458,9 +460,9 @@ tr.lista2 > td.lista > a[onmouseover] {
                 mldlCol.header.addEventListener('click', downloadAllTorrents);
 
                 observeDocument((target) => {
-                    var newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
+                    const newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
 
-                    newCol.header.addEventListener('click', toggleThumbnailSize);
+                    newCol.header.addEventListener('click', () => toggleThumbnailSize());
                 });
 
                 if (Options.infiniteScrolling) { // infiniteScrolling
@@ -470,7 +472,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                         const nav = 'td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)';
 
                         const container = getElementsByXPath('//table[@class=\'lista2t\']')[0];
-                        var infScroll = new InfiniteScroll(container, {
+                        const infScroll = new InfiniteScroll(container, {
                             path: 'a[title="next page"]',
                             append: tbody, // the table
                             hideNav: nav,
@@ -661,7 +663,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         if (typeof Mousetrap === 'undefined') return;
         Mousetrap.bind(['space'], (e) => {
             // appendPage(currentDocument.querySelector('a[title="next page"]'));
-            solveCaptcha(); // todo: remove this, this is just for debugging
+            solveCaptcha(); // TODO: remove this, this is just for debugging
         });
         Mousetrap.bind(['/'], (e) => {
             console.log('clicking search input');
@@ -726,8 +728,9 @@ tr.lista2 > td.lista > a[onmouseover] {
         cell.appendChild(thumbnailLink);
         thumbnailLink.appendChild(thumbnailImg);
 
+        const dllink = row.querySelector('a.torrent-dl');
         const ml = row.querySelector('a.torrent-ml');
-        const dl = row.querySelector('a.torrent-dl') || extractTorrentDL(torrent);
+        const dlurl = dllink ? dllink.href : extractTorrentDL(torrent);
 
         // thumbnail link
         (function setLinkHref() {
@@ -738,12 +741,12 @@ tr.lista2 > td.lista > a[onmouseover] {
                         if (!/^magnet:\?/.test(thumbnailLink.href))  // noinspection ExceptionCaughtLocallyJS
                             throw new Error('Not a magnet link');
                     } catch (e) {
-                        thumbnailLink.href = dl;
+                        thumbnailLink.href = dlurl;
                     }
                     break;
                 case 'tor':
                     try {
-                        thumbnailLink.href = dl;
+                        thumbnailLink.href = dlurl;
                     } catch (e) {
                         thumbnailLink.href = ml;
                         if (debug) console.debug('Using MagnetLink for torrent thumbnail since torrent failed:', ml);
@@ -759,7 +762,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             console.warn(
                 'thumbnail Link:', thumbnailLink,
                 'torrent:', torrent.innerText,
-                'dl', dl
+                'dl', dlurl
             );
 
         // thumbnail
@@ -783,7 +786,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         const img = container.querySelector('img');
         const captcha = document.querySelector('#solve_string');
         const submitBtn = document.querySelector('#button_submit');
-		const url = new URL(location.href);
+        const url = new URL(location.href);
 
         if (img.naturalHeight === 0 && img.naturalWidth === 0) {
             console.log('image hasn\'t loaded, refreshing to new captha page');
@@ -861,8 +864,8 @@ tr.lista2 > td.lista > a[onmouseover] {
         })();
 
         const regex = new RegExp(convertedQuery.replace(/-/g, '|')
-                .replace(/\|\|/g, '|')
-                .replace(/^\|/, ''),// '|' that is at the beginning of a word
+            .replace(/\|\|/g, '|')
+            .replace(/^\|/, ''),// '|' that is at the beginning of a word
             'ig');
 
 
@@ -1014,7 +1017,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         updateCss();
         if (debug) console.log('toggling thumbnail sizes. Options.largeThumbnails = ', Options.largeThumbnails);
     }
-// gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
+    // gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
     function getLargeThumbnail(smallThumbUrl) {
         // Movie example
         // Small pic:   http://dyncdn.me/mimages/316661/over_opt.jpg
@@ -1038,14 +1041,14 @@ tr.lista2 > td.lista > a[onmouseover] {
             thumbnailSrc = MAGNET_ICO;
             console.error('extractThumbnailSrc error:', r);
         }
-        debug && console.debug('extractThumbnailSrc(', torrentAnchor, ')->', thumbnailSrc);
+        if (debug) console.debug('extractThumbnailSrc(', torrentAnchor, ')->', thumbnailSrc);
         return thumbnailSrc;
     }
 
     function addImageSearchAnchor(torrentAnchor) {
         const searchTd = document.createElement('td'),
             searchLink = document.createElement('a')
-        ;
+            ;
         searchTd.classList.add('search');
         searchTd.style['border-top-width'] = '10px';
         searchTd.style['padding-top'] = '10px';
@@ -1054,7 +1057,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText)
             .replace(/\s\s+/g, ' ') // removes double spaces
             .trim()
-        ;
+            ;
 
         /**
          * @return {string} the category of the torrent (Movies, XXX, TV Shows, Games, Music, Software, Non XXX)
@@ -1088,7 +1091,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             if (Options.addCategoryWithSearch && !new RegExp(getCategory(torrentAnchor)).test(searchLink.href))
                 searchLink.href += ' ' + getCategory(torrentAnchor);
         } catch (e) {
-            if(debug) console.warn('unable to get category', searchLink);
+            if (debug) console.warn('unable to get category', searchLink);
         }
         if (debug) console.debug('search url:', searchLink.href);
         searchLink.classList.add('search');
@@ -1255,7 +1258,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             header.classList.add('header6');
             header.id = sanitizedTitle + '-head';
             oldColumnEntries[0].insertAdjacentElement('afterend', header);
-            debug && console.log('header:', header);
+            if (debug) console.log('header:', header);
         }
 
 

@@ -534,7 +534,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 }
 
                 // click sort by seeds
-                Mousetrap.bind('s', function (e) {
+                Mousetrap.bind('t s', function (e) {
                     let columnIndex = getColumnIndex('S.');
                     if (columnIndex !== -1) {
                         tbodyEl.querySelectorAll('tr > td.header6')[columnIndex].querySelector('a').click();
@@ -545,17 +545,13 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // this torrent link has failed, then we have to go to the torrent page and download it
                 const torrentPageUrl = new URL(location.href).searchParams.get('tpageurl'); // get the previously injected page url here
                 if (torrentPageUrl) {
-                    fetch(torrentPageUrl).then(r => r.text().then(t => {
-                        document.write(t);
-                        document.close();
-                        var torrentlink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
-                        console.log(torrentlink.href);
-
-                        torrentlink.dispatchEvent(new Event('click'));
-                        torrentlink.click();
-                        unsafeWindow.location.assign(torrenturl.href);
-                        unsafeWindow.open(torrenturl.href, '_blank');
-                    }));
+                    fetchDoc(torrentPageUrl).then(doc => {
+                        const torrentdownloadLink = doc.querySelector("td.lista a[onmouseover]");
+                        location.assign(torrentdownloadLink.href);
+                        document.addEventListener('DOMContentLoaded', () => document.close());
+                        document.addEventListener('load', () => document.close());
+                        setTimeout(() => window.close(), 1000);
+                    });
                 } else {
                     console.warn('"tpageurl" is not in the location params!');
                     window.close();
@@ -1357,7 +1353,7 @@ tr.lista2 > td.lista > a[onmouseover] {
     }
 
     function extractTorrentDL(anchor) {
-        return anchor.href.replace('torrent/', 'download.php?id=') + '&f=' + encodeURI(anchor.innerText) + '-[rarbg.to].torrent';
+        return anchor.href.replace('torrent/', 'download.php?id=') + '&f=' + encodeURI(anchor.innerText) + '-[rarbg.to].torrent' + '&tpageurl=' + encodeURIComponent(anchor.href.trim());
     }
 
     function addMouseoverListener(link, type) {
@@ -1514,3 +1510,28 @@ function addCss(cssStr, id = '') {
     return document.getElementsByTagName('head')[0].appendChild(style);
 }
 
+
+function fetchDoc(url) {
+    return fetch(url, {
+        "credentials": "include",
+        "headers": {
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
+            "accept-language": "en-US,en;q=0.9",
+            "cache-control": "no-cache",
+            "pragma": "no-cache",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1"
+        },
+        "referrerPolicy": "no-referrer-when-downgrade",
+        "body": null,
+        "method": "GET",
+        "mode": "cors"
+    })
+        .then((res) => res.text())
+        .then((html) => {
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            return doc;
+        });
+}

@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      1.4
+// @version      1.4.1
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
 //               with some code from https://greasyfork.org/en/users/2160-darkred
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
+// @include      /https?:\/\/.{0,8}rargb.*\.\/*/
+// @include      /https?:\/\/.*u=MTcyLjIxLjAuMXw6Ly9yYXJiZy50by90b3JyZW50LzIyMDg3MjYwfE1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS83OS4wLjM5NDUuMTMwIFNhZmFyaS81MzcuMzZ8ODc4MDQz.*/
 // @include      https://rarbg.to/*
 // @include      http://rarbgmirror.xyz/*
 // @include      https://rarbgunblock.com/*
@@ -63,6 +65,14 @@
 // @include      https://rarbg.unblockmy.site/
 // @include      http://rarbg-to.proxydude.xyz/
 // @include      https://rarbgproxy.org/
+// @include      https://sitenable.pw/rarbg-proxy
+// @include      https://sitenable.top/rarbg-proxy
+// @include      https://rarbgmirror.com/
+// @include      https://siteget.net/rarbg-proxy
+// @include      https://sitenable.info/rarbg-proxy
+// @include      http://rarbgaccess.org/
+// @include      https://freeproxy.io/rarbg-proxy
+// @include      http://rarbgto.org/
 // @grant        unsafeWindow
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -76,9 +86,8 @@
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
-// @require      https://github.com/buzamahmooza/Helpful-Web-Userscripts/raw/master/download_script.user.js
-// @require      https://github.com/bevacqua/horsey/raw/master/dist/horsey.js
 // ==/UserScript==
+// @require      https://github.com/bevacqua/horsey/raw/master/dist/horsey.js
 
 // AddColumn() and add magnetLinks() code taken from:      https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
 

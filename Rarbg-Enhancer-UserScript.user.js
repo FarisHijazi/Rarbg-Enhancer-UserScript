@@ -1458,7 +1458,7 @@ function hex2rgb(c) {
 }
 
 function makeTextFile(text) {
-    const data = new Blob([text], {type: 'text/plain'});
+    const data = new Blob([text], { type: 'text/plain' });
     var textFile = null;
     // If we are replacing a previously generated file we need to manually revoke the object URL to avoid memory leaks.
     if (textFile !== null) window.URL.revokeObjectURL(textFile);

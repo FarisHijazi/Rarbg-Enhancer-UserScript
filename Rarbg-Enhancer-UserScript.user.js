@@ -118,6 +118,26 @@ if (Element.prototype.after === undefined) {
     };
 }
 
+
+const catCodeMap = {
+    'Movies': '48;17;44;45;47;50;51;52;42;46'.split(';'),
+    'XXX': '4'.split(';'),
+    'Music': '23;24;25;26'.split(';'),
+    'TV shows': '18;41;49'.split(';'),
+    'Software': '33;34;43'.split(';'),
+    'Games': '27;28;29;30;31;32;40;53'.split(';'),
+};
+// categories map, given the category number (in the URL), returns the name of it
+const codeToCatMap = reverseMapping(catCodeMap);
+// converts key to a category code (number in URL)
+const catKeyMap = {
+    'v': 'Movies',
+    's': 'TV show',
+    'm': 'Music',
+    'w': 'Software',
+    'x': 'XXX',
+};
+
 // main
 (function () {
     'use strict';
@@ -749,6 +769,26 @@ tr.lista2 > td.lista > a[onmouseover] {
             toggleThumbnailSize('update only');
         });
 
+        // binding each key to a category
+        // then you can change categories by pressing that key (like "m" for (M)ovie)
+        console.group('Binding keys to categories:');
+        for (const [key, catName] of Object.entries(catKeyMap)) {
+            console.log(`"${key}": "${catName}"`);
+            Mousetrap.bind(key, function (e) {
+                const catCode = catCodeMap[catName].join(';');
+
+                if (typeof URL !== 'undefined') {
+                    const url = new URL(location.href);
+                    url.searchParams.delete('category');
+                    url.pathname = '/torrents.php';
+                    location.assign(url.toString() + '?&category=' + catCode);
+                } else {
+                    location.assign('/torrents.php?category=' + catCode);
+                }
+            });
+        }
+        console.groupEnd();
+
     })();
 
     function addThumbnailColumn(cell, torrent, row) {
@@ -1120,15 +1160,8 @@ tr.lista2 > td.lista > a[onmouseover] {
              */
             const categoryCode = anchor.href.split('torrents.php?category=').pop();
             // a map of the
-            const catMap = {
-                'Movies': 'Movies',
-                '4': 'XXX',
-                '23': 'Music',
-                '18': 'TV show',
-                '33': 'Software',
-            };
-            if (catMap.hasOwnProperty(categoryCode)) {
-                return catMap[categoryCode];
+            if (codeToCatMap.hasOwnProperty(categoryCode)) {
+                return codeToCatMap[categoryCode];
             } else {
                 if (debug) console.debug('Unkown category:', categoryCode);
             }
@@ -1457,6 +1490,26 @@ function unsafeEval(func, ...arguments) {
     unsafeWindow.Function(body).apply(unsafeWindow, arguments);
 }
 
+/**
+ * 
+ * @param {Object} o Object to be reversed.
+ * Note: that if there are multiple values in an entry, it will be stored as multiple keys each corresponding to the same key (duplication).
+ */
+function reverseMapping(o) {
+    const r = {};
+
+    for (const [k, v] of Object.entries(o)) {
+        var values = [v];
+        if (v instanceof Array) {
+            values = v;
+        }
+        for (const val of values) {
+            r[val] = k;
+        }
+    }
+    return r;
+    // return Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {});
+}
 
 /**
  * replaces common thumbnails to originals from hosting sites like imagecurl.com...

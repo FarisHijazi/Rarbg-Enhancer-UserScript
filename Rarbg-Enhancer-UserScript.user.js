@@ -196,7 +196,7 @@ if (Element.prototype.after === undefined) {
     // click to verify browser
     document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
 
-    //todo: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
+    //TODO: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
     if (isPageBlockedKSA()) {
         location.assign(Options.mirrors[Math.floor(Math.random() * Options.mirrors.length)]);
     }
@@ -327,6 +327,23 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
                 let mainTorrentLink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
+
+                // FIXME:
+                // // if just download and gtfo:
+                // if (/&downloadtorrent/.test(location.href)) {
+                //     location.assign(mainTorrentLink.href);
+                //     // window.open(mainTorrentLink.href);
+                //     // window.close();
+                //     // return;
+                // }
+
+                const relatedTorrent = document.querySelector('.lista_related');
+                if (relatedTorrent) {
+                    const tr_tableHeader = relatedTorrent.closest('table').querySelector('tbody > tr');
+                    const thumbsHeader = tr_tableHeader.firstElementChild.cloneNode();
+                    thumbsHeader.innerText = 'thumbnail';
+                    tr_tableHeader.firstElementChild.before(thumbsHeader);
+                }
 
                 // adding thumbnails
                 for (const torrent of document.querySelectorAll('a[href^="/torrent/"]')) {
@@ -688,17 +705,8 @@ tr.lista2 > td.lista > a[onmouseover] {
             searchBar.select();
             searchBar.setSelectionRange(searchBar.value.length, searchBar.value.length);
         });
-        Mousetrap.bind(['x'], (e) => {
-            if (typeof URL !== 'undefined') {
-                const url = new URL(location.href);
-                url.searchParams.set('category', '4');
-                url.pathname = '/torrents.php';
-                location.assign(url.toString().replace('category=4', 'category=4;2'));
-            } else {
-                location.assign('/torrents.php?category=2;4');
-            }
-        });
-        Mousetrap.bind(['`'], toggleThumbnailSize);
+
+        Mousetrap.bind(['`'], (e) => toggleThumbnailSize());
         Mousetrap.bind(['ctrl+s'], (e) => {// saves an html file containing the data
             const rows = document.querySelectorAll('table > tbody > tr.lista2');
             var torrentJsons = Array.from(rows).map(row => {
@@ -868,7 +876,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
     /**
      * hides all torrents that do not match the search query
-     * todo:maybe generalize this function to just return the resulting score for each item,
+     * TODO:maybe generalize this function to just return the resulting score for each item,
      *      this way it can be portable and made as a library and use elsewhere
      *      and then you can iterate and hide them later
      */

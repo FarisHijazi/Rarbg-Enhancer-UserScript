@@ -328,6 +328,23 @@ tr.lista2 > td.lista > a[onmouseover] {
                 let mainTorrentLink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
 
+                // FIXME:
+                // // if just download and gtfo:
+                // if (/&downloadtorrent/.test(location.href)) {
+                //     location.assign(mainTorrentLink.href);
+                //     // window.open(mainTorrentLink.href);
+                //     // window.close();
+                //     // return;
+                // }
+
+                const relatedTorrent = document.querySelector('.lista_related');
+                if (relatedTorrent) {
+                    const tr_tableHeader = relatedTorrent.closest('table').querySelector('tbody > tr');
+                    const thumbsHeader = tr_tableHeader.firstElementChild.cloneNode();
+                    thumbsHeader.innerText = 'thumbnail';
+                    tr_tableHeader.firstElementChild.before(thumbsHeader);
+                }
+
                 // adding thumbnails
                 for (const torrent of document.querySelectorAll('a[href^="/torrent/"]')) {
                     //creating and adding thumbnails

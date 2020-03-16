@@ -156,7 +156,9 @@ if (Element.prototype.after === undefined) {
             'http://rarbg-to.pbproxy2.co',
             'https://www.rarbg.is',
         ],
-        colorBackground: false,
+        seedEffects: true,
+        imgScale: 1.0,
+        staticSearchbar: true,
     }, GM_getValue('RarbgOptions'));
 
     // write back the Options to the storage (in the case that they changed)
@@ -172,7 +174,7 @@ if (Element.prototype.after === undefined) {
     const SearchEngines = {
         google: {
             name: 'Google',
-            imageSearchUrl: (q) => `https://ipv4.google.com/search?&hl=en&tbm=isch&q=${encodeURIComponent(q)}`
+            imageSearchUrl: (q) => `https://www.google.com/search?&hl=en&tbm=isch&q=${encodeURIComponent(q)}`
         },
         ddg: {
             name: 'DuckDuckGo',
@@ -210,11 +212,11 @@ if (Element.prototype.after === undefined) {
 
     var tbodyEl = isOnSingleTorrentPage && row_others ?
         row_others.parentElement.querySelector('tbody') :
-        document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
+        document.querySelector('body > table > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
     if (!tbodyEl) console.warn('tbody element not found!');
 
 
-    let width = 150, maxwidth = 400, maxheight = 300;
+    let width = 150, maxwidth = 300, maxheight = 200;
 
     var thumbnailsCssBlock = addCss('');
     // language=CSS
@@ -266,7 +268,6 @@ a.search:active { color: blue; }
     transition: transform .2s; /* Animation */
     margin: 0 auto;
 }
-
 .zoom:hover {
     transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
 }
@@ -280,8 +281,8 @@ td.lista {
 /*torrent links*/
 tr.lista2 > td.lista > a[onmouseover] {
     width: max-content;
-    font-size: 15px !important;
-    padding: 20px !important;
+    /*font-size: 15px !important;*/
+    /*padding: 20px !important;*/
     /*display: -webkit-box !important;*/
     background-color: rgba(183, 183, 183, 0.23) !important;
     margin: 10px !important;
@@ -350,16 +351,18 @@ tr.lista2 > td.lista > a[onmouseover] {
                     setThumbnail(thumbnailImg);
                     thumbnailLink.appendChild(thumbnailImg);
 
-                    torrent.closest('tr').after(cell);
+                    torrent.closest('tr').firstElementChild.before(cell);
+
                     thumbnailImg.style.width = 'auto';
-                    thumbnailImg.style['max-height'] = 'none';
-                    thumbnailImg.style['max-width'] = 'none';
+                    thumbnailImg.style['max-height'] = '500px';
+                    thumbnailImg.style['max-width'] = '400px';
+                    thumbnailImg.style['margin-bottom'] = '20px';
                 }
 
                 // remove VPN row
-                const vpnR = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(2)');
+                const vpnR = getElementsByXPath('(//tr[contains(., "VPN\:")])[last()]');
                 if (vpnR) {
-                    vpnR.remove();
+                    vpnR[0].remove();
                 }
 
                 /**
@@ -904,8 +907,8 @@ tr.lista2 > td.lista > a[onmouseover] {
     function updateCss() {
         thumbnailsCssBlock.innerText =
             'td.thumbnail-cell > a > img.preview-image {' +
-            ' max-width: ' + maxwidth + 'px;' +
-            ' max-height: ' + maxheight + 'px; ' +
+            ' max-width: ' + maxwidth * Options.imgScale + 'px;' +
+            ' max-height: ' + maxheight * Options.imgScale + 'px; ' +
             '}';
         // width: ${!Options.addThumbnails ? width * 0.5 : (!Options.largeThumbnails ? width : width * 2)}px;
     }
@@ -925,8 +928,8 @@ tr.lista2 > td.lista > a[onmouseover] {
     }
 
     function dealWithTorrents(node) {
-        for (const torrent of node.querySelectorAll('tr.lista2 > td > a[title][href^="/torrent/"]:not(.modded)')) {
-            const row = torrent.closest('tr');
+        for (const torrentLink of node.querySelectorAll('tr.lista2 > td > a[title][href^="/torrent/"]:not(.modded)')) {
+            const row = torrentLink.closest('tr');
 
             // = adding relative time to columns
             (function changeDateToRelativeTime() {
@@ -949,30 +952,39 @@ tr.lista2 > td.lista > a[onmouseover] {
             })();
 
             // color backgrounds depending on the number of seeders
-            if (Options.colorBackground) {
-                (function colorBackground() {
+            if (Options.seedEffects) {
+                (function seedEffects() {
                     /**
                      * @param numberOfSeeders
                      * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
                      */
-                    const mapSeedersToAlpha = numberOfSeeders => {
-                        const alpha = 0.013 * Math.log(1 + numberOfSeeders) / Math.log(1.15);
-                        return Math.clamp(alpha, 0.1, 0.4);
+                    const mapSeedersToScale = numberOfSeeders => {
+                        return Math.clamp(0.013 * Math.log(1.0 + numberOfSeeders) / Math.log(.05), 0.1, 999999999.0) * 10.0;
                     };
 
                     const seedersFont = row.querySelector('font[color]');
+
                     const statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
-                    const clampedAlpha = mapSeedersToAlpha(parseInt(seedersFont.innerText));
-                    statusRGB.map(x => x * clampedAlpha * 10);
-                    statusRGB.push(clampedAlpha); // add alpha channel
+                    const scaler = mapSeedersToScale(parseInt(seedersFont.innerText));
+                    console.log(`mapSeedersToScale(${seedersFont.innerText}) -> `, scaler);
+
+                    /*
+                    increasing font size and element sizes for more seeds
+                    */
+                    seedersFont.style['font-size'] = Math.max(20, (parseInt(seedersFont.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
+                    torrentLink.style['font-size'] = Math.max(20, (parseInt(torrentLink.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
+
+                    const alphaScaler = Math.clamp(scaler, 0.1, 0.4);
+                    statusRGB.map(x => x * alphaScaler);
+                    statusRGB.push(alphaScaler); // add alpha channel
 
                     row.style.background = 'rgb(' + statusRGB.join(', ') + ')';
                 })();
             }
 
-            addImageSearchAnchor(torrent);
+            addImageSearchAnchor(torrentLink);
 
-            torrent.classList.add('modded');
+            torrentLink.classList.add('modded');
         }
     }
 
@@ -1017,9 +1029,15 @@ tr.lista2 > td.lista > a[onmouseover] {
         }
     }
 
-    function toggleThumbnailSize() {
-        Options.largeThumbnails = !Options.largeThumbnails;
-        console.log('toggleThumbnailSize(' + (Options.largeThumbnails ? 'large' : 'small') + ')');
+    function toggleThumbnailSize(newSize = 'toggle') {
+        if (newSize === "large") {
+            Options.largeThumbnails = true;
+        } else if (newSize == "small") {
+            Options.largeThumbnails = false;
+        } else if (newSize === 'toggle') {
+            Options.largeThumbnails = !Options.largeThumbnails;
+        }
+        console.log('toggleThumbnailSize(' + newSize + ')');
         document.querySelectorAll('.preview-image').forEach(setThumbnail);
         updateCss();
         if (debug) console.log('toggling thumbnail sizes. Options.largeThumbnails = ', Options.largeThumbnails);

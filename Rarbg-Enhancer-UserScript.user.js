@@ -365,28 +365,6 @@ tr.lista2 > td.lista > a[onmouseover] {
                     vpnR[0].remove();
                 }
 
-                /**
-                 * replaces common thumbnails to originals from hosting sites like imagecurl.com...
-                 *
-                 * @param {string} imgCommonUrl - the segment of the URL that's unique to this replacement, example: "https://imagecurl.com/images/"
-                 * @param {object|Function} replaceMethod - replaceMethod(src)->newSrc a function that passes back the new string or a replacement map
-                 */
-                function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
-                    const callback = typeof (replaceMethod) === 'function' ? replaceMethod :
-                        src => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src) // if object
-                        ;
-                    for (const img of document.querySelectorAll('img[src*="' + imgCommonUrl + '"]')) {
-                        if (img) {
-                            const fullres = callback(img.src);
-                            console.log('replacing thumbnail:', img.src, '->', fullres, '\n', img);
-                            img.src = fullres;
-                            img.closest('a').href = fullres;
-                            img.style['max-width'] = '100%';
-                            // img.style['max-height'] = '400px';
-                        }
-                    }
-                }
-
                 // fullres for imgprime.com
                 // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
                 // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
@@ -480,13 +458,13 @@ tr.lista2 > td.lista > a[onmouseover] {
                     const searchContainer = searchBox.closest('form').closest('div');
 
                     if (checkbox.checked) {
-                        searchContainer.style['position'] = 'fixed';
-                        searchContainer.style['top'] = '0';
-                        searchContainer.style['left'] = '702px';
+                        searchContainer.style.position = 'fixed';
+                        searchContainer.style.top = '0';
+                        searchContainer.style.left = '702px';
                     } else {
-                        searchContainer.style['position'] = '';
-                        searchContainer.style['top'] = '';
-                        searchContainer.style['left'] = '';
+                        searchContainer.style.position = '';
+                        searchContainer.style.top = '';
+                        searchContainer.style.left = '';
                     }
                     Options.staticSearchbar = checkbox.checked;
                 };
@@ -751,6 +729,18 @@ tr.lista2 > td.lista > a[onmouseover] {
             anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + ' [' + rows.length + ']' + ' info.json');
             anchorClick(makeTextFile(summaryHTML), document.title + ' [' + rows.length + ']' + ' summary.html');
         });
+
+        // increase thumbnail size
+        Mousetrap.bind('=', function (e) {
+            Options.imgScale = Math.min(Options.imgScale + 0.2, 10);
+            toggleThumbnailSize('update only');
+        });
+        // decrease thumbnail size
+        Mousetrap.bind('-', function (e) {
+            Options.imgScale = Math.max(Options.imgScale - 0.2, 0.2);
+            toggleThumbnailSize('update only');
+        });
+
     })();
 
     function addThumbnailColumn(cell, torrent, row) {
@@ -1457,6 +1447,29 @@ tr.lista2 > td.lista > a[onmouseover] {
 function unsafeEval(func, ...arguments) {
     let body = 'return (' + func + ').apply(this, arguments)';
     unsafeWindow.Function(body).apply(unsafeWindow, arguments);
+}
+
+
+/**
+ * replaces common thumbnails to originals from hosting sites like imagecurl.com...
+ *
+ * @param {string} imgCommonUrl - the segment of the URL that's unique to this replacement, example: "https://imagecurl.com/images/"
+ * @param {object|Function} replaceMethod - replaceMethod(src)->newSrc a function that passes back the new string or a replacement map
+ */
+function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
+    const callback = typeof (replaceMethod) === 'function' ? replaceMethod :
+        src => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src) // if object
+        ;
+    for (const img of document.querySelectorAll('img[src*="' + imgCommonUrl + '"]')) {
+        if (img) {
+            const fullres = callback(img.src);
+            console.log('replacing thumbnail:', img.src, '->', fullres, '\n', img);
+            img.src = fullres;
+            img.closest('a').href = fullres;
+            img.style['max-width'] = '100%';
+            // img.style['max-height'] = '400px';
+        }
+    }
 }
 
 function matchSite(siteRegex) {

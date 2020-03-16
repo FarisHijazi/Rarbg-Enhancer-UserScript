@@ -469,8 +469,33 @@ tr.lista2 > td.lista > a[onmouseover] {
                 void (0);
             } else if (isOnIndexPage) { // if on torrent page (index)
                 searchBox.onkeyup = updateSearch;
+                const searchContainer = searchBox.closest('form').closest('div');
 
-                var mldlCol = appendColumn('ML DL', 'File', addDlAndMl);
+                // making checkbox (fixed searchbar)
+                const moreBtn = searchContainer.querySelector('tr:nth-child(1) > td:nth-child(3)');
+                moreBtn.after($('<td><input id="static-checkbox" type="checkbox"><label for="static-checkbox" style="display: block;">fixed searchbar</label></td>')[0]);
+
+                const checkbox = document.querySelector('#static-checkbox');
+                checkbox.onchange = function (e) {
+                    const searchContainer = searchBox.closest('form').closest('div');
+
+                    if (checkbox.checked) {
+                        searchContainer.style['position'] = 'fixed';
+                        searchContainer.style['top'] = '0';
+                        searchContainer.style['left'] = '702px';
+                    } else {
+                        searchContainer.style['position'] = '';
+                        searchContainer.style['top'] = '';
+                        searchContainer.style['left'] = '';
+                    }
+                    Options.staticSearchbar = checkbox.checked;
+                };
+
+                if (Options.staticSearchbar) {
+                    checkbox.click();
+                }
+
+                const mldlCol = appendColumn('ML DL', 'File', addDlAndMl);
                 mldlCol.header.addEventListener('click', downloadAllTorrents);
 
                 observeDocument((target) => {

@@ -1,3 +1,5 @@
+var meta = {
+    rawmdb: function () {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
@@ -88,6 +90,18 @@
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // ==/UserScript==
 // @require      https://github.com/bevacqua/horsey/raw/master/dist/horsey.js
+    }
+};
+if (meta.rawmdb && meta.rawmdb.toString && (meta.rawmdb = meta.rawmdb.toString())) {
+    var kv, row = /\/\/\s+@(\S+)\s+(.+)/g;
+    while ((kv = row.exec(meta.rawmdb)) !== null) {
+        if (meta[kv[1]]) {
+            if (typeof meta[kv[1]] == 'string') meta[kv[1]] = [meta[kv[1]]];
+            meta[kv[1]].push(kv[2]);
+        } else meta[kv[1]] = kv[2];
+    }
+}
+console.log('Script:', meta.name, 'meta:', meta);
 
 // AddColumn() and add magnetLinks() code taken from:      https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
 
@@ -100,9 +114,7 @@
  * observeDocument(dealWithTorrents)
  * */
 
-console.log('Rarbg script running');
-
-// adding Element.before() and Element.after() (since some browsers like MS Edge don't already have them)
+// pollyfill for Element.before() and Element.after(): (since some browsers like MS Edge don't already have them)
 if (Element.prototype.before === undefined) {
     Element.prototype.before = function (newNode) {
         if (this.parentElement) {
@@ -147,7 +159,7 @@ const catKeyMap = {
     const MAGNET_ICO = 'https://dyncdn.me/static/20/img/magnet.gif';
     const trackers = 'http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710';
 
-    const isOnSingleTorrentPage = matchSite(/\/torrent\//);
+    const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
     let currentDocument = document; // placeholder to keep track of the latest document object (since multiple documents are used)
 
@@ -405,7 +417,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // fullres for imgprime.com
                 // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
                 // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-                replaceImageHostImageWithOriginal("https://imgprime.com/u/s/", {
+                replaceImageHostImageWithOriginal("https://imgprime.com/", {
                     'imga-': '',
                     '.html': '',
                     '/small/': '/big/',
@@ -1029,7 +1041,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                     const statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
                     const scaler = mapSeedersToScale(parseInt(seedersFont.innerText));
-                    console.log(`mapSeedersToScale(${seedersFont.innerText}) -> `, scaler);
+                    console.debug(`mapSeedersToScale(${seedersFont.innerText}) -> `, scaler);
 
                     /*
                     increasing font size and element sizes for more seeds

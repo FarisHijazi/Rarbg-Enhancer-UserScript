@@ -802,9 +802,9 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 if (typeof URL !== 'undefined') {
                     const url = new URL(location.href);
-                    url.searchParams.delete('category');
+                    url.searchParams.set('category', catCode);
                     url.pathname = '/torrents.php';
-                    location.assign(url.toString() + '?&category=' + catCode);
+                    location.assign(url.toString());
                 } else {
                     location.assign('/torrents.php?category=' + catCode);
                 }

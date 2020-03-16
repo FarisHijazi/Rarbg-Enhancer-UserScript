@@ -1,3 +1,5 @@
+var meta = {
+    rawmdb: function () {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
@@ -88,6 +90,18 @@
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // ==/UserScript==
 // @require      https://github.com/bevacqua/horsey/raw/master/dist/horsey.js
+    }
+};
+if (meta.rawmdb && meta.rawmdb.toString && (meta.rawmdb = meta.rawmdb.toString())) {
+    var kv, row = /\/\/\s+@(\S+)\s+(.+)/g;
+    while ((kv = row.exec(meta.rawmdb)) !== null) {
+        if (meta[kv[1]]) {
+            if (typeof meta[kv[1]] == 'string') meta[kv[1]] = [meta[kv[1]]];
+            meta[kv[1]].push(kv[2]);
+        } else meta[kv[1]] = kv[2];
+    }
+}
+console.log('Script:', meta.name, 'meta:', meta);
 
 // AddColumn() and add magnetLinks() code taken from:      https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
 
@@ -100,9 +114,7 @@
  * observeDocument(dealWithTorrents)
  * */
 
-console.log('Rarbg script running');
-
-// adding Element.before() and Element.after() (since some browsers like MS Edge don't already have them)
+// pollyfill for Element.before() and Element.after(): (since some browsers like MS Edge don't already have them)
 if (Element.prototype.before === undefined) {
     Element.prototype.before = function (newNode) {
         if (this.parentElement) {
@@ -118,6 +130,26 @@ if (Element.prototype.after === undefined) {
     };
 }
 
+
+const catCodeMap = {
+    'Movies': '48;17;44;45;47;50;51;52;42;46'.split(';'),
+    'XXX': '4'.split(';'),
+    'Music': '23;24;25;26'.split(';'),
+    'TV shows': '18;41;49'.split(';'),
+    'Software': '33;34;43'.split(';'),
+    'Games': '27;28;29;30;31;32;40;53'.split(';'),
+};
+// categories map, given the category number (in the URL), returns the name of it
+const codeToCatMap = reverseMapping(catCodeMap);
+// converts key to a category code (number in URL)
+const catKeyMap = {
+    'v': 'Movies',
+    's': 'TV show',
+    'm': 'Music',
+    'w': 'Software',
+    'x': 'XXX',
+};
+
 // main
 (function () {
     'use strict';
@@ -127,7 +159,7 @@ if (Element.prototype.after === undefined) {
     const MAGNET_ICO = 'https://dyncdn.me/static/20/img/magnet.gif';
     const trackers = 'http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710';
 
-    const isOnSingleTorrentPage = matchSite(/\/torrent\//);
+    const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
     let currentDocument = document; // placeholder to keep track of the latest document object (since multiple documents are used)
 
@@ -196,7 +228,7 @@ if (Element.prototype.after === undefined) {
     // click to verify browser
     document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
 
-    //todo: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
+    //TODO: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
     if (isPageBlockedKSA()) {
         location.assign(Options.mirrors[Math.floor(Math.random() * Options.mirrors.length)]);
     }
@@ -313,6 +345,17 @@ tr.lista2 > td.lista > a[onmouseover] {
     // === end of variable declarations ===
 
     $(document).ready(function main() {
+        // force relative URLs
+        observeDocument(function() {
+            for (const a of document.links) {
+                const oldHref = a.getAttribute('href');
+                if (!(/^(\/|#)/).test(oldHref) && (a.hostname === location.hostname || /rarbg/.test(a.hostname))) {
+                    a.setAttribute('href', a.getAttribute('href').replace(a.protocol + '//' + a.hostname, ''));
+                    console.log(oldHref, '->', a.getAttribute('href'));
+                }
+            }
+        });
+
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
             if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');
@@ -385,7 +428,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // fullres for imgprime.com
                 // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
                 // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-                replaceImageHostImageWithOriginal("https://imgprime.com/u/s/", {
+                replaceImageHostImageWithOriginal("https://imgprime.com/", {
                     'imga-': '',
                     '.html': '',
                     '/small/': '/big/',
@@ -705,17 +748,8 @@ tr.lista2 > td.lista > a[onmouseover] {
             searchBar.select();
             searchBar.setSelectionRange(searchBar.value.length, searchBar.value.length);
         });
-        Mousetrap.bind(['x'], (e) => {
-            if (typeof URL !== 'undefined') {
-                const url = new URL(location.href);
-                url.searchParams.set('category', '4');
-                url.pathname = '/torrents.php';
-                location.assign(url.toString().replace('category=4', 'category=4;2'));
-            } else {
-                location.assign('/torrents.php?category=2;4');
-            }
-        });
-        Mousetrap.bind(['`'], toggleThumbnailSize);
+
+        Mousetrap.bind(['`'], (e) => toggleThumbnailSize());
         Mousetrap.bind(['ctrl+s'], (e) => {// saves an html file containing the data
             const rows = document.querySelectorAll('table > tbody > tr.lista2');
             var torrentJsons = Array.from(rows).map(row => {
@@ -757,6 +791,26 @@ tr.lista2 > td.lista > a[onmouseover] {
             Options.imgScale = Math.max(Options.imgScale - 0.2, 0.2);
             toggleThumbnailSize('update only');
         });
+
+        // binding each key to a category
+        // then you can change categories by pressing that key (like "m" for (M)ovie)
+        console.group('Binding keys to categories:');
+        for (const [key, catName] of Object.entries(catKeyMap)) {
+            console.log(`"${key}": "${catName}"`);
+            Mousetrap.bind(key, function (e) {
+                const catCode = catCodeMap[catName].join(';');
+
+                if (typeof URL !== 'undefined') {
+                    const url = new URL(location.href);
+                    url.searchParams.delete('category');
+                    url.pathname = '/torrents.php';
+                    location.assign(url.toString() + '?&category=' + catCode);
+                } else {
+                    location.assign('/torrents.php?category=' + catCode);
+                }
+            });
+        }
+        console.groupEnd();
 
     })();
 
@@ -885,7 +939,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
     /**
      * hides all torrents that do not match the search query
-     * todo:maybe generalize this function to just return the resulting score for each item,
+     * TODO:maybe generalize this function to just return the resulting score for each item,
      *      this way it can be portable and made as a library and use elsewhere
      *      and then you can iterate and hide them later
      */
@@ -998,7 +1052,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                     const statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
                     const scaler = mapSeedersToScale(parseInt(seedersFont.innerText));
-                    console.log(`mapSeedersToScale(${seedersFont.innerText}) -> `, scaler);
+                    console.debug(`mapSeedersToScale(${seedersFont.innerText}) -> `, scaler);
 
                     /*
                     increasing font size and element sizes for more seeds
@@ -1129,15 +1183,8 @@ tr.lista2 > td.lista > a[onmouseover] {
              */
             const categoryCode = anchor.href.split('torrents.php?category=').pop();
             // a map of the
-            const catMap = {
-                'Movies': 'Movies',
-                '4': 'XXX',
-                '23': 'Music',
-                '18': 'TV show',
-                '33': 'Software',
-            };
-            if (catMap.hasOwnProperty(categoryCode)) {
-                return catMap[categoryCode];
+            if (codeToCatMap.hasOwnProperty(categoryCode)) {
+                return codeToCatMap[categoryCode];
             } else {
                 if (debug) console.debug('Unkown category:', categoryCode);
             }
@@ -1466,6 +1513,26 @@ function unsafeEval(func, ...arguments) {
     unsafeWindow.Function(body).apply(unsafeWindow, arguments);
 }
 
+/**
+ * 
+ * @param {Object} o Object to be reversed.
+ * Note: that if there are multiple values in an entry, it will be stored as multiple keys each corresponding to the same key (duplication).
+ */
+function reverseMapping(o) {
+    const r = {};
+
+    for (const [k, v] of Object.entries(o)) {
+        var values = [v];
+        if (v instanceof Array) {
+            values = v;
+        }
+        for (const val of values) {
+            r[val] = k;
+        }
+    }
+    return r;
+    // return Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {});
+}
 
 /**
  * replaces common thumbnails to originals from hosting sites like imagecurl.com...

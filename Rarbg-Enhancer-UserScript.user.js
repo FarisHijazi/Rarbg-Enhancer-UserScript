@@ -345,6 +345,17 @@ tr.lista2 > td.lista > a[onmouseover] {
     // === end of variable declarations ===
 
     $(document).ready(function main() {
+        // force relative URLs
+        observeDocument(function() {
+            for (const a of document.links) {
+                const oldHref = a.getAttribute('href');
+                if (!(/^(\/|#)/).test(oldHref) && (a.hostname === location.hostname || /rarbg/.test(a.hostname))) {
+                    a.setAttribute('href', a.getAttribute('href').replace(a.protocol + '//' + a.hostname, ''));
+                    console.log(oldHref, '->', a.getAttribute('href'));
+                }
+            }
+        });
+
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
             if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');

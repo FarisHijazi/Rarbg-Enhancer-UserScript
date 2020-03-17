@@ -161,9 +161,6 @@ const catKeyMap = {
 
     const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
-    let currentDocument = document; // placeholder to keep track of the latest document object (since multiple documents are used)
-
-    const url = new URL(location.href);
 
     const Options = $.extend({
         thumbnailLink: 'ml', //options:  "ml", "tor", "img", "page"
@@ -220,11 +217,6 @@ const catKeyMap = {
     let searchEngine = {};
     initSearchEngine();
 
-
-    // const mls = appendColumn('DL ML');
-
-    var appendedPageNum = 1;
-
     // click to verify browser
     document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
 
@@ -252,7 +244,7 @@ const catKeyMap = {
 
     var thumbnailsCssBlock = addCss('');
     // language=CSS
-    var cssBlock = addCss(
+    addCss(
         `td.thumbnail-cell {
     text-align: center;
     height: ${maxheight}px;
@@ -367,18 +359,8 @@ tr.lista2 > td.lista > a[onmouseover] {
             }
         } else { // on torrent(s) page
             if (isOnSingleTorrentPage) {
-                // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
                 let mainTorrentLink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
-
-                // FIXME:
-                // // if just download and gtfo:
-                // if (/&downloadtorrent/.test(location.href)) {
-                //     location.assign(mainTorrentLink.href);
-                //     // window.open(mainTorrentLink.href);
-                //     // window.close();
-                //     // return;
-                // }
 
                 const relatedTorrent = document.querySelector('.lista_related');
                 if (relatedTorrent) {
@@ -451,14 +433,6 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 // putting the "Description:" row before the "Others:" row
                 getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].appendChild(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
-
-                // add error listener to use a proxy if an image fails to load
-                // var tbl = document.querySelector('table.lista-rounded');
-                // if (tbl) tbl.querySelectorAll('img[src]').forEach(img => {
-                //     img.onerror = function () {
-                //         img.src = (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(img.src)}&f=1`);
-                //     };
-                // });
 
                 Mousetrap.bind('d', function (e) {
                     const torrent = document.querySelector('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
@@ -735,7 +709,6 @@ tr.lista2 > td.lista > a[onmouseover] {
     (function bindKeys() {
         if (typeof Mousetrap === 'undefined') return;
         Mousetrap.bind(['space'], (e) => {
-            // appendPage(currentDocument.querySelector('a[title="next page"]'));
             solveCaptcha(); // TODO: remove this, this is just for debugging
         });
         Mousetrap.bind(['/'], (e) => {
@@ -986,7 +959,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 a.closest('.lista2').style.display = hideCondition ? 'none' : '';
             } // skip if empty title
 
-            // done: make it so that it doesn't just check if "query" starts with '-', rather, check each match and check if it starts with '-'
+            // DONE: make it so that it doesn't just check if "query" starts with '-', rather, check each match and check if each word starts with '-'
         }
     }
 
@@ -1045,7 +1018,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                      * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
                      */
                     const mapSeedersToScale = numberOfSeeders => {
-                        return Math.clamp(0.013 * Math.log(1.0 + numberOfSeeders) / Math.log(.05), 0.1, 999999999.0) * 10.0;
+                        return Math.clamp(0.013 * Math.log(1.0 + numberOfSeeders) / Math.log(0.05), 0.1, 999999999.0) * 10.0;
                     };
 
                     const seedersFont = row.querySelector('font[color]');
@@ -1219,66 +1192,6 @@ tr.lista2 > td.lista > a[onmouseover] {
         torrentAnchor.after(searchLink);
     }
 
-    /**
-     * @param pageLink
-     */
-    function appendPage(pageLink) {
-        if (!pageLink) return;
-
-        const tb = document.createElement('tr');
-        const pageNumber = ++appendedPageNum;
-        const pageAnchor = createElement(`<td><a class="page-link-${pageNumber}" href="${pageLink.href}"><p1 style="white-space: nowrap;">Go to page ${pageNumber}</p1></a></td>`);
-
-        tb.appendChild(pageAnchor);
-        tbodyEl.appendChild(tb);
-
-        var req = new XMLHttpRequest();
-        req.open('GET', pageLink.href);
-        req.send();
-        req.onreadystatechange = function () {
-            if (req.readyState === 4) {
-                var pageHTML = req.responseText;
-                currentDocument = document.createElement('html');
-                currentDocument.innerHTML = pageHTML;
-
-                var lista2s = currentDocument.querySelectorAll('tbody>.lista2');
-                for (const e of lista2s) {
-                    tbodyEl.appendChild(e);
-                    appendColumnCell(e.childNodes[1]);
-                }
-                if (debug) console.log('Added lista2 elements:', lista2s);
-                history.pushState(history.state, '', pageLink.href);
-            }
-        };
-    }
-
-    function addMagnetCell(torrent) {
-        var url = torrent.href;
-        var req = new XMLHttpRequest();
-        req.open('GET', url);
-        req.send();
-        req.onreadystatechange = function () {
-            if (req.readyState === 4) {
-                var pageHTML = req.responseText;
-                var magnetURL = pageHTML.match(/href="(magnet[:_\-+%?=&;.0-9a-zA-Z]*)"/)[1]; //match magnet URL
-                var thumbURLs = pageHTML.match('src\="((.?)*\.jpg)"');
-
-                //creating and adding the elements
-                var magnetCell = document.createElement('td'),
-                    magnetLink = document.createElement('a'),
-                    magnetImg = document.createElement('img');
-                magnetLink.href = magnetURL;
-                magnetCell.classList.add('thumbnail-cell');
-                magnetCell.appendChild(magnetLink);
-
-                magnetImg.src = thumbURLs[1];
-                if (!thumbURLs[1]) magnetImg = MAGNET_ICO;
-                magnetLink.appendChild(magnetImg);
-                torrent.parentElement.parentElement.replaceChild(magnetCell, torrent.parentElement.parentElement.childNodes[1]);
-            }
-        };
-    }
-
     function initSearchEngine() {
         const searchEngineValue = GM_getValue('ImageSearchEngine', Options.defaultImageSearchEngine);
         if (SearchEngines.hasOwnProperty(searchEngineValue)) {
@@ -1325,7 +1238,6 @@ tr.lista2 > td.lista > a[onmouseover] {
             colIndex = getColumnIndex(colIndex);
         }
 
-        // const sanitizedTitle = title.replace(/[^\w\d]/g, ' ').trim().replace(/\s+/g, '-');
         const sanitizedTitle = $.escapeSelector(title.replace(/\s/g, '')).replace(/\s/g, '');
 
         /**
@@ -1483,27 +1395,27 @@ tr.lista2 > td.lista > a[onmouseover] {
     // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
     // this is one row
     /*
-<tr className="lista2">
-    <td align="left" className="lista" width="48" style="width:48px;">
-        <a href="/torrents.php?category=45">
-            <img src="https://dyncdn.me/static/20/images/categories/cat_new45.gif" border="0" alt="">
-        </a>
-    </td>
-    <td align="left" className="lista">
-        <a onMouseOver="return overlib('<img src=\'https://dyncdn.me/mimages/5975/over_opt.jpg\' border=0>')"
-           onMouseOut="return nd();" href="/torrent/ifcvj5g" title="">The.Visitor.2007.720p.BluRay.H264.AAC-RARBG</a>
-        <a href="/torrents.php?imdb=tt0857191">
-            <img src="https://dyncdn.me/static/20/images/imdb_thumb.gif" border="0" alt=""></a><br>
-        <span style="color:DarkSlateGray">Drama IMDB: 7.7/10</span>
-    </td>
-    <td align="center" width="150px" className="lista">2018-07-25 16:55:06</td>
-    <td align="center" width="100px" className="lista">1.25 GB</td>
-    <td align="center" width="50px" className="lista"><font color="#dd0000">1</font></td>
-    <td align="center" width="50px" className="lista">5</td>
-    <td align="center" width="50px" className="lista">--</td>
-    <td align="center" className="lista">Scene</td>
-</tr>
-    */
+     * <tr className="lista2">
+     *     <td align="left" className="lista" width="48" style="width:48px;">
+     *         <a href="/torrents.php?category=45">
+     *             <img src="https://dyncdn.me/static/20/images/categories/cat_new45.gif" border="0" alt="">
+     *         </a>
+     *     </td>
+     *     <td align="left" className="lista">
+     *         <a onMouseOver="return overlib('<img src=\'https://dyncdn.me/mimages/5975/over_opt.jpg\' border=0>')"
+     *         onMouseOut="return nd();" href="/torrent/ifcvj5g" title="">The.Visitor.2007.720p.BluRay.H264.AAC-RARBG</a>
+     *         <a href="/torrents.php?imdb=tt0857191">
+     *             <img src="https://dyncdn.me/static/20/images/imdb_thumb.gif" border="0" alt=""></a><br>
+     *         <span style="color:DarkSlateGray">Drama IMDB: 7.7/10</span>
+     *     </td>
+     *     <td align="center" width="150px" className="lista">2018-07-25 16:55:06</td>
+     *     <td align="center" width="100px" className="lista">1.25 GB</td>
+     *     <td align="center" width="50px" className="lista"><font color="#dd0000">1</font></td>
+     *     <td align="center" width="50px" className="lista">5</td>
+     *     <td align="center" width="50px" className="lista">--</td>
+     *     <td align="center" className="lista">Scene</td>
+     * </tr>
+     */
 })();
 
 // == below are general helper functions, not specific to this script ==
@@ -1531,7 +1443,6 @@ function reverseMapping(o) {
         }
     }
     return r;
-    // return Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {});
 }
 
 /**

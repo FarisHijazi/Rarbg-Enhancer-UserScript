@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/buzamahmooza
-// @version      1.4.1
+// @version      1.5.0
 // @description  Add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -101,6 +101,16 @@ if (meta.rawmdb && meta.rawmdb.toString && (meta.rawmdb = meta.rawmdb.toString()
         } else meta[kv[1]] = kv[2];
     }
 }
+meta.window = this;
+(unsafeWindow.scriptMetas = unsafeWindow.scriptMetas || []);
+if (meta.hasOwnProperty('nodups')) {
+    if (new Set(unsafeWindow.scriptMetas.map(meta=>meta.namespace+meta.name)).has(meta.namespace+meta.name)) {
+        console.warn('Another script is trying to execute but @nodups is set. Stopping execution.\n',
+            meta.namespace+meta.name);
+        return;
+    }
+}
+unsafeWindow.scriptMetas.push(meta);
 console.log('Script:', meta.name, 'meta:', meta);
 
 // AddColumn() and add magnetLinks() code taken from:      https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code

@@ -158,6 +158,10 @@ Set.prototype.difference = function (other) {
     return new Set(Array.from(this).filter(x => !other.has(x)));
 };
 
+/**
+ * {}
+ */
+let titleGroups = {};
 
 const catCodeMap = {
     'Movies': '48;17;44;45;47;50;51;52;42;46'.split(';'),
@@ -1036,6 +1040,57 @@ tr.lista2 > td.lista > a[onmouseover] {
         });
     }
 
+    /**
+     * grouping similar torrents together
+     * this is useful when you have 3 torrents of the same movie but different resolutions, there's no need to see it 3 times
+     * @returns {{string: HTMLAnchorElement[]}}
+     */
+    function updateTorrentGroups() {
+        const FILLER_WORDS = new Set(['AND', '2160P', 'MP4', 'THE', 'COM', 'WEIRD', 'IN', 'IMAGESET', 'YAPG', 'A', 'TRASHBIN', 'FOR', '2', 'LOVE', 'TO', 'WITH', 'HER', 'MY', 'ON', 'PART', 'X264', 'OF', '720P', 'SEX', 'XXX', 'MP4', 'KTR', '1080P', 'SD', 'KLEENEX']);
+
+        const extractCleanTitle = (a) => Array.from(
+            new Set((a.title || a.innerText)
+                .toUpperCase()
+                .replace(/\d{1,3}\.\d{1,3}\.\d{1,3}\.?/, '') // remove dates like 02.11.2019
+                .split(/[\s._\-\[\]]/g) // split on dots and dashes and spaces...
+                .filter(word => word) // remove empty words
+            ).difference(FILLER_WORDS) // remove filler words
+        ).sort() // sort to maximize conflicts (we want the same title with different word orderings to be in the same group)
+        .join(' ');
+
+        const titleToLinkEntries = getTorrentLinks().map( a => [a.cleanTitle = a.cleanTitle||extractCleanTitle(a), a] );
+        /* 
+         * looks like:
+         *
+         * 0: (2) ["HOPE ION10 S04 SAVING WEBRIP", a.modded]
+         * 1: (2) ["ALASKA ION10 RAILROAD S01 WEBRIP", a.modded]
+         * 2: (2) ["ION10 RULES S08E11 VANDERPUMP WEBRIP", a.modded]
+         * 3: (2) ["ION10 RESIDENT S03E18 WEBRIP", a.modded]
+         */
+
+        /**
+         * clusters: titles to words
+         * {key: value}  {title: array of links that belong to that same title}
+         * @typedef {string: Element[]}
+         */
+        titleGroups = fromEntriesMultivalue(
+            titleToLinkEntries //.concat(Object.entries(titleGroups))
+            // .map( ([k, v]) => [k, Array.from(new Set(v))] ) // remove duplicate links
+        );
+        /*
+         * looks something like:
+         *
+         * HOPE ION10 S04 SAVING WEBRIP: [a.modded]
+         * ALASKA ION10 RAILROAD S01 WEBRIP: [a.modded]
+         * ION10 RULES S08E11 VANDERPUMP WEBRIP: [a.modded]
+         * ION10 RESIDENT S03E18 WEBRIP: [a.modded]
+         * ION10 NAMASTE S04 WEBRIP YOGA: [a.modded] 
+         */
+
+
+        return titleGroups;
+    }
+
     function dealWithTorrents(node) {
         for (const torrentLink of node.querySelectorAll('tr.lista2 > td > a[title][href^="/torrent/"]:not(.modded)')) {
             const row = torrentLink.closest('tr');
@@ -1499,6 +1554,39 @@ function reverseMapping(o) {
         }
     }
     return r;
+}
+
+/**
+ * reverse map but support multiple values, for collisions: concat in array
+ *
+ * @param {*} o
+ * @returns
+ */
+function reverseMappingMultivalue(o) {
+    const r = {};
+
+    for (const [k, v] of Object.entries(o)) {
+        var values = [v];
+        for (const val of values) {
+            if (r.hasOwnProperty(val)) {
+                r[val].push(k);
+            } else {
+                r[val] = [k];
+            }
+        }
+    }
+    return r;
+}
+/**
+ * same as Object.fromEntries(), but support multiple values in case of key collision.
+ * resolution: concat conflicts in an array
+ * @param {*} entries
+ * @returns
+ */
+function fromEntriesMultivalue(entries) {
+    const o = {};
+    entries.forEach(([k, v]) => o[k] = (o[k] || []).concat(v));
+    return o;
 }
 
 /**

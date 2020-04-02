@@ -712,35 +712,63 @@ tr.lista2 > td.lista > a[onmouseover] {
         });
 
         Mousetrap.bind(['`'], (e) => toggleThumbnailSize());
-        Mousetrap.bind(['ctrl+s'], (e) => {// saves an html file containing the data
-            const rows = document.querySelectorAll('table > tbody > tr.lista2');
-            var torrentJsons = Array.from(rows).map(row => {
-                try {
-                    const a = row.querySelector('a[onmouseover]');
-                    const thumbnail = row.querySelector('td.thumbnail-cell > a > img.preview-image ');
-                    const ml = row.querySelector('.torrent-ml');
-                    const torrentLink = row.querySelector('.torrent-dl');
-                    return {
-                        title: a.title || a.innerText,
-                        page: a.href,
-                        torrentLink: torrentLink ? torrentLink.href : '',
-                        magnetLink: ml ? encodeURI(ml.href) : '',
-                        thumbnailSrc: thumbnail ? thumbnail.src : ''
-                    };
-                } catch (e) {
-                }
+
+        // saves an html and json file for all torrents on page
+        Mousetrap.bind(['ctrl+s'], (e) => {
+            document.querySelectorAll("body > table > tbody > tr > td:nth-child(4) > a.torrent-ml").forEach(a=>a.protocol='magnet:');
+            
+            document.querySelectorAll('a').forEach(
+                a=>a.setAttribute('href', relativeToAbsoluteURL(a.getAttribute('href'), 'https://rarbgprx.org/'))
+                // TODO: remove rarbgprx.org and put something more general
+            );
+
+            // converting image URLs to base64 (so they'd be saved in the page)
+            Promise.all(
+                Array.from(document.querySelectorAll("img")).map(
+                    img => new Promise((resolve, reject) => {
+                        
+                        fetchB64ImgUrl(img.src)
+                            .then(bin => resolve(img.src = bin||img.src))
+                            .catch(reject);
+
+                        setTimeout(resolve, 2000);
+                    })
+                )
+            ).then(promises => {
+                console.log("SUCCESSFULLY converted image urls to base64", promises);
+            }).finally(function(promises) {
+
+                const rows = document.querySelectorAll('table > tbody > tr.lista2');
+                const torrentJsons = Array.from(rows).map(row => {
+                    try {
+                        const a = row.querySelector('a[onmouseover]');
+                        const thumbnail = row.querySelector('td.thumbnail-cell > a > img.preview-image ');
+                        const ml = row.querySelector('.torrent-ml');
+                        const torrentLink = row.querySelector('.torrent-dl');
+                        return {
+                            title: a.title || a.innerText,
+                            page: a.href,
+                            torrentLink: torrentLink ? torrentLink.href : '',
+                            magnetLink: ml ? encodeURI(ml.href) : '',
+                            thumbnailSrc: thumbnail ? thumbnail.src : ''
+                        };
+                    } catch (e) {
+                    }
+                });
+                const torrentsObject = {
+                    documentTitle: document.title,
+                    date: Date.now(),
+                    torrents: torrentJsons
+                };
+
+                const tableOuterHTML = document.querySelector("table.lista2t, table.lista").outerHTML;
+                const summaryHTML = `<html lang="en">${document.head.outerHTML}<body>${tableOuterHTML}</body></html>`;
+
+                anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + ' [' + rows.length + ']' + ' info.json');
+                anchorClick(makeTextFile(summaryHTML), document.title + ' [' + rows.length + ']' + ' summary.html');
+
             });
-            var torrentsObject = {
-                documentTitle: document.title,
-                date: Date.now(),
-                torrents: torrentJsons
-            };
 
-            const tableOuterHTML = getElementsByXPath('//table[@class=\'lista\']')[0].outerHTML;
-            const summaryHTML = `<html lang="en">${document.head.outerHTML}<body>${tableOuterHTML}</body></html>`;
-
-            anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + ' [' + rows.length + ']' + ' info.json');
-            anchorClick(makeTextFile(summaryHTML), document.title + ' [' + rows.length + ']' + ' summary.html');
         });
 
         // increase thumbnail size
@@ -1648,3 +1676,90 @@ function relativeToAbsoluteURL(url, base=null){
     }
     return a.protocol+'//'+a.hostname+base.join('/');
 }
+
+function fetchB64ImgUrl(url, opts) {
+    return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            'method': 'GET',
+            'url': url || 'http://static.jsbin.com/images/dave.min.svg?4.1.4',
+            'onload': function (resp) {
+                // resolve(resp);
+
+                var binResp = customBase64Encode(resp.responseText);
+                resolve('data:image/png;base64,'+binResp);
+            },
+            'overrideMimeType': 'text/plain; charset=x-user-defined'
+        });
+    });
+
+
+    function customBase64Encode(inputStr) {
+        var
+            bbLen = 3,
+            enCharLen = 4,
+            inpLen = inputStr.length,
+            inx = 0,
+            jnx,
+            keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+                + '0123456789+/=',
+            output = '',
+            paddingBytes = 0;
+        var
+            bytebuffer = new Array(bbLen),
+            encodedCharIndexes = new Array(enCharLen);
+
+        while (inx < inpLen) {
+            for (jnx = 0; jnx < bbLen; ++jnx) {
+                /*--- Throw away high-order byte, as documented at:
+                  https://developer.mozilla.org/En/Using_XMLHttpRequest#Handling_binary_data
+                */
+                if (inx < inpLen) {
+                    bytebuffer[jnx] = inputStr.charCodeAt(inx++) & 0xff;
+                } else {
+                    bytebuffer[jnx] = 0;
+                }
+            }
+
+            /*--- Get each encoded character, 6 bits at a time.
+                index 0: first  6 bits
+                index 1: second 6 bits
+                            (2 least significant bits from inputStr byte 1
+                             + 4 most significant bits from byte 2)
+                index 2: third  6 bits
+                            (4 least significant bits from inputStr byte 2
+                             + 2 most significant bits from byte 3)
+                index 3: forth  6 bits (6 least significant bits from inputStr byte 3)
+            */
+            encodedCharIndexes[0] = bytebuffer[0] >> 2;
+            encodedCharIndexes[1] = ((bytebuffer[0] & 0x3) << 4) | (bytebuffer[1] >> 4);
+            encodedCharIndexes[2] = ((bytebuffer[1] & 0x0f) << 2) | (bytebuffer[2] >> 6);
+            encodedCharIndexes[3] = bytebuffer[2] & 0x3f;
+
+            //--- Determine whether padding happened, and adjust accordingly.
+            paddingBytes = inx - (inpLen - 1);
+            switch (paddingBytes) {
+                case 1:
+                    // Set last character to padding char
+                    encodedCharIndexes[3] = 64;
+                    break;
+                case 2:
+                    // Set last 2 characters to padding char
+                    encodedCharIndexes[3] = 64;
+                    encodedCharIndexes[2] = 64;
+                    break;
+                default:
+                    break; // No padding - proceed
+            }
+
+            /*--- Now grab each appropriate character out of our keystring,
+                based on our index array and append it to the output string.
+            */
+            for (jnx = 0; jnx < enCharLen; ++jnx)
+                output += keyStr.charAt(encodedCharIndexes[jnx]);
+        }
+        return output;
+    }
+}
+
+
+

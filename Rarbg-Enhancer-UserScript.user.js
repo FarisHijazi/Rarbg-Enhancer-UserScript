@@ -129,6 +129,34 @@ if (Element.prototype.after === undefined) {
         }
     };
 }
+// "Set" operations
+Set.prototype.addAll = function (range) {
+    if (range) {
+        for (const x of range) {
+            this.add(x);
+        }
+    }
+    return this;
+};
+Set.prototype.union = function (other) {
+    if (!other.concat) other = Array.from(other);
+    return new Set(
+        other.concat(Array.from(this))
+    );
+};
+Set.prototype.intersection = function (other) {
+    if (!other.filter) other = Array.from(other);
+    return new Set(
+        other.filter(x => this.has(x))
+    );
+};
+/** this - other
+ * @param other
+ * @returns {Set} containing what this has but other doesn't */
+Set.prototype.difference = function (other) {
+    if (!other.has) other = new Set(other);
+    return new Set(Array.from(this).filter(x => !other.has(x)));
+};
 
 
 const catCodeMap = {

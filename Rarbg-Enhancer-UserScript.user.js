@@ -721,7 +721,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 }
 
                 dealWithTorrents(target);
-                forceAbsoluteLinks();
+                // forceAbsoluteLinks();
 
                 // group torrents
                 titleGroups = updateTorrentGroups();

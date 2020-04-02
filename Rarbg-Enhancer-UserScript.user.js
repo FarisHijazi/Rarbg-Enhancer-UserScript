@@ -276,7 +276,13 @@ const catKeyMap = {
     var thumbnailsCssBlock = addCss('');
     // language=CSS
     addCss(
-        `td.thumbnail-cell {
+        `
+/*this keeps the tableCells in the groups at equal heights*/
+table.groupTable > tbody > tr > td {
+    height: 10px !important;
+}
+
+td.thumbnail-cell {
     text-align: center;
     height: ${maxheight}px;
 }
@@ -716,6 +722,14 @@ tr.lista2 > td.lista > a[onmouseover] {
                 dealWithTorrents(target);
                 forceAbsoluteLinks();
 
+                // group torrents
+                titleGroups = updateTorrentGroups();
+                for (const [torrentTitle, torrentAnchors] of Object.entries(titleGroups)) {
+                    if (torrentAnchors.length > 1) {
+                        groupTorrents(torrentTitle, torrentAnchors);
+                    }
+                }
+
                 // remove links for adds that cover the screen
                 for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
                     console.debug('removed redirect element:', x);
@@ -1039,6 +1053,59 @@ tr.lista2 > td.lista > a[onmouseover] {
         });
     }
 
+    /**
+     * takes a list of torrentLinks and groups them into the first one
+     *
+     * @param {*} torrentLinks
+     */
+    function groupTorrents(torrentTitle, torrentLinks) {
+        const $rows = $(torrentLinks).closest('tr').filter(':not(.grouped)');
+        var $firstRow = $rows.filter('.firstRow');
+        if ($firstRow.length || $firstRow.children('td').length) {
+            console.warn('groupTorrents() not allowed to call twice, found a firstRow:', $firstRow);
+            return;
+        } else {
+            $firstRow = $rows.first();
+        }
+
+        $firstRow.addClass('firstRow');
+        var $groupTables = $firstRow.closest('table.groupTable');
+        if (!$groupTables.length) {
+            $groupTables = $firstRow.children('td')
+                .append('<table class="groupTable">')
+                .end()
+                .find('table.groupTable').remove();
+
+            // for each row
+            $rows.each(
+                // move the td elements and add it in a new row in the table 
+                (_, row) => $(row).children('td')
+                    .each((i, td) => (i < $groupTables.length) && $groupTables[i].insertRow().appendChild(td))
+            );
+
+            $firstRow
+                .append(
+                    // create 10 'td' elements
+                    ($(Array($groupTables.length).fill(null).map(() => document.createElement('td'))))
+                        .each((i, td) => (i < $groupTables.length) && td.appendChild($groupTables[i]))
+                );
+        }
+
+        
+
+        // const dividerRowHTML = `<tr>
+        // <td align="center" class="" style="width:48px;">Cat.</td><td align="center">Thumbnails</td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">File</a></td><td align="center">ML DL</td>
+        // <td align="center" class=""><a class="anal tdlinkfull3"><i class="icon-arrow-down"></i>Added</a></td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">Size</a></td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">S.</a></td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">L.</a></td>
+        // <td align="center" class=""><img src="https://dyncdn2.com/static/20/images/comments.gif" border="0" alt="comments"></td>
+        // <td align="center" class="">Uploader</td>
+        // </tr>`;
+
+        $rows.addClass('grouped');
+    }
     /**
      * grouping similar torrents together
      * this is useful when you have 3 torrents of the same movie but different resolutions, there's no need to see it 3 times

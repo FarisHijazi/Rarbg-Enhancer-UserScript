@@ -82,6 +82,7 @@ var meta = {
 // @grant        GM_xmlhttpRequest
 // @icon         https://www.google.com/s2/favicons?domain=rarbg.com
 // @run-at       document-idle
+// @noframes
 // @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      https://code.jquery.com/jquery-3.4.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
@@ -1031,7 +1032,6 @@ tr.lista2 > td.lista > a[onmouseover] {
             ' max-width: ' + maxwidth * Options.imgScale + 'px;' +
             ' max-height: ' + maxheight * Options.imgScale + 'px; ' +
             '}';
-        // width: ${!Options.addThumbnails ? width * 0.5 : (!Options.largeThumbnails ? width : width * 2)}px;
     }
 
     function observeDocument(callback) {
@@ -1112,7 +1112,8 @@ tr.lista2 > td.lista > a[onmouseover] {
      * @returns {{string: HTMLAnchorElement[]}}
      */
     function updateTorrentGroups() {
-        const FILLER_WORDS = new Set(['AND', '2160P', 'MP4', 'THE', 'COM', 'WEIRD', 'IN', 'IMAGESET', 'YAPG', 'A', 'TRASHBIN', 'FOR', '2', 'LOVE', 'TO', 'WITH', 'HER', 'MY', 'ON', 'PART', 'X264', 'OF', '720P', 'SEX', 'XXX', 'MP4', 'KTR', '1080P', 'SD', 'KLEENEX']);
+        const FILLER_WORDS = new Set(['AND', '2160P', 'MP4', 'THE', 'COM', 'WEIRD', 'IN', 'YAPG', 'A', 'TRASHBIN', 'FOR', 
+            'TO', 'WITH', 'HER', 'MY', 'ON', 'PART', 'X264', 'OF', '720P', 'SEX', 'XXX', 'MP4', 'KTR', '1080P', 'SD', 'KLEENEX']);
 
         const extractCleanTitle = (a) => Array.from(
             new Set((a.title || a.innerText)
@@ -1122,7 +1123,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 .filter(word => word) // remove empty words
             ).difference(FILLER_WORDS) // remove filler words
         ).sort() // sort to maximize conflicts (we want the same title with different word orderings to be in the same group)
-        .join(' ');
+            .join(' ');
 
         const titleToLinkEntries = getTorrentLinks().map( a => [a.cleanTitle = a.cleanTitle||extractCleanTitle(a), a] );
         /* 
@@ -1456,9 +1457,13 @@ tr.lista2 > td.lista > a[onmouseover] {
 
 
         // creation of the extra column
-        const newColumn = Array.from(oldColumnEntries).slice(1).filter( // exclude rows that already have this column
-            oldCol => !oldCol.closest('tr.lista2').querySelector('.' + $.escapeSelector(sanitizedTitle))
-        ).map(makeCell);
+        const newColumn = [].slice.call(oldColumnEntries, 1)
+            // exclude rows that already have this column
+            .filter(oldCol => {
+                const row = oldCol.closest('tr.lista2');
+                const selector = '.' + $.escapeSelector(sanitizedTitle);
+                if (row) return !row.querySelector(selector);
+            }).map(makeCell);
 
         // fire callback
         for (let cell of newColumn) {

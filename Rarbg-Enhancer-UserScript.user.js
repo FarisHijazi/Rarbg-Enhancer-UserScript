@@ -530,12 +530,6 @@ tr.lista2 > td.lista > a[onmouseover] {
                 const mldlCol = appendColumn('ML DL', 'File', addDlAndMl);
                 mldlCol.header.addEventListener('click', downloadAllTorrents);
 
-                observeDocument((target) => {
-                    const newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
-
-                    newCol.header.addEventListener('click', () => toggleThumbnailSize());
-                });
-
                 if (Options.infiniteScrolling) { // infiniteScrolling
                     (function makeInfiniteScroll() {
                         const tableLvl2 = 'div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)';
@@ -714,6 +708,11 @@ tr.lista2 > td.lista > a[onmouseover] {
             })();
 
             observeDocument((target) => {
+                if (isOnIndexPage) {
+                    const newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
+                    newCol.header.addEventListener('click', () => toggleThumbnailSize());
+                }
+
                 dealWithTorrents(target);
                 forceAbsoluteLinks();
 

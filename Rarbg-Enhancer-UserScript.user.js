@@ -82,6 +82,7 @@ var meta = {
 // @grant        GM_xmlhttpRequest
 // @icon         https://www.google.com/s2/favicons?domain=rarbg.com
 // @run-at       document-idle
+// @noframes
 // @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      https://code.jquery.com/jquery-3.4.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
@@ -139,7 +140,39 @@ if (Element.prototype.after === undefined) {
         }
     };
 }
+// "Set" operations
+Set.prototype.addAll = function (range) {
+    if (range) {
+        for (const x of range) {
+            this.add(x);
+        }
+    }
+    return this;
+};
+Set.prototype.union = function (other) {
+    if (!other.concat) other = Array.from(other);
+    return new Set(
+        other.concat(Array.from(this))
+    );
+};
+Set.prototype.intersection = function (other) {
+    if (!other.filter) other = Array.from(other);
+    return new Set(
+        other.filter(x => this.has(x))
+    );
+};
+/** this - other
+ * @param other
+ * @returns {Set} containing what this has but other doesn't */
+Set.prototype.difference = function (other) {
+    if (!other.has) other = new Set(other);
+    return new Set(Array.from(this).filter(x => !other.has(x)));
+};
 
+/**
+ * {}
+ */
+let titleGroups = {};
 
 const catCodeMap = {
     'Movies': '48;17;44;45;47;50;51;52;42;46'.split(';'),
@@ -171,9 +204,6 @@ const catKeyMap = {
 
     const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
-    let currentDocument = document; // placeholder to keep track of the latest document object (since multiple documents are used)
-
-    const url = new URL(location.href);
 
     const Options = $.extend({
         thumbnailLink: 'ml', //options:  "ml", "tor", "img", "page"
@@ -230,11 +260,6 @@ const catKeyMap = {
     let searchEngine = {};
     initSearchEngine();
 
-
-    // const mls = appendColumn('DL ML');
-
-    var appendedPageNum = 1;
-
     // click to verify browser
     document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
 
@@ -249,8 +274,7 @@ const catKeyMap = {
 
     const getTorrentLinks = () => Array.from(document.querySelectorAll('table > tbody > tr.lista2 a[title]'));
 
-    var row_others = getElementsByXPath('(//tr[contains(., "Others\:")])[last()]');
-    row_others = row_others.pop();
+    var row_others = getElementsByXPath('(//tr[contains(., "Others\:")])[last()]').pop();
 
     var tbodyEl = isOnSingleTorrentPage && row_others ?
         row_others.parentElement.querySelector('tbody') :
@@ -262,8 +286,14 @@ const catKeyMap = {
 
     var thumbnailsCssBlock = addCss('');
     // language=CSS
-    var cssBlock = addCss(
-        `td.thumbnail-cell {
+    addCss(
+        `
+/*this keeps the tableCells in the groups at equal heights*/
+table.groupTable > tbody > tr > td {
+    height: 10px !important;
+}
+
+td.thumbnail-cell {
     text-align: center;
     height: ${maxheight}px;
 }
@@ -355,17 +385,6 @@ tr.lista2 > td.lista > a[onmouseover] {
     // === end of variable declarations ===
 
     $(document).ready(function main() {
-        // force relative URLs
-        observeDocument(function() {
-            for (const a of document.links) {
-                const oldHref = a.getAttribute('href');
-                if (!(/^(\/|#)/).test(oldHref) && (a.hostname === location.hostname || /rarbg/.test(a.hostname))) {
-                    a.setAttribute('href', a.getAttribute('href').replace(a.protocol + '//' + a.hostname, ''));
-                    console.log(oldHref, '->', a.getAttribute('href'));
-                }
-            }
-        });
-
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
             if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');
@@ -377,18 +396,8 @@ tr.lista2 > td.lista > a[onmouseover] {
             }
         } else { // on torrent(s) page
             if (isOnSingleTorrentPage) {
-                // addCss(`body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(5) > td:nth-child(2) > table > tbody > td { display: inline-table; }`);
                 let mainTorrentLink = document.querySelector('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)');
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
-
-                // FIXME:
-                // // if just download and gtfo:
-                // if (/&downloadtorrent/.test(location.href)) {
-                //     location.assign(mainTorrentLink.href);
-                //     // window.open(mainTorrentLink.href);
-                //     // window.close();
-                //     // return;
-                // }
 
                 const relatedTorrent = document.querySelector('.lista_related');
                 if (relatedTorrent) {
@@ -461,14 +470,6 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 // putting the "Description:" row before the "Others:" row
                 getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].appendChild(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
-
-                // add error listener to use a proxy if an image fails to load
-                // var tbl = document.querySelector('table.lista-rounded');
-                // if (tbl) tbl.querySelectorAll('img[src]').forEach(img => {
-                //     img.onerror = function () {
-                //         img.src = (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(img.src)}&f=1`);
-                //     };
-                // });
 
                 Mousetrap.bind('d', function (e) {
                     const torrent = document.querySelector('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
@@ -545,12 +546,6 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                 const mldlCol = appendColumn('ML DL', 'File', addDlAndMl);
                 mldlCol.header.addEventListener('click', downloadAllTorrents);
-
-                observeDocument((target) => {
-                    const newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
-
-                    newCol.header.addEventListener('click', () => toggleThumbnailSize());
-                });
 
                 if (Options.infiniteScrolling) { // infiniteScrolling
                     (function makeInfiniteScroll() {
@@ -730,7 +725,21 @@ tr.lista2 > td.lista > a[onmouseover] {
             })();
 
             observeDocument((target) => {
+                if (isOnIndexPage) {
+                    const newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
+                    newCol.header.addEventListener('click', () => toggleThumbnailSize());
+                }
+
                 dealWithTorrents(target);
+                // forceAbsoluteLinks();
+
+                // group torrents
+                titleGroups = updateTorrentGroups();
+                for (const [torrentTitle, torrentAnchors] of Object.entries(titleGroups)) {
+                    if (torrentAnchors.length > 1) {
+                        groupTorrents(torrentTitle, torrentAnchors);
+                    }
+                }
 
                 // remove links for adds that cover the screen
                 for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
@@ -745,7 +754,6 @@ tr.lista2 > td.lista > a[onmouseover] {
     (function bindKeys() {
         if (typeof Mousetrap === 'undefined') return;
         Mousetrap.bind(['space'], (e) => {
-            // appendPage(currentDocument.querySelector('a[title="next page"]'));
             solveCaptcha(); // TODO: remove this, this is just for debugging
         });
         Mousetrap.bind(['/'], (e) => {
@@ -760,35 +768,63 @@ tr.lista2 > td.lista > a[onmouseover] {
         });
 
         Mousetrap.bind(['`'], (e) => toggleThumbnailSize());
-        Mousetrap.bind(['ctrl+s'], (e) => {// saves an html file containing the data
-            const rows = document.querySelectorAll('table > tbody > tr.lista2');
-            var torrentJsons = Array.from(rows).map(row => {
-                try {
-                    const a = row.querySelector('a[onmouseover]');
-                    const thumbnail = row.querySelector('td.thumbnail-cell > a > img.preview-image ');
-                    const ml = row.querySelector('.torrent-ml');
-                    const torrentLink = row.querySelector('.torrent-dl');
-                    return {
-                        title: a.title || a.innerText,
-                        page: a.href,
-                        torrentLink: torrentLink ? torrentLink.href : '',
-                        magnetLink: ml ? encodeURI(ml.href) : '',
-                        thumbnailSrc: thumbnail ? thumbnail.src : ''
-                    };
-                } catch (e) {
-                }
+
+        // saves an html and json file for all torrents on page
+        Mousetrap.bind(['ctrl+s'], (e) => {
+            document.querySelectorAll("body > table > tbody > tr > td:nth-child(4) > a.torrent-ml").forEach(a=>a.protocol='magnet:');
+            
+            document.querySelectorAll('a').forEach(
+                a=>a.setAttribute('href', relativeToAbsoluteURL(a.getAttribute('href'), 'https://rarbgprx.org/'))
+                // TODO: remove rarbgprx.org and put something more general
+            );
+
+            // converting image URLs to base64 (so they'd be saved in the page)
+            Promise.all(
+                Array.from(document.querySelectorAll("img")).map(
+                    img => new Promise((resolve, reject) => {
+                        
+                        fetchB64ImgUrl(img.src)
+                            .then(bin => resolve(img.src = bin||img.src))
+                            .catch(reject);
+
+                        setTimeout(resolve, 2000);
+                    })
+                )
+            ).then(promises => {
+                console.log("SUCCESSFULLY converted image urls to base64", promises);
+            }).finally(function(promises) {
+
+                const rows = document.querySelectorAll('table > tbody > tr.lista2');
+                const torrentJsons = Array.from(rows).map(row => {
+                    try {
+                        const a = row.querySelector('a[onmouseover]');
+                        const thumbnail = row.querySelector('td.thumbnail-cell > a > img.preview-image ');
+                        const ml = row.querySelector('.torrent-ml');
+                        const torrentLink = row.querySelector('.torrent-dl');
+                        return {
+                            title: a.title || a.innerText,
+                            page: a.href,
+                            torrentLink: torrentLink ? torrentLink.href : '',
+                            magnetLink: ml ? encodeURI(ml.href) : '',
+                            thumbnailSrc: thumbnail ? thumbnail.src : ''
+                        };
+                    } catch (e) {
+                    }
+                });
+                const torrentsObject = {
+                    documentTitle: document.title,
+                    date: Date.now(),
+                    torrents: torrentJsons
+                };
+
+                const tableOuterHTML = document.querySelector("table.lista2t, table.lista").outerHTML;
+                const summaryHTML = `<html lang="en">${document.head.outerHTML}<body>${tableOuterHTML}</body></html>`;
+
+                anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + ' [' + rows.length + ']' + ' info.json');
+                anchorClick(makeTextFile(summaryHTML), document.title + ' [' + rows.length + ']' + ' summary.html');
+
             });
-            var torrentsObject = {
-                documentTitle: document.title,
-                date: Date.now(),
-                torrents: torrentJsons
-            };
 
-            const tableOuterHTML = getElementsByXPath('//table[@class=\'lista\']')[0].outerHTML;
-            const summaryHTML = `<html lang="en">${document.head.outerHTML}<body>${tableOuterHTML}</body></html>`;
-
-            anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + ' [' + rows.length + ']' + ' info.json');
-            anchorClick(makeTextFile(summaryHTML), document.title + ' [' + rows.length + ']' + ' summary.html');
         });
 
         // increase thumbnail size
@@ -996,7 +1032,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 a.closest('.lista2').style.display = hideCondition ? 'none' : '';
             } // skip if empty title
 
-            // done: make it so that it doesn't just check if "query" starts with '-', rather, check each match and check if it starts with '-'
+            // DONE: make it so that it doesn't just check if "query" starts with '-', rather, check each match and check if each word starts with '-'
         }
     }
 
@@ -1006,21 +1042,130 @@ tr.lista2 > td.lista > a[onmouseover] {
             ' max-width: ' + maxwidth * Options.imgScale + 'px;' +
             ' max-height: ' + maxheight * Options.imgScale + 'px; ' +
             '}';
-        // width: ${!Options.addThumbnails ? width * 0.5 : (!Options.largeThumbnails ? width : width * 2)}px;
     }
 
     function observeDocument(callback) {
         callback(document.body);
-        new MutationObserver(function (mutations) {
+        new MutationObserver(function (mutations, me) {
+            me.disconnect();
             for (var i = 0; i < mutations.length; i++) {
                 if (mutations[i].addedNodes.length) {
                     callback(mutations[i].target);
                 }
             }
+            me.observe(document.body, {
+                childList: true, subtree: true,
+                attributes: false, characterData: false
+            });
         }).observe(document.body, {
             childList: true, subtree: true,
             attributes: false, characterData: false
         });
+    }
+
+    /**
+     * takes a list of torrentLinks and groups them into the first one
+     *
+     * @param {*} torrentLinks
+     */
+    function groupTorrents(torrentTitle, torrentLinks) {
+        const $rows = $(torrentLinks).closest('tr').filter(':not(.grouped)');
+        var $firstRow = $rows.filter('.firstRow');
+        if ($firstRow.length || $firstRow.children('td').length) {
+            console.warn('groupTorrents() not allowed to call twice, found a firstRow:', $firstRow);
+            return;
+        } else {
+            $firstRow = $rows.first();
+        }
+
+        $firstRow.addClass('firstRow');
+        var $groupTables = $firstRow.closest('table.groupTable');
+        if (!$groupTables.length) {
+            $groupTables = $firstRow.children('td')
+                .append('<table class="groupTable">')
+                .end()
+                .find('table.groupTable').remove();
+
+            // for each row
+            $rows.each(
+                // move the td elements and add it in a new row in the table 
+                (_, row) => $(row).children('td')
+                    .each((i, td) => (i < $groupTables.length) && $groupTables[i].insertRow().appendChild(td))
+            );
+
+            $firstRow
+                .append(
+                    // create 10 'td' elements
+                    ($(Array($groupTables.length).fill(null).map(() => document.createElement('td'))))
+                        .each((i, td) => (i < $groupTables.length) && td.appendChild($groupTables[i]))
+                );
+        }
+
+        
+
+        // const dividerRowHTML = `<tr>
+        // <td align="center" class="" style="width:48px;">Cat.</td><td align="center">Thumbnails</td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">File</a></td><td align="center">ML DL</td>
+        // <td align="center" class=""><a class="anal tdlinkfull3"><i class="icon-arrow-down"></i>Added</a></td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">Size</a></td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">S.</a></td>
+        // <td align="center" class=""><a class="anal tdlinkfull3">L.</a></td>
+        // <td align="center" class=""><img src="https://dyncdn2.com/static/20/images/comments.gif" border="0" alt="comments"></td>
+        // <td align="center" class="">Uploader</td>
+        // </tr>`;
+
+        $rows.addClass('grouped');
+    }
+    /**
+     * grouping similar torrents together
+     * this is useful when you have 3 torrents of the same movie but different resolutions, there's no need to see it 3 times
+     * @returns {{string: HTMLAnchorElement[]}}
+     */
+    function updateTorrentGroups() {
+        const FILLER_WORDS = new Set(['AND', '2160P', 'MP4', 'THE', 'COM', 'WEIRD', 'IN', 'YAPG', 'A', 'TRASHBIN', 'FOR', 
+            'TO', 'WITH', 'HER', 'MY', 'ON', 'PART', 'X264', 'OF', '720P', 'SEX', 'XXX', 'MP4', 'KTR', '1080P', 'SD', 'KLEENEX']);
+
+        const extractCleanTitle = (a) => Array.from(
+            new Set((a.title || a.innerText)
+                .toUpperCase()
+                .replace(/\d{1,3}\.\d{1,3}\.\d{1,3}\.?/, '') // remove dates like 02.11.2019
+                .split(/[\s._\-\[\]]/g) // split on dots and dashes and spaces...
+                .filter(word => word) // remove empty words
+            ).difference(FILLER_WORDS) // remove filler words
+        ).sort() // sort to maximize conflicts (we want the same title with different word orderings to be in the same group)
+            .join(' ');
+
+        const titleToLinkEntries = getTorrentLinks().map( a => [a.cleanTitle = a.cleanTitle||extractCleanTitle(a), a] );
+        /* 
+         * looks like:
+         *
+         * 0: (2) ["HOPE ION10 S04 SAVING WEBRIP", a.modded]
+         * 1: (2) ["ALASKA ION10 RAILROAD S01 WEBRIP", a.modded]
+         * 2: (2) ["ION10 RULES S08E11 VANDERPUMP WEBRIP", a.modded]
+         * 3: (2) ["ION10 RESIDENT S03E18 WEBRIP", a.modded]
+         */
+
+        /**
+         * clusters: titles to words
+         * {key: value}  {title: array of links that belong to that same title}
+         * @typedef {string: Element[]}
+         */
+        titleGroups = fromEntriesMultivalue(
+            titleToLinkEntries //.concat(Object.entries(titleGroups))
+            // .map( ([k, v]) => [k, Array.from(new Set(v))] ) // remove duplicate links
+        );
+        /*
+         * looks something like:
+         *
+         * HOPE ION10 S04 SAVING WEBRIP: [a.modded]
+         * ALASKA ION10 RAILROAD S01 WEBRIP: [a.modded]
+         * ION10 RULES S08E11 VANDERPUMP WEBRIP: [a.modded]
+         * ION10 RESIDENT S03E18 WEBRIP: [a.modded]
+         * ION10 NAMASTE S04 WEBRIP YOGA: [a.modded] 
+         */
+
+
+        return titleGroups;
     }
 
     function dealWithTorrents(node) {
@@ -1055,7 +1200,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                      * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
                      */
                     const mapSeedersToScale = numberOfSeeders => {
-                        return Math.clamp(0.013 * Math.log(1.0 + numberOfSeeders) / Math.log(.05), 0.1, 999999999.0) * 10.0;
+                        return Math.clamp(0.013 * Math.log(1.0 + numberOfSeeders) / Math.log(0.05), 0.1, 999999999.0) * 10.0;
                     };
 
                     const seedersFont = row.querySelector('font[color]');
@@ -1229,66 +1374,6 @@ tr.lista2 > td.lista > a[onmouseover] {
         torrentAnchor.after(searchLink);
     }
 
-    /**
-     * @param pageLink
-     */
-    function appendPage(pageLink) {
-        if (!pageLink) return;
-
-        const tb = document.createElement('tr');
-        const pageNumber = ++appendedPageNum;
-        const pageAnchor = createElement(`<td><a class="page-link-${pageNumber}" href="${pageLink.href}"><p1 style="white-space: nowrap;">Go to page ${pageNumber}</p1></a></td>`);
-
-        tb.appendChild(pageAnchor);
-        tbodyEl.appendChild(tb);
-
-        var req = new XMLHttpRequest();
-        req.open('GET', pageLink.href);
-        req.send();
-        req.onreadystatechange = function () {
-            if (req.readyState === 4) {
-                var pageHTML = req.responseText;
-                currentDocument = document.createElement('html');
-                currentDocument.innerHTML = pageHTML;
-
-                var lista2s = currentDocument.querySelectorAll('tbody>.lista2');
-                for (const e of lista2s) {
-                    tbodyEl.appendChild(e);
-                    appendColumnCell(e.childNodes[1]);
-                }
-                if (debug) console.log('Added lista2 elements:', lista2s);
-                history.pushState(history.state, '', pageLink.href);
-            }
-        };
-    }
-
-    function addMagnetCell(torrent) {
-        var url = torrent.href;
-        var req = new XMLHttpRequest();
-        req.open('GET', url);
-        req.send();
-        req.onreadystatechange = function () {
-            if (req.readyState === 4) {
-                var pageHTML = req.responseText;
-                var magnetURL = pageHTML.match(/href="(magnet[:_\-+%?=&;.0-9a-zA-Z]*)"/)[1]; //match magnet URL
-                var thumbURLs = pageHTML.match('src\="((.?)*\.jpg)"');
-
-                //creating and adding the elements
-                var magnetCell = document.createElement('td'),
-                    magnetLink = document.createElement('a'),
-                    magnetImg = document.createElement('img');
-                magnetLink.href = magnetURL;
-                magnetCell.classList.add('thumbnail-cell');
-                magnetCell.appendChild(magnetLink);
-
-                magnetImg.src = thumbURLs[1];
-                if (!thumbURLs[1]) magnetImg = MAGNET_ICO;
-                magnetLink.appendChild(magnetImg);
-                torrent.parentElement.parentElement.replaceChild(magnetCell, torrent.parentElement.parentElement.childNodes[1]);
-            }
-        };
-    }
-
     function initSearchEngine() {
         const searchEngineValue = GM_getValue('ImageSearchEngine', Options.defaultImageSearchEngine);
         if (SearchEngines.hasOwnProperty(searchEngineValue)) {
@@ -1316,9 +1401,15 @@ tr.lista2 > td.lista > a[onmouseover] {
      * @returns {number} the index of the column given the column header text
      */
     function getColumnIndex(headerTitle) {
-        const allHeaders = tbodyEl.querySelectorAll('tr > td.header6');
-        const idx = Array.from(allHeaders).map(header => header.innerText).indexOf(headerTitle);
-        return idx;
+        const headerTitles = ["Cat.", "Thumbnails", "File", "ML DL", "Added", "Size", "S.", "L.", "", "Uploader"];
+        var idx = headerTitles.indexOf(headerTitle);
+        if (idx >= 0) {
+            return idx;
+        } else {
+            console.warn('The passed headerTitle:', headerTitle, "is not a valid headerTitle, choose from:", headerTitles);
+            const allHeaders = tbodyEl.querySelectorAll('tr > td.header6');
+            return [].map.call(allHeaders, header => header.innerText).indexOf(headerTitle);
+        }
     }
     /**
      * Adds a column to the torrents table. Safe to call this function multiple times for the same column, it will not add duplicate cells to a row that already has this header.
@@ -1335,7 +1426,6 @@ tr.lista2 > td.lista > a[onmouseover] {
             colIndex = getColumnIndex(colIndex);
         }
 
-        // const sanitizedTitle = title.replace(/[^\w\d]/g, ' ').trim().replace(/\s+/g, '-');
         const sanitizedTitle = $.escapeSelector(title.replace(/\s/g, '')).replace(/\s/g, '');
 
         /**
@@ -1377,9 +1467,13 @@ tr.lista2 > td.lista > a[onmouseover] {
 
 
         // creation of the extra column
-        const newColumn = Array.from(oldColumnEntries).slice(1).filter( // exclude rows that already have this column
-            oldCol => !oldCol.closest('tr.lista2').querySelector('.' + $.escapeSelector(sanitizedTitle))
-        ).map(makeCell);
+        const newColumn = [].slice.call(oldColumnEntries, 1)
+            // exclude rows that already have this column
+            .filter(oldCol => {
+                const row = oldCol.closest('tr.lista2');
+                const selector = '.' + $.escapeSelector(sanitizedTitle);
+                if (row) return !row.querySelector(selector);
+            }).map(makeCell);
 
         // fire callback
         for (let cell of newColumn) {
@@ -1493,27 +1587,27 @@ tr.lista2 > td.lista > a[onmouseover] {
     // Cat. | File | Added | Size | S. | L. | comments  |   Uploader
     // this is one row
     /*
-<tr className="lista2">
-    <td align="left" className="lista" width="48" style="width:48px;">
-        <a href="/torrents.php?category=45">
-            <img src="https://dyncdn.me/static/20/images/categories/cat_new45.gif" border="0" alt="">
-        </a>
-    </td>
-    <td align="left" className="lista">
-        <a onMouseOver="return overlib('<img src=\'https://dyncdn.me/mimages/5975/over_opt.jpg\' border=0>')"
-           onMouseOut="return nd();" href="/torrent/ifcvj5g" title="">The.Visitor.2007.720p.BluRay.H264.AAC-RARBG</a>
-        <a href="/torrents.php?imdb=tt0857191">
-            <img src="https://dyncdn.me/static/20/images/imdb_thumb.gif" border="0" alt=""></a><br>
-        <span style="color:DarkSlateGray">Drama IMDB: 7.7/10</span>
-    </td>
-    <td align="center" width="150px" className="lista">2018-07-25 16:55:06</td>
-    <td align="center" width="100px" className="lista">1.25 GB</td>
-    <td align="center" width="50px" className="lista"><font color="#dd0000">1</font></td>
-    <td align="center" width="50px" className="lista">5</td>
-    <td align="center" width="50px" className="lista">--</td>
-    <td align="center" className="lista">Scene</td>
-</tr>
-    */
+     * <tr className="lista2">
+     *     <td align="left" className="lista" width="48" style="width:48px;">
+     *         <a href="/torrents.php?category=45">
+     *             <img src="https://dyncdn.me/static/20/images/categories/cat_new45.gif" border="0" alt="">
+     *         </a>
+     *     </td>
+     *     <td align="left" className="lista">
+     *         <a onMouseOver="return overlib('<img src=\'https://dyncdn.me/mimages/5975/over_opt.jpg\' border=0>')"
+     *         onMouseOut="return nd();" href="/torrent/ifcvj5g" title="">The.Visitor.2007.720p.BluRay.H264.AAC-RARBG</a>
+     *         <a href="/torrents.php?imdb=tt0857191">
+     *             <img src="https://dyncdn.me/static/20/images/imdb_thumb.gif" border="0" alt=""></a><br>
+     *         <span style="color:DarkSlateGray">Drama IMDB: 7.7/10</span>
+     *     </td>
+     *     <td align="center" width="150px" className="lista">2018-07-25 16:55:06</td>
+     *     <td align="center" width="100px" className="lista">1.25 GB</td>
+     *     <td align="center" width="50px" className="lista"><font color="#dd0000">1</font></td>
+     *     <td align="center" width="50px" className="lista">5</td>
+     *     <td align="center" width="50px" className="lista">--</td>
+     *     <td align="center" className="lista">Scene</td>
+     * </tr>
+     */
 })();
 
 // == below are general helper functions, not specific to this script ==
@@ -1541,7 +1635,39 @@ function reverseMapping(o) {
         }
     }
     return r;
-    // return Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {});
+}
+
+/**
+ * reverse map but support multiple values, for collisions: concat in array
+ *
+ * @param {*} o
+ * @returns
+ */
+function reverseMappingMultivalue(o) {
+    const r = {};
+
+    for (const [k, v] of Object.entries(o)) {
+        var values = [v];
+        for (const val of values) {
+            if (r.hasOwnProperty(val)) {
+                r[val].push(k);
+            } else {
+                r[val] = [k];
+            }
+        }
+    }
+    return r;
+}
+/**
+ * same as Object.fromEntries(), but support multiple values in case of key collision.
+ * resolution: concat conflicts in an array
+ * @param {*} entries
+ * @returns
+ */
+function fromEntriesMultivalue(entries) {
+    const o = {};
+    entries.forEach(([k, v]) => o[k] = (o[k] || []).concat(v));
+    return o;
 }
 
 /**
@@ -1624,9 +1750,7 @@ function makeTextFile(text) {
 /** Create an element by HTML.
  example:   var myAnchor = createElement('<a href="https://example.com">Go to example.com</a>');*/
 function createElement(html) {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.childNodes[0];
+    return $(html)[0];
 }
 
 function htmlToElements(html) {
@@ -1685,3 +1809,154 @@ function fetchDoc(url) {
             return doc;
         });
 }
+
+function forceAbsoluteLinks() {
+    // force absolute URLs
+    for (const a of document.querySelectorAll('a[href]')) {
+        const oldHref = a.getAttribute('href');
+        // is it a relative URL or a rarbg URL?
+        const a_hostname = a.hostname;
+        const isRarbgHostname = a_hostname === location.hostname ;
+        const isRarbgHostname2 = /rarbg/.test(a_hostname);
+        const isRelative = /^(\/|#)/.test(oldHref);
+        if (!((isRarbgHostname||isRarbgHostname2) && isRelative) ) {
+            a.setAttribute('href', a.getAttribute('href').replace(a.protocol + '//' + a_hostname, ''));
+            // console.log(oldHref, '->', a.getAttribute('href'));
+        }
+    }
+}
+function relativeToAbsoluteURL(url, base=null){
+    if (!base) base = document.baseURI;
+    if('string'!==typeof url || url==null){
+        return null; // wrong or empty url
+    } else if(url.match(/^[a-z]+\:\/\//i)){ 
+        return url; // url is absolute already 
+    } else if(url.match(/^\/\//)){ 
+        return 'http:'+url; // url is absolute already 
+    } else if(url.match(/^[a-z]+\:/i)){ 
+        return url; // data URI, mailto:, tel:, etc.
+    } else if('string'!==typeof base){
+        var a=document.createElement('a'); 
+        a.href=url; // try to resolve url without base  
+        if(!a.pathname){ 
+            return null; // url not valid 
+        }
+        return 'http://'+url;
+    } else{ 
+        base=relativeToAbsoluteURL(base); // check base
+        if(base===null){
+            return null; // wrong base
+        }
+    }
+    var a=document.createElement('a'); 
+    a.href=base;
+
+    if(url[0]==='/'){ 
+        base=[]; // rooted path
+    } else{ 
+        base=a.pathname.split('/'); // relative path
+        base.pop(); 
+    }
+    url=url.split('/');
+    for(var i=0; i<url.length; ++i){
+        if(url[i]==='.'){ // current directory
+            continue;
+        }
+        if(url[i]==='..'){ // parent directory
+            if('undefined'===typeof base.pop() || base.length===0){ 
+                return null; // wrong url accessing non-existing parent directories
+            }
+        }
+        else{ // child directory
+            base.push(url[i]); 
+        }
+    }
+    return a.protocol+'//'+a.hostname+base.join('/');
+}
+
+function fetchB64ImgUrl(url, opts) {
+    return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            'method': 'GET',
+            'url': url || 'http://static.jsbin.com/images/dave.min.svg?4.1.4',
+            'onload': function (resp) {
+                // resolve(resp);
+
+                var binResp = customBase64Encode(resp.responseText);
+                resolve('data:image/png;base64,'+binResp);
+            },
+            'overrideMimeType': 'text/plain; charset=x-user-defined'
+        });
+    });
+
+
+    function customBase64Encode(inputStr) {
+        var
+            bbLen = 3,
+            enCharLen = 4,
+            inpLen = inputStr.length,
+            inx = 0,
+            jnx,
+            keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+                + '0123456789+/=',
+            output = '',
+            paddingBytes = 0;
+        var
+            bytebuffer = new Array(bbLen),
+            encodedCharIndexes = new Array(enCharLen);
+
+        while (inx < inpLen) {
+            for (jnx = 0; jnx < bbLen; ++jnx) {
+                /*--- Throw away high-order byte, as documented at:
+                  https://developer.mozilla.org/En/Using_XMLHttpRequest#Handling_binary_data
+                */
+                if (inx < inpLen) {
+                    bytebuffer[jnx] = inputStr.charCodeAt(inx++) & 0xff;
+                } else {
+                    bytebuffer[jnx] = 0;
+                }
+            }
+
+            /*--- Get each encoded character, 6 bits at a time.
+                index 0: first  6 bits
+                index 1: second 6 bits
+                            (2 least significant bits from inputStr byte 1
+                             + 4 most significant bits from byte 2)
+                index 2: third  6 bits
+                            (4 least significant bits from inputStr byte 2
+                             + 2 most significant bits from byte 3)
+                index 3: forth  6 bits (6 least significant bits from inputStr byte 3)
+            */
+            encodedCharIndexes[0] = bytebuffer[0] >> 2;
+            encodedCharIndexes[1] = ((bytebuffer[0] & 0x3) << 4) | (bytebuffer[1] >> 4);
+            encodedCharIndexes[2] = ((bytebuffer[1] & 0x0f) << 2) | (bytebuffer[2] >> 6);
+            encodedCharIndexes[3] = bytebuffer[2] & 0x3f;
+
+            //--- Determine whether padding happened, and adjust accordingly.
+            paddingBytes = inx - (inpLen - 1);
+            switch (paddingBytes) {
+                case 1:
+                    // Set last character to padding char
+                    encodedCharIndexes[3] = 64;
+                    break;
+                case 2:
+                    // Set last 2 characters to padding char
+                    encodedCharIndexes[3] = 64;
+                    encodedCharIndexes[2] = 64;
+                    break;
+                default:
+                    break; // No padding - proceed
+            }
+
+            /*--- Now grab each appropriate character out of our keystring,
+                based on our index array and append it to the output string.
+            */
+            for (jnx = 0; jnx < enCharLen; ++jnx)
+                output += keyStr.charAt(encodedCharIndexes[jnx]);
+        }
+        return output;
+    }
+}
+
+
+

@@ -58,6 +58,10 @@ This project licenced under the [MIT](/LICENCE) licence, this script is for educ
 
 ## Todo
 
+- [ ] Grouping: grouping the same torrent (but with different resolutions for example) to be in the same box
+  - [ ] identify what should be grouped
+  - [ ] make table grouping in HTML
+
 - [ ] Add menu to change options
 - [ ] Add ability to change search engine
 - [ ] Add a search filter bar

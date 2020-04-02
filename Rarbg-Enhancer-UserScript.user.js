@@ -231,8 +231,7 @@ const catKeyMap = {
 
     const getTorrentLinks = () => Array.from(document.querySelectorAll('table > tbody > tr.lista2 a[title]'));
 
-    var row_others = getElementsByXPath('(//tr[contains(., "Others\:")])[last()]');
-    row_others = row_others.pop();
+    var row_others = getElementsByXPath('(//tr[contains(., "Others\:")])[last()]').pop();
 
     var tbodyEl = isOnSingleTorrentPage && row_others ?
         row_others.parentElement.querySelector('tbody') :
@@ -337,17 +336,6 @@ tr.lista2 > td.lista > a[onmouseover] {
     // === end of variable declarations ===
 
     $(document).ready(function main() {
-        // force relative URLs
-        observeDocument(function() {
-            for (const a of document.links) {
-                const oldHref = a.getAttribute('href');
-                if (!(/^(\/|#)/).test(oldHref) && (a.hostname === location.hostname || /rarbg/.test(a.hostname))) {
-                    a.setAttribute('href', a.getAttribute('href').replace(a.protocol + '//' + a.hostname, ''));
-                    console.log(oldHref, '->', a.getAttribute('href'));
-                }
-            }
-        });
-
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
             if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');
@@ -695,6 +683,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
             observeDocument((target) => {
                 dealWithTorrents(target);
+                forceAbsoluteLinks();
 
                 // remove links for adds that cover the screen
                 for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
@@ -974,12 +963,17 @@ tr.lista2 > td.lista > a[onmouseover] {
 
     function observeDocument(callback) {
         callback(document.body);
-        new MutationObserver(function (mutations) {
+        new MutationObserver(function (mutations, me) {
+            me.disconnect();
             for (var i = 0; i < mutations.length; i++) {
                 if (mutations[i].addedNodes.length) {
                     callback(mutations[i].target);
                 }
             }
+            me.observe(document.body, {
+                childList: true, subtree: true,
+                attributes: false, characterData: false
+            });
         }).observe(document.body, {
             childList: true, subtree: true,
             attributes: false, characterData: false
@@ -1219,9 +1213,15 @@ tr.lista2 > td.lista > a[onmouseover] {
      * @returns {number} the index of the column given the column header text
      */
     function getColumnIndex(headerTitle) {
-        const allHeaders = tbodyEl.querySelectorAll('tr > td.header6');
-        const idx = Array.from(allHeaders).map(header => header.innerText).indexOf(headerTitle);
-        return idx;
+        const headerTitles = ["Cat.", "Thumbnails", "File", "ML DL", "Added", "Size", "S.", "L.", "", "Uploader"];
+        var idx = headerTitles.indexOf(headerTitle);
+        if (idx >= 0) {
+            return idx;
+        } else {
+            console.warn('The passed headerTitle:', headerTitle, "is not a valid headerTitle, choose from:", headerTitles);
+            const allHeaders = tbodyEl.querySelectorAll('tr > td.header6');
+            return [].map.call(allHeaders, header => header.innerText).indexOf(headerTitle);
+        }
     }
     /**
      * Adds a column to the torrents table. Safe to call this function multiple times for the same column, it will not add duplicate cells to a row that already has this header.
@@ -1525,9 +1525,7 @@ function makeTextFile(text) {
 /** Create an element by HTML.
  example:   var myAnchor = createElement('<a href="https://example.com">Go to example.com</a>');*/
 function createElement(html) {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.childNodes[0];
+    return $(html)[0];
 }
 
 function htmlToElements(html) {
@@ -1585,4 +1583,68 @@ function fetchDoc(url) {
             const doc = new DOMParser().parseFromString(html, "text/html");
             return doc;
         });
+}
+
+function forceAbsoluteLinks() {
+    // force absolute URLs
+    for (const a of document.querySelectorAll('a[href]')) {
+        const oldHref = a.getAttribute('href');
+        // is it a relative URL or a rarbg URL?
+        const a_hostname = a.hostname;
+        const isRarbgHostname = a_hostname === location.hostname ;
+        const isRarbgHostname2 = /rarbg/.test(a_hostname);
+        const isRelative = /^(\/|#)/.test(oldHref);
+        if (!((isRarbgHostname||isRarbgHostname2) && isRelative) ) {
+            a.setAttribute('href', a.getAttribute('href').replace(a.protocol + '//' + a_hostname, ''));
+            // console.log(oldHref, '->', a.getAttribute('href'));
+        }
+    }
+}
+function relativeToAbsoluteURL(url, base=null){
+    if (!base) base = document.baseURI;
+    if('string'!==typeof url || url==null){
+        return null; // wrong or empty url
+    } else if(url.match(/^[a-z]+\:\/\//i)){ 
+        return url; // url is absolute already 
+    } else if(url.match(/^\/\//)){ 
+        return 'http:'+url; // url is absolute already 
+    } else if(url.match(/^[a-z]+\:/i)){ 
+        return url; // data URI, mailto:, tel:, etc.
+    } else if('string'!==typeof base){
+        var a=document.createElement('a'); 
+        a.href=url; // try to resolve url without base  
+        if(!a.pathname){ 
+            return null; // url not valid 
+        }
+        return 'http://'+url;
+    } else{ 
+        base=relativeToAbsoluteURL(base); // check base
+        if(base===null){
+            return null; // wrong base
+        }
+    }
+    var a=document.createElement('a'); 
+    a.href=base;
+
+    if(url[0]==='/'){ 
+        base=[]; // rooted path
+    } else{ 
+        base=a.pathname.split('/'); // relative path
+        base.pop(); 
+    }
+    url=url.split('/');
+    for(var i=0; i<url.length; ++i){
+        if(url[i]==='.'){ // current directory
+            continue;
+        }
+        if(url[i]==='..'){ // parent directory
+            if('undefined'===typeof base.pop() || base.length===0){ 
+                return null; // wrong url accessing non-existing parent directories
+            }
+        }
+        else{ // child directory
+            base.push(url[i]); 
+        }
+    }
+    return a.protocol+'//'+a.hostname+base.join('/');
 }

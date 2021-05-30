@@ -1032,17 +1032,22 @@ tr.lista2 > td.lista > a[onmouseover] {
             return excludeUrlProtocol && dataURL.replace(/^data:image\/(png|jpg);base64,/, '') || dataURL;
         }
 
-        console.log('solveCAPTHA fetching image');
-        uriToImageData(getBase64Image(img)).then((imageData) => {
+        console.log('solveCAPTHA fetching image ...');
+
+        return new Promise(resolve => { // wait for image to load
+            if (img.complete) {
+                return resolve();
+            }
+            img.onload = resolve;
+        }).then(() => uriToImageData(getBase64Image(img)).then((imageData) => {
             if (img.naturalHeight === 0 && img.naturalWidth === 0) {
-                console.log('image hasn\'t loaded, refreshing to new captha page');
+                console.warn('image hasn\'t loaded, refreshing to new captha page');
                 url.searchParams.set('defence', '1');
                 location.assign(url.toString());
-                void (0);
                 return;
             }
 
-            console.log('feeding image to OCRAD');
+            console.log('feeding image to OCR ...');
             var imageText = OCRAD(imageData);
             console.log('OCRAD result:', imageText);
             if (!imageText) {
@@ -1051,11 +1056,10 @@ tr.lista2 > td.lista > a[onmouseover] {
             captcha.value = imageText;
             submitBtn.display = '';
             submitBtn.click();
-        }).catch(e=>{
+        })).catch(e => {
+            console.error(e);
             url.searchParams.set('defence', '1');
             location.assign(url.toString());
-            void (0);
-            return;
         });
     }
 

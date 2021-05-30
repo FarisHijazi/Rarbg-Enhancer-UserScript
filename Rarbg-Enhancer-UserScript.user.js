@@ -761,10 +761,12 @@ tr.lista2 > td.lista > a[onmouseover] {
                         const option = document.createElement('option');
                         option.className = 'mirrors-option';
                         option.value = mirror;
-                        option.innerText = new URL(mirror).hostname;
-                        if (option.innerText !== location.hostname) {
-                            mirrorsSelect.appendChild(option);
-                        }
+                        try{
+                            option.innerText = new URL(mirror).hostname;
+                            if (option.innerText !== location.hostname) {
+                                mirrorsSelect.appendChild(option);
+                            }
+                        }catch(e){}
                     }
 
                     // adding another last one (which would be THIS hostsname's url)
@@ -1030,8 +1032,8 @@ tr.lista2 > td.lista > a[onmouseover] {
             return excludeUrlProtocol && dataURL.replace(/^data:image\/(png|jpg);base64,/, '') || dataURL;
         }
 
+        console.log('solveCAPTHA fetching image');
         uriToImageData(getBase64Image(img)).then((imageData) => {
-            
             if (img.naturalHeight === 0 && img.naturalWidth === 0) {
                 console.log('image hasn\'t loaded, refreshing to new captha page');
                 url.searchParams.set('defence', '1');
@@ -1040,6 +1042,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 return;
             }
 
+            console.log('feeding image to OCRAD');
             var imageText = OCRAD(imageData);
             console.log('OCRAD result:', imageText);
             if (!imageText) {
@@ -1048,6 +1051,11 @@ tr.lista2 > td.lista > a[onmouseover] {
             captcha.value = imageText;
             submitBtn.display = '';
             submitBtn.click();
+        }).catch(e=>{
+            url.searchParams.set('defence', '1');
+            location.assign(url.toString());
+            void (0);
+            return;
         });
     }
 

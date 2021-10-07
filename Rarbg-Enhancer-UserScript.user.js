@@ -190,6 +190,7 @@ const catKeyMap = {
     'm': 'Music',
     'w': 'Software',
     'x': 'XXX',
+    'g': 'Games',
 };
 
 // main

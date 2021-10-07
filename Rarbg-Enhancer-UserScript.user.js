@@ -25,65 +25,41 @@ var meta = {
 // @include      /https?:\/\/.{0,8}rargb.*\.\/*/
 // @include      /https?:\/\/.*u=MTcyLjIxLjAuMXw6Ly9yYXJiZy50by90b3JyZW50LzIyMDg3MjYwfE1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS83OS4wLjM5NDUuMTMwIFNhZmFyaS81MzcuMzZ8ODc4MDQz.*/
 // @include      https://www.rarbg.is
-// @include      https://rarbg.to/*
-// @include      http://rarbg-to.pbproxy.red
-// @include      http://rarbg-to.pbproxy2.co
-// @include      http://rarbg-to.proxydude.red
-// @include      http://rarbg-to.proxydude.xyz
-// @include      http://rarbg.bypassed.team
-// @include      http://rarbg.com.torrentprox.com
-// @include      http://rarbg4-to.unblocked.lol
-// @include      http://rarbgaccess.org
-// @include      http://rarbgmirror.xyz/*
-// @include      http://rarbgto.org
-// @include      https://rarbg.bypassed.cab
-// @include      https://rarbg.bypassed.plus
-// @include      https://rarbg.immunicity.cab
-// @include      https://rarbg.immunicity.cool
-// @include      https://rarbg.immunicity.host
-// @include      https://rarbg.immunicity.plus
-// @include      https://rarbg.immunicity.team
-// @include      https://rarbg.proxydude.win
-// @include      https://rarbg.unblockall.xyz
-// @include      https://rarbg.unblocked.bet
-// @include      https://rarbg.unblocked.cab
-// @include      https://rarbg.unblocked.cool
-// @include      https://rarbg.unblocked.lol
-// @include      https://rarbg.unblocked.plus
-// @include      https://rarbg.unblocked.pub
-// @include      https://rarbg.unblocked.red
-// @include      https://rarbg.unblocked.st
-// @include      https://rarbg.unblocked.st/*
-// @include      https://rarbg.unblocked.team
-// @include      https://rarbg.unblockedall.site
-// @include      https://rarbg.unblocker.cc
-// @include      https://rarbg.unblocker.win
-// @include      https://rarbg.unblockmy.link
-// @include      https://rarbg.unblockmy.site
-// @include      https://rarbg.unlockproj.party
-// @include      http://rarbgmirror.xyz
+// @include      https://proxyrarbg.org
+// @include      https://rarbg.com
+// @include      https://rarbg.to
+// @include      https://rarbg2018.org
+// @include      https://rarbg2019.org
+// @include      https://rarbg2020.org
+// @include      https://rarbg2021.org
 // @include      https://rarbgaccess.org
+// @include      https://rarbgaccessed.org
+// @include      https://rarbgcdn.org
+// @include      https://rarbgcore.org
+// @include      https://rarbgdata.org
+// @include      https://rarbgenter.org
+// @include      https://rarbgget.org
+// @include      https://rarbggo.org
+// @include      https://rarbgindex.org
 // @include      https://rarbgmirror.com
+// @include      https://rarbgmirror.org
+// @include      https://rarbgmirrored.org
+// @include      https://rarbgp2p.org
+// @include      https://rarbgproxied.org
+// @include      https://rarbgproxies.org
+// @include      https://rarbgproxy.com
 // @include      https://rarbgproxy.org
 // @include      https://rarbgprx.org
-// @include      https://rarbgunblock.com
-// @include      https://rarbgmirror.org
 // @include      https://rarbgto.org
-// @include      https://rarbgunblock.com/*
-// @include      https://filesdownloader.com/proxify.php?proxy=ZmlsZXNkb3dubG9hZGVyLmNvbQ==&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://freeanimesonline.com/proxify.php?proxy=ZnJlZWFuaW1lc29ubGluZS5jb20=&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://freeproxy.io/proxify.php?proxy=ZnJlZXByb3h5Lmlv&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://freeproxy.io/rarbg-proxy
-// @include      https://siteget.net/proxify.php?proxy=c2l0ZWdldC5uZXQ=&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://siteget.net/rarbg-proxy
-// @include      https://sitenable.ch/proxify.php?proxy=c2l0ZW5hYmxlLmNo&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://sitenable.co/proxify.php?proxy=c2l0ZW5hYmxlLmNv&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://sitenable.info/proxify.php?proxy=c2l0ZW5hYmxlLmluZm8=&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://sitenable.info/rarbg-proxy
-// @include      https://sitenable.pw/proxify.php?proxy=c2l0ZW5hYmxlLnB3&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://sitenable.pw/rarbg-proxy
-// @include      https://sitenable.top/proxify.php?proxy=c2l0ZW5hYmxlLnRvcA==&site=aHR0cDovL3JhcmJnLnRvLw==
-// @include      https://sitenable.top/rarbg-proxy
+// @include      https://rarbgtor.org
+// @include      https://rarbgtorrents.org
+// @include      https://rarbgunblock.com
+// @include      https://rarbgunblock.org
+// @include      https://rarbgunblocked.org
+// @include      https://rarbgway.org
+// @include      https://rarbgweb.org
+// @include      https://unblockedrarbg.org
+// @include      https://www.rarbg.is
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @noframes
 // ==/UserScript==
@@ -213,50 +189,10 @@ const catKeyMap = {
         largeThumbnails: true,
         defaultImageSearchEngine: 'google',
         infiniteScrolling: true,
-        mirrors: meta.include || [
-            "http://rarbg-to.pbproxy.red",
-            "http://rarbg-to.pbproxy2.co",
-            "http://rarbg-to.proxydude.red",
-            "http://rarbg-to.proxydude.xyz",
-            "http://rarbg.bypassed.team",
-            "http://rarbg.com.torrentprox.com",
-            "http://rarbg4-to.unblocked.lol",
-            "http://rarbgmirror.xyz",
-            "https://rarbg.bypassed.cab",
-            "https://rarbg.bypassed.plus",
-            "https://rarbg.immunicity.cab",
-            "https://rarbg.immunicity.cool",
-            "https://rarbg.immunicity.host",
-            "https://rarbg.immunicity.plus",
-            "https://rarbg.immunicity.team",
-            "https://rarbg.proxydude.win",
-            "https://rarbg.unblockall.xyz",
-            "https://rarbg.unblocked.bet",
-            "https://rarbg.unblocked.cab",
-            "https://rarbg.unblocked.cool",
-            "https://rarbg.unblocked.lol",
-            "https://rarbg.unblocked.plus",
-            "https://rarbg.unblocked.pub",
-            "https://rarbg.unblocked.red",
-            "https://rarbg.unblocked.st",
-            "https://rarbg.unblocked.team",
-            "https://rarbg.unblocker.cc",
-            "https://rarbg.unblocker.win",
-            "https://rarbg.unblockmy.link",
-            "https://rarbg.unlockproj.party",
-            "https://rarbgaccess.org",
-            "https://rarbgmirror.com",
-            "https://rarbgproxy.org",
-            "https://rarbgprx.org",
-            "https://rarbgunblock.com",
-            "https://www.rarbg.is",
-            "https://rarbgmirror.org",
-            "https://rarbgto.org",
-            "https://rarbgunblock.com",
-        ],
+        mirrors: meta.include,
         seedEffects: true,
         imgScale: 1.0,
-        staticSearchbar: true,
+        staticSearchbar: false,
     }, GM_getValue('RarbgOptions'));
 
     // write back the Options to the storage (in the case that they changed)

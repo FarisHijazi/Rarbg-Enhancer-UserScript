@@ -108,6 +108,12 @@ if (meta.hasOwnProperty('nodups')) {
 unsafeWindow.scriptMetas.push(meta);
 console.log('Script:', meta.name, 'meta:', meta);
 
+function matchSite(siteRegex) {
+    let result = location.href.match(siteRegex);
+    if (!!result) console.debug('Site matched regex: ' + siteRegex);
+    return result;
+}
+
 function solveCaptcha(OCRAD) {
     console.log('solving captcha...');
     const container = document.querySelector('tbody > :nth-child(2)');

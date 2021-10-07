@@ -2,9 +2,9 @@ var meta = {
     rawmdb: function () {
 // ==UserScript==
 // @name         RARBG Enhancer
-// @namespace    https://github.com/buzamahmooza
-// @version      1.5.1
-// @description  Add a magnet link shortcut and thumbnails of torrents,
+// @namespace    https://github.com/FarisHijazi
+// @version      1.5.2
+// @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
 //               with some code from https://greasyfork.org/en/users/2160-darkred
@@ -15,7 +15,7 @@ var meta = {
 // @grant        GM_xmlhttpRequest
 // @icon         https://www.google.com/s2/favicons?domain=rarbg.com
 // @run-at       document-idle
-// @updateUrl    https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
+// @updateUrl    https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      https://code.jquery.com/jquery-3.4.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
@@ -87,8 +87,6 @@ var meta = {
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @noframes
 // ==/UserScript==
-
-// @require      https://github.com/bevacqua/horsey/raw/master/dist/horsey.js
     }
 };
 if (meta.rawmdb && meta.rawmdb.toString && (meta.rawmdb = meta.rawmdb.toString())) {
@@ -415,14 +413,14 @@ tr.lista2 > td.lista > a[onmouseover] {
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
             if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');
-                
-                
+
+
                 try {
                     // solveCaptcha(OCRAD);
                     unsafeEval(solveCaptcha, OCRAD);
                 } catch (e) {
                     console.error('Error occurred while trying to solve captcha:\n', e);
-                    
+
                     const container = document.querySelector('tbody > :nth-child(2)');
                     const img = container.querySelector('img');
                     const captcha = document.querySelector('#solve_string');
@@ -447,7 +445,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                             return result;
                         });
                     }
-                    
+
                     unsafeEval(solveCaptchaTesseract, Tesseract);
 
                 }
@@ -528,8 +526,6 @@ tr.lista2 > td.lista > a[onmouseover] {
                 replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
                     'https://imgtaxi.com/images/small/': 'https://imgtaxi.com/images/big/',
                 });
-
-                
 
 
                 // putting the "Description:" row before the "Others:" row
@@ -838,7 +834,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         // saves an html and json file for all torrents on page
         Mousetrap.bind(['ctrl+s'], (e) => {
             document.querySelectorAll("body > table > tbody > tr > td:nth-child(4) > a.torrent-ml").forEach(a=>a.protocol='magnet:');
-            
+
             document.querySelectorAll('a').forEach(
                 a=>a.setAttribute('href', relativeToAbsoluteURL(a.getAttribute('href'), 'https://rarbgprx.org/'))
                 // TODO: remove rarbgprx.org and put something more general
@@ -848,7 +844,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             Promise.all(
                 Array.from(document.querySelectorAll("img")).map(
                     img => new Promise((resolve, reject) => {
-                        
+
                         fetchB64ImgUrl(img.src)
                             .then(bin => resolve(img.src = bin||img.src))
                             .catch(reject);
@@ -1181,7 +1177,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 );
         }
 
-        
+
 
         // const dividerRowHTML = `<tr>
         // <td align="center" class="" style="width:48px;">Cat.</td><td align="center">Thumbnails</td>
@@ -1202,7 +1198,7 @@ tr.lista2 > td.lista > a[onmouseover] {
      * @returns {{string: HTMLAnchorElement[]}}
      */
     function updateTorrentGroups() {
-        const FILLER_WORDS = new Set(['AND', '2160P', 'MP4', 'THE', 'COM', 'WEIRD', 'IN', 'YAPG', 'A', 'TRASHBIN', 'FOR', 
+        const FILLER_WORDS = new Set(['AND', '2160P', 'MP4', 'THE', 'COM', 'WEIRD', 'IN', 'YAPG', 'A', 'TRASHBIN', 'FOR',
             'TO', 'WITH', 'HER', 'MY', 'ON', 'PART', 'X264', 'OF', '720P', 'SEX', 'XXX', 'MP4', 'KTR', '1080P', 'SD', 'KLEENEX']);
 
         const extractCleanTitle = (a) => Array.from(
@@ -1473,6 +1469,8 @@ tr.lista2 > td.lista > a[onmouseover] {
             for (const dlAnchor of visibleTorrentAnchors) {
                 saveByAnchor(dlAnchor.href, new URL(dlAnchor.href).searchParams.get('f'));
             }
+            // click all magnet links
+            document.querySelectorAll("a.torrent-ml").forEach(a => a.click());
         }
     }
 
@@ -1700,7 +1698,7 @@ function unsafeEval(func, ...arguments) {
 }
 
 /**
- * 
+ *
  * @param {Object} o Object to be reversed.
  * Note: that if there are multiple values in an entry, it will be stored as multiple keys each corresponding to the same key (duplication).
  */
@@ -1911,33 +1909,33 @@ function relativeToAbsoluteURL(url, base=null){
     if (!base) base = document.baseURI;
     if('string'!==typeof url || url==null){
         return null; // wrong or empty url
-    } else if(url.match(/^[a-z]+\:\/\//i)){ 
+    } else if(url.match(/^[a-z]+\:\/\//i)){
         return url; // url is absolute already 
-    } else if(url.match(/^\/\//)){ 
-        return 'http:'+url; // url is absolute already 
-    } else if(url.match(/^[a-z]+\:/i)){ 
+    } else if(url.match(/^\/\//)){
+        return 'http:'+url; // url is absolute already
+    } else if(url.match(/^[a-z]+\:/i)){
         return url; // data URI, mailto:, tel:, etc.
     } else if('string'!==typeof base){
-        var a=document.createElement('a'); 
-        a.href=url; // try to resolve url without base  
-        if(!a.pathname){ 
+        var a=document.createElement('a');
+        a.href=url; // try to resolve url without base
+        if(!a.pathname){
             return null; // url not valid 
         }
         return 'http://'+url;
-    } else{ 
+    } else{
         base=relativeToAbsoluteURL(base); // check base
         if(base===null){
             return null; // wrong base
         }
     }
-    var a=document.createElement('a'); 
+    var a=document.createElement('a');
     a.href=base;
 
-    if(url[0]==='/'){ 
+    if(url[0]==='/'){
         base=[]; // rooted path
-    } else{ 
+    } else{
         base=a.pathname.split('/'); // relative path
-        base.pop(); 
+        base.pop();
     }
     url=url.split('/');
     for(var i=0; i<url.length; ++i){
@@ -1945,12 +1943,12 @@ function relativeToAbsoluteURL(url, base=null){
             continue;
         }
         if(url[i]==='..'){ // parent directory
-            if('undefined'===typeof base.pop() || base.length===0){ 
+            if('undefined'===typeof base.pop() || base.length===0){
                 return null; // wrong url accessing non-existing parent directories
             }
         }
         else{ // child directory
-            base.push(url[i]); 
+            base.push(url[i]);
         }
     }
     return a.protocol+'//'+a.hostname+base.join('/');

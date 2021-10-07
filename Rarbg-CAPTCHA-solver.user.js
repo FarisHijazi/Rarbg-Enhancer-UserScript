@@ -108,11 +108,6 @@ if (meta.hasOwnProperty('nodups')) {
 unsafeWindow.scriptMetas.push(meta);
 console.log('Script:', meta.name, 'meta:', meta);
 
-function matchSite(siteRegex) {
-    let result = location.href.match(siteRegex);
-    if (!!result) console.debug('Site matched regex: ' + siteRegex);
-    return result;
-}
 
 function solveCaptcha(OCRAD) {
     console.log('solving captcha...');
@@ -191,9 +186,6 @@ function solveCaptcha(OCRAD) {
 
 (function() {
     'use strict';
-    const trackers = 'http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710';
-
-    const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
     $(document).ready(function main() {
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha

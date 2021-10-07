@@ -1289,8 +1289,8 @@ tr.lista2 > td.lista > a[onmouseover] {
                     /*
                     increasing font size and element sizes for more seeds
                     */
-                    seedersFont.style['font-size'] = Math.max(20, (parseInt(seedersFont.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
-                    torrentLink.style['font-size'] = Math.max(20, (parseInt(torrentLink.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
+                    // seedersFont.style['font-size'] = Math.max(20, (parseInt(seedersFont.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
+                    // torrentLink.style['font-size'] = Math.max(20, (parseInt(torrentLink.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
 
                     const alphaScaler = Math.clamp(scaler, 0.1, 0.4);
                     statusRGB.map(x => x * alphaScaler);

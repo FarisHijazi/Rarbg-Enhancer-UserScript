@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.5.2
+// @version      1.5.3
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -156,6 +156,7 @@ const catCodeMap = {
     'TV shows': '18;41;49'.split(';'),
     'Software': '33;34;43'.split(';'),
     'Games': '27;28;29;30;31;32;40;53'.split(';'),
+    'Non XXX': '2;14;15;16;17;21;22;42;18;19;41;27;28;29;30;31;32;40;23;24;25;26;33;34;43;44;45;46;47;48;49;50;51;52;54'.split(';'),
 };
 // categories map, given the category number (in the URL), returns the name of it
 const codeToCatMap = reverseMapping(catCodeMap);
@@ -167,6 +168,7 @@ const catKeyMap = {
     'w': 'Software',
     'x': 'XXX',
     'g': 'Games',
+    'n': 'Non XXX',
 };
 
 // main

@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG CAPTCHA solver
 // @namespace    https://github.com/FarisHijazi
-// @version      1.0
+// @version      1.1
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -188,6 +188,8 @@ function solveCaptcha(OCRAD) {
     'use strict';
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
     $(document).ready(function main() {
+        // click to verify browser
+        document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
             if (document.querySelector('#solve_string')) {
                 console.log('Rarbg threat defence page');

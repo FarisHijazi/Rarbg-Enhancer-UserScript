@@ -4,11 +4,11 @@
 
 - Install any [UserScript client](https://www.greasyfork.org/) to your browser (this script has only been tested on [Tampermonkey](https://tampermonkey.net/))
 - Click the [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js) link of the script to install it to your userscript client
-- Open [Rarbg.to](https://rarbg.to/) or any of its mirrors and the changes should be there
+- Open [Rarbg](https://rarbgunblocked.org/) or any of its mirrors and the changes should be there
 
 ## Features
 
-This script adds features and enhances the [Rarbg.to](https://rarbg.to/) website
+This script adds features and enhances the [Rarbg](https://rarbgunblocked.org/) website
 
 <img src="screenshots/Screenshot_Rarbg_general.png" alt="General Screenshot" max-height="400"/>
 

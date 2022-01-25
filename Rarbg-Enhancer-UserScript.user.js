@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.5.3
+// @version      1.6.0
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -13,13 +13,17 @@ var meta = {
 // @grant        GM_getValue
 // @grant        GM_download
 // @grant        GM_xmlhttpRequest
-// @icon         https://www.google.com/s2/favicons?domain=rarbg.com
+// @grant        GM_registerMenuCommand
+// @icon         https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rarbg.to&size=16
 // @run-at       document-idle
 // @updateUrl    https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      https://code.jquery.com/jquery-3.4.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
+// @require      https://raw.githubusercontent.com/mitchellmebane/GM_fetch/master/GM_fetch.js
+// @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
+// @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @include      https://*rarbg.*
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
 // @include      /https?:\/\/.{0,8}rargb.*\.\/*/
@@ -60,7 +64,6 @@ var meta = {
 // @include      https://rarbgweb.org
 // @include      https://unblockedrarbg.org
 // @include      https://www.rarbg.is
-// @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @noframes
 // ==/UserScript==
     }
@@ -171,6 +174,123 @@ const catKeyMap = {
     'n': 'Non XXX',
 };
 
+function getGoogleImages(query) {
+    if (typeof getGoogleImages.cache === 'undefined') getGoogleImages.cache = {};
+
+    if (Object.keys(getGoogleImages.cache).includes(query)) {
+        console.log('getGoogleImages(): using cache for query:', query);
+        return getGoogleImages[query];
+    }
+
+
+    return GM_fetch("https://www.google.com/search?q="+encodeURIComponent(query)+"&tbm=isch", {
+      "headers": {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+        "accept-language": "en-US,en;q=0.9,ar;q=0.8",
+      },
+      "referrer": "https://www.google.com/",
+      "referrerPolicy": "origin",
+      "body": null,
+      "method": "GET",
+      "mode": "cors",
+      "credentials": "include"
+    }).then(response => response.text()).then(text => {
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        try {
+            var result =  parse_AF_initDataCallback(doc);
+            getGoogleImages[query] = result;
+        } catch(e) {
+            console.warn('parse_AF_initDataCallback failed for query:', query, e);
+            var result = {};
+        }
+
+        return result;
+    });
+}
+
+function parse_AF_initDataCallback(doc) {
+    var data = Array.from(doc.querySelectorAll('script[nonce]'))
+        .map(s => s.innerText)
+        .filter(t => /^AF_initDataCallback/.test(t))
+        .map(t => eval(t.replace(/^AF_initDataCallback/, '')).data)
+        .filter(d => d && d.length && d.reduce((acc, el) => acc || el && el.length))
+    ;
+
+    var entry = data.slice(-1)[0];
+    var imgMetas = entry[31][0][12][2].map(meta => meta[1]); // confirmed
+    var metas = imgMetas.map(meta => {
+        try {
+            const rg_meta = ({
+                'id': '',  // thumbnail
+                'tu': '', 'th': '', 'tw': '',  // original
+                'ou': '', 'oh': '', 'ow': '',  // site and name
+                'pt': '', 'st': '',  // titles
+                'ity': '',
+                'rh': 'IMAGE_HOST',
+                'ru': 'IMAGE_SOURCE',
+            });
+
+            rg_meta.id = meta[1];
+            [rg_meta.tu, rg_meta.th, rg_meta.tw] = meta[2];
+            [rg_meta.ou, rg_meta.oh, rg_meta.ow] = meta[3];
+
+            const siteAndNameInfo = meta[9] || meta[11];
+
+            if (siteAndNameInfo[2003]) {
+                rg_meta.pt = siteAndNameInfo[2003][3];
+            } else {
+                rg_meta.pt = siteAndNameInfo[2003][2];
+            }
+
+            try {
+                rg_meta.st = siteAndNameInfo[183836587][0]; // infolink TODO: doublecheck
+            } catch (error) {
+                try {
+                    rg_meta.st = siteAndNameInfo[2003][2]; // infolink TODO: doublecheck
+                } catch (error) {
+                }
+            }
+
+            return rg_meta;
+        } catch (e) {
+        }
+    }).filter(meta => !!meta);
+
+    metasMap = Object.fromEntries(metas.map(meta => [meta.id, meta])); // same as metas, but is an object with the "id" as the key
+
+    parse_AF_initDataCallback.metasMap = metasMap;
+    return metasMap;
+}
+
+
+function removeDoubleSpaces(str) {
+    return !!str ? str.replace(/(\s\s+)/g, ' ') : str;
+}
+
+function clearSymbolsFromString(str) {
+    function clearDatesFromString(str) {
+        return !!str ? removeDoubleSpaces(str.replace(/\d+([.\-])(\d+)([.\-])\d*/g, ' ')) : str;
+    }
+
+    return str && removeDoubleSpaces(clearDatesFromString(str).replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, ' ')
+        .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, ' ')).trim();
+}
+
+const SearchEngines = {
+    google: {
+        name: 'Google',
+        imageSearchUrl: (q) => `https://www.google.com/search?&hl=en&tbm=isch&q=${encodeURIComponent(q)}`
+    },
+    ddg: {
+        name: 'DuckDuckGo',
+        imageSearchUrl: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}&atb=v73-5__&iar=images&iax=images&ia=images`
+    },
+    yandex: {
+        name: 'Yandex',
+        imageSearchUrl: (q) => `https://yandex.com/images/search?text=${encodeURIComponent(q)}`
+    }
+};
+
 // main
 (function () {
     'use strict';
@@ -182,45 +302,144 @@ const catKeyMap = {
 
     const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
+    
+    // TODO: make this open on the first time the script runs, and have a screenshot that shows how to open these settings
+    unsafeWindow.GM_config = GM_config
+    createElement
+    
+    var title = createElement('<div><div><a href="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript">Rarbg-Enhancer-UserScript Settings</a><pre style=" font-size: medium; ">You can get to this options page by pressing "ctrl+/" or by navigating to the menu as shown bellow</pre></div><img src="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/screenshots/rarbg-options.png"></div>')
 
-    const Options = $.extend({
-        thumbnailLink: 'ml', //options:  "ml", "tor", "img", "page"
-        addThumbnails: true, // if set to false, the content thumbnails will not be used, magnet or torrent thumbnails will be used isntead
-        showGeneratedSearchQuery: false,
-        addCategoryWithSearch: true, // when searching for a movie title like "X-men", will become "X-men movie"
-        largeThumbnails: true,
-        defaultImageSearchEngine: 'google',
-        infiniteScrolling: true,
-        mirrors: meta.include,
-        seedEffects: true,
-        imgScale: 1.0,
-        staticSearchbar: false,
-    }, GM_getValue('RarbgOptions'));
+    GM_config.init({
+        id: 'GM_config',
+        title: title,
+        css: '#GM_config_section_1 .config_var, #GM_config_section_2 .config_var, #GM_config_section_3 .config_var { margin: 5% !important;display: inline !important; }',
+        fields: {
+            'thumbnailLink': {
+                'section': [GM_config.create('Rarbg Settings'), 'here you can configure settings for the rarbg-enhancer-userscript. Be aware that the page will reload after saving'],
+                'label': 'thumbnailLink',
+                'default': 'magnetLink',
+                'title': 'where should clicking the thumbnail take you',
+                'options':  ['magnetLink','torrentLink','torrentPageLink', 'img'],
+                'type': 'radio',
+            },
+            'addThumbnails': {
+                'label': 'addThumbnails',
+                'default': true,
+                'title': 'if set to false, the content thumbnails will not be used, magnet or torrent thumbnails will be used isntead',
+                'type': 'checkbox',
+            },
+            'showGeneratedSearchQuery': {
+                'label': 'showGeneratedSearchQuery',
+                'default': false,
+                'title': '',
+                'type': 'checkbox',
+            },
+            'addCategoryWithSearch': {
+                'label': 'addCategoryWithSearch',
+                'default': true,
+                'title': 'when searching for a movie title like "X-men", will become "X-men movie"',
+                'type': 'checkbox',
+            },
+            'largeThumbnails': {
+                'label': 'largeThumbnails',
+                'default': true,
+                'title': '',
+                'type': 'checkbox',
+            },
+            'fetchExtraThumbnails': {
+                'label': 'fetchExtraThumbnails',
+                'title': 'fetches extra thumbnails from Google images and adds them to the torrent row in the search page',
+                'type': 'int',
+                'default': 5,
+            },
+            'ImageSearchEngine': {
+                'label': 'ImageSearchEngine',
+                'default': 'google',
+                'title': '',
+                'options':  Array.from(Object.keys(SearchEngines)),
+                'type': 'radio',
+            },
+            'infiniteScrolling': {
+                'label': 'infiniteScrolling',
+                'default': true,
+                'title': '',
+                'type': 'checkbox',
+            },
+            'mirrors': {
+                'label': 'mirrors',
+                'default': meta.include.join('\n'),
+                'title': '',
+                'type': 'textarea',
+            },
+            'seedEffects': {
+                'label': 'seedEffects',
+                'default': true,
+                'title': 'coloring the torrent rows based on the number of seeders',
+                'type': 'checkbox',
+            },
+            'imgScale': {
+                'label': 'imgScale',
+                'default': 0.5,
+                'title': '',
+                'type': 'float',
+            },
+            'imgHoverPopupScale': {
+                'label': 'imgHoverPopupScale',
+                'default': 2.0,
+                'title': '',
+                'type': 'float',
+            },
+            'hideRecommendedTorrents': {
+                'label': 'hideRecommendedTorrents',
+                'default': false,
+                'title': '',
+                'type': 'checkbox',
+            },
+            'staticSearchbar': {
+                'label': 'staticSearchbar',
+                'default': false,
+                'title': '',
+                'type': 'checkbox',
+            },
+            'isFirstVisit': {
+                'type': 'hidden',
+                'default': true,
+            },
+            // blocking
+            'block Movies': {   'label': 'block Movies',   'default': false, 'type': 'checkbox', 'title': 'Movies', 'section': 'Block categories', },
+            'block TV show': {  'label': 'block TV show',  'default': false, 'type': 'checkbox', 'title': 'TV show', },
+            'block Music': {    'label': 'block Music',    'default': false, 'type': 'checkbox', 'title': 'Music', },
+            'block Software': { 'label': 'block Software', 'default': false, 'type': 'checkbox', 'title': 'Software', },
+            'block XXX': {      'label': 'block XXX',      'default': false, 'type': 'checkbox', 'title': 'XXX', },
+            'block Games': {    'label': 'block Games',    'default': false, 'type': 'checkbox', 'title': 'Games', },
+        },
+        events:
+        {
+          open: function(doc) {
 
-    // write back the Options to the storage (in the case that they changed)
-    window.addEventListener('unload', function () {
-        GM_setValue('RarbgOptions', Options);
+          },
+          save: function(values) {
+            // All the values that aren't saved are passed to this function
+            // for (i in values) alert(values[i]);
+            location.reload();
+          }
+        },
     });
+
+    if (!GM_config.get('mirrors')) {
+        GM_config.save();
+    }
+
+    GM_registerMenuCommand('Rarbg options', () => {
+        GM_config.open();
+    });
+
 
     Math.clamp = function (a, min, max) {
         return a < min ? min :
             a > max ? max : a;
     };
 
-    const SearchEngines = {
-        google: {
-            name: 'Google',
-            imageSearchUrl: (q) => `https://www.google.com/search?&hl=en&tbm=isch&q=${encodeURIComponent(q)}`
-        },
-        ddg: {
-            name: 'DuckDuckGo',
-            imageSearchUrl: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}&atb=v73-5__&iar=images&iax=images&ia=images`
-        },
-        yandex: {
-            name: 'Yandex',
-            imageSearchUrl: (q) => `https://yandex.com/images/search?text=${encodeURIComponent(q)}`
-        }
-    };
     let searchEngine = {};
     initSearchEngine();
 
@@ -229,7 +448,7 @@ const catKeyMap = {
 
     //TODO: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
     if (isPageBlockedKSA()) {
-        location.assign(Options.mirrors[Math.floor(Math.random() * Options.mirrors.length)]);
+        location.assign(GM_config.get('mirrors').split('\n')[Math.floor(Math.random() * GM_config.get('mirrors').split('\n').length)]);
     }
 
     const searchBox = document.querySelector('#searchinput');
@@ -305,7 +524,7 @@ a.search:active { color: blue; }
     margin: 0 auto;
 }
 .zoom:hover {
-    transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
+    transform: scale(${GM_config.get('imgHoverPopupScale')}); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
 }
 
 td.lista {
@@ -323,7 +542,24 @@ tr.lista2 > td.lista > a[onmouseover] {
     background-color: rgba(183, 183, 183, 0.23) !important;
     margin: 10px !important;
     font-family: sans-serif !important;
-}`
+}
+
+a.extra-tb img {
+    max-height: 100px;
+    max-width: 100px;
+}
+
+a.extra-tb {
+    background: white;
+}
+
+.row{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+`
     );
     updateCss();
 
@@ -536,17 +772,23 @@ tr.lista2 > td.lista > a[onmouseover] {
                         searchContainer.style.top = '';
                         searchContainer.style.left = '';
                     }
-                    Options.staticSearchbar = checkbox.checked;
+                    GM_config.set('staticSearchbar', checkbox.checked);
                 };
 
-                if (Options.staticSearchbar) {
+                if (GM_config.get('staticSearchbar')) {
                     checkbox.click();
+                }
+
+                if (GM_getValue('isFirstVisit', true)) {
+                    console.log('is first visit');
+                    GM_config.open();
+                    GM_setValue('isFirstVisit', false);
                 }
 
                 const mldlCol = appendColumn('ML DL', 'File', addDlAndMl);
                 mldlCol.header.addEventListener('click', downloadAllTorrents);
 
-                if (Options.infiniteScrolling) { // infiniteScrolling
+                if (GM_config.get('infiniteScrolling')) { // infiniteScrolling
                     (function makeInfiniteScroll() {
                         const tableLvl2 = 'div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)';
                         const tbody = tableLvl2 + ' > tbody';
@@ -581,6 +823,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                 // TODO: use horsey and fuzzysearch for string matching and for showing suggestions
                 // TODO: try to put updateSearch() into the horsey source() option
                 if (typeof (horsey) !== 'undefined') {
+                    console.log('horsey is defined WARNING!')
                     const myHorsey = horsey(searchBox, {
                         source: [{
                             list: getTorrentLinks().map(a => ({
@@ -642,10 +885,11 @@ tr.lista2 > td.lista > a[onmouseover] {
                 const signinTab = document.querySelector('body > table:nth-child(5) > tbody > tr > td > table > tbody > tr > td.header4');
                 if (signinTab) signinTab.remove();
 
-
-                // remove recommended torrents
-                const recTor = document.querySelector('tr > [valign="top"] > [onmouseout="return nd();"]');
-                if (recTor) recTor.closest('div').remove();
+                if (GM_config.get('hideRecommendedTorrents')) {
+                    // remove recommended torrents
+                    const recTor = document.querySelector('tr > [valign="top"] > [onmouseout="return nd();"]');
+                    if (recTor) recTor.closest('div').remove();
+                }
 
                 // remove "recommended torrents" title
                 const recTitle = getElementsByXPath('(//text()[contains(., "Recommended torrents \:")])/../../..')[0];
@@ -692,7 +936,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                     };
                     mirrorsTab.appendChild(mirrorsSelect);
 
-                    for (const mirror of Options.mirrors) {
+                    for (const mirror of GM_config.get('mirrors').split('\n')) {
                         const option = document.createElement('option');
                         option.className = 'mirrors-option';
                         option.value = mirror;
@@ -722,6 +966,21 @@ tr.lista2 > td.lista > a[onmouseover] {
 
                     blankTab.after(mirrorsTab);
                 })();
+
+                // create settings tab
+                if (!document.querySelector('#settingsTab')) {
+                    var lastTab = document.querySelector("tbody > tr > td > table > tbody > tr > td:last-child.header3");
+                    var settingsTab = lastTab.cloneNode();
+                    settingsTab.id = 'settingsTab';
+                    settingsTab.onclick = function(e) {
+                        GM_config.open();
+                    };
+                    var a = document.createElement('a');
+                    a.innerText = '⚙️ Script Settings';
+                    settingsTab.appendChild(a);
+                    settingsTab.style['background-color'] = 'green';
+                    lastTab.after(settingsTab);
+                }
 
             })();
 
@@ -756,6 +1015,10 @@ tr.lista2 > td.lista > a[onmouseover] {
         if (typeof Mousetrap === 'undefined') return;
         Mousetrap.bind(['space'], (e) => {
             solveCaptcha(); // TODO: remove this, this is just for debugging
+        });
+        
+        Mousetrap.bind('ctrl+/', function (e) {
+            GM_config.open();
         });
         Mousetrap.bind(['/'], (e) => {
             console.log('clicking search input');
@@ -830,12 +1093,12 @@ tr.lista2 > td.lista > a[onmouseover] {
 
         // increase thumbnail size
         Mousetrap.bind('=', function (e) {
-            Options.imgScale = Math.min(Options.imgScale + 0.2, 10);
+            GM_config.set('imgScale', Math.min(GM_config.get('imgScale') + 0.2, 10));
             toggleThumbnailSize('update only');
         });
         // decrease thumbnail size
         Mousetrap.bind('-', function (e) {
-            Options.imgScale = Math.max(Options.imgScale - 0.2, 0.2);
+            GM_config.set('imgScale', Math.max(GM_config.get('imgScale') - 0.2, 0.2));
             toggleThumbnailSize('update only');
         });
 
@@ -877,8 +1140,8 @@ tr.lista2 > td.lista > a[onmouseover] {
 
         // thumbnail link
         (function setLinkHref() {
-            switch (Options.thumbnailLink) {
-                case 'ml':
+            switch (GM_config.get('thumbnailLink')) {
+                case 'magnetLink':
                     try {
                         thumbnailLink.href = ml;
                         if (!/^magnet:\?/.test(thumbnailLink.href))  // noinspection ExceptionCaughtLocallyJS
@@ -887,7 +1150,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                         thumbnailLink.href = dlurl;
                     }
                     break;
-                case 'tor':
+                case 'torrentLink':
                     try {
                         thumbnailLink.href = dlurl;
                     } catch (e) {
@@ -895,7 +1158,7 @@ tr.lista2 > td.lista > a[onmouseover] {
                         if (debug) console.debug('Using MagnetLink for torrent thumbnail since torrent failed:', ml);
                     }
                     break;
-                case 'page':
+                case 'torrentPageLink':
                     thumbnailLink.href = torrent.href;
                     break;
             }
@@ -1054,8 +1317,8 @@ tr.lista2 > td.lista > a[onmouseover] {
     function updateCss() {
         thumbnailsCssBlock.innerText =
             'td.thumbnail-cell > a > img.preview-image {' +
-            ' max-width: ' + maxwidth * Options.imgScale + 'px;' +
-            ' max-height: ' + maxheight * Options.imgScale + 'px; ' +
+            ' max-width: ' + maxwidth * GM_config.get('imgScale') + 'px;' +
+            ' max-height: ' + maxheight * GM_config.get('imgScale') + 'px; ' +
             '}';
     }
 
@@ -1208,7 +1471,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             })();
 
             // color backgrounds depending on the number of seeders
-            if (Options.seedEffects) {
+            if (GM_config.get('seedEffects')) {
                 (function seedEffects() {
                     /**
                      * @param numberOfSeeders
@@ -1257,7 +1520,7 @@ tr.lista2 > td.lista > a[onmouseover] {
             thumbnail.setAttribute('small-loaded', '');
             thumbnail.src = thumbnail.getAttribute('smallSrc');
 
-            if (Options.largeThumbnails && thumbnail.getAttribute('big-loaded')) {
+            if (GM_config.get('largeThumbnails') && thumbnail.getAttribute('big-loaded')) {
                 thumbnail.src = thumbnail.getAttribute('bigSrc');
             }
         };
@@ -1268,17 +1531,17 @@ tr.lista2 > td.lista > a[onmouseover] {
         bigImage.onLoad = function () {
             thumbnail.setAttribute('big-loaded', '');
 
-            if (Options.largeThumbnails) {
+            if (GM_config.get('largeThumbnails')) {
                 thumbnail.src = thumbnail.getAttribute('bigSrc');
             }
         };
 
-        // thumbnail.src = thumbnail.getAttribute((!Options.largeThumbnails ? 'smallSrc' : 'bigSrc'));
-        thumbnail.src = Options.largeThumbnails ?
+        // thumbnail.src = thumbnail.getAttribute((!GM_config.get('largeThumbnails') ? 'smallSrc' : 'bigSrc'));
+        thumbnail.src = GM_config.get('largeThumbnails') ?
             thumbnail.getAttribute('bigSrc') :
             thumbnail.getAttribute('smallSrc');
 
-        if (!Options.addThumbnails) {
+        if (!GM_config.get('addThumbnails')) {
             thumbnail.src = thumbnail.closest('a').href.indexOf('magnet:?') === 0 ? // if magnet link
                 MAGNET_ICO : // magnet icon
                 TORRENT_ICO; // else, just put torrent icon
@@ -1287,16 +1550,16 @@ tr.lista2 > td.lista > a[onmouseover] {
 
     function toggleThumbnailSize(newSize = 'toggle') {
         if (newSize === "large") {
-            Options.largeThumbnails = true;
+            GM_config.set('largeThumbnails', true);
         } else if (newSize == "small") {
-            Options.largeThumbnails = false;
+            GM_config.set('largeThumbnails', false);
         } else if (newSize === 'toggle') {
-            Options.largeThumbnails = !Options.largeThumbnails;
+            GM_config.set('largeThumbnails', !GM_config.get('largeThumbnails'));
         }
         console.log('toggleThumbnailSize(' + newSize + ')');
         document.querySelectorAll('.preview-image').forEach(setThumbnail);
         updateCss();
-        if (debug) console.log('toggling thumbnail sizes. Options.largeThumbnails = ', Options.largeThumbnails);
+        if (debug) console.log('toggling thumbnail sizes. GM_config.set(largeThumbnails,', GM_config.get('largeThumbnails'), ')');
     }
     // gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
     function getLargeThumbnail(smallThumbUrl) {
@@ -1327,6 +1590,19 @@ tr.lista2 > td.lista > a[onmouseover] {
     }
 
     function addImageSearchAnchor(torrentAnchor) {
+        var blocklist = [];
+        if (GM_config.get('block Movies')) blocklist = blocklist.concat(catCodeMap['Movies']);
+        if (GM_config.get('block TV show')) blocklist = blocklist.concat(catCodeMap['TV show']);
+        if (GM_config.get('block Music')) blocklist = blocklist.concat(catCodeMap['Music']);
+        if (GM_config.get('block Software')) blocklist = blocklist.concat(catCodeMap['Software']);
+        if (GM_config.get('block XXX')) blocklist = blocklist.concat(catCodeMap['XXX']);
+        if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
+        var selector = blocklist.map(c=>`img[src="https://dyncdn2.com/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
+        try {
+            document.querySelectorAll(selector).forEach(img=>img.closest('tr').remove());
+        } catch(e) {}
+
+
         const searchTd = document.createElement('td'),
             searchLink = document.createElement('a')
             ;
@@ -1362,7 +1638,7 @@ tr.lista2 > td.lista > a[onmouseover] {
 
         searchLink.href = searchEngine.imageSearchUrl(searchQuery);
         try {
-            if (Options.addCategoryWithSearch && !new RegExp(getCategory(torrentAnchor)).test(searchLink.href))
+            if (GM_config.get('addCategoryWithSearch') && !new RegExp(getCategory(torrentAnchor)).test(searchLink.href))
                 searchLink.href += ' ' + getCategory(torrentAnchor);
         } catch (e) {
             if (debug) console.warn('unable to get category', searchLink);
@@ -1374,7 +1650,7 @@ tr.lista2 > td.lista > a[onmouseover] {
         var searchEngineText = document.createElement('p5');
         var qText = document.createElement('p6');
         searchEngineText.innerHTML = `${searchEngine.name} Image Search`;
-        qText.innerHTML = (Options.showGeneratedSearchQuery) ? ': ' + searchQuery : '';
+        qText.innerHTML = (GM_config.get('showGeneratedSearchQuery')) ? ': ' + searchQuery : '';
 
         let searchIcon = document.createElement('img');
         // searchIcon.src = SEARCH_ICON_URL;
@@ -1387,10 +1663,53 @@ tr.lista2 > td.lista > a[onmouseover] {
         // searchLink.appendChild(searchEngineText);
         searchLink.appendChild(qText);
         torrentAnchor.after(searchLink);
+
+        if (GM_config.get('fetchExtraThumbnails') > 0) {
+            var query = clearSymbolsFromString(torrentAnchor.innerText)
+            .replace(/\s\s+/g, ' ') // removes double spaces
+            .trim()
+            ;
+            getGoogleImages(query).then(metas=> {
+                metas = Object.values(metas);
+                // console.log(q, metas[0].ou)
+                var div = document.createElement('div');
+                div.classList.add('row');
+                torrentAnchor.parentNode.append(div);
+                var i = 0;
+                for (const meta of metas) {
+                    if (/dyncdn/.test(meta.ou)) {
+                        continue; // skip rarbg thumbnails
+                    }
+                    var a = document.createElement('a');
+                    a.href = meta.st;
+                    a.innerText = meta.pt;
+                    a.classList.add('extra-tb');
+                    a.style["font-size"] = "5px";
+                    a.style["display"] = "table-caption";
+
+                    var img = document.createElement('img');
+                    a.classList.add('zoom');
+                    img.src = meta.ou;
+                    //https://stackoverflow.com/a/70725756/7771202
+                    img.setAttribute('onerror', "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['"+meta.tu+"'])");
+
+                    a.append(img);
+                    var subdiv = document.createElement('div');
+                    subdiv.classList.add('column');
+                    subdiv.append(a);
+                    div.append(subdiv);
+
+                    if (++i > GM_config.get('fetchExtraThumbnails')) {
+                        break
+                    }
+                }
+            });
+        }
+        
     }
 
     function initSearchEngine() {
-        const searchEngineValue = GM_getValue('ImageSearchEngine', Options.defaultImageSearchEngine);
+        const searchEngineValue = GM_config.get('ImageSearchEngine');
         if (SearchEngines.hasOwnProperty(searchEngineValue)) {
             searchEngine = SearchEngines[searchEngineValue];
             console.log('search engine:', searchEngineValue, searchEngine);

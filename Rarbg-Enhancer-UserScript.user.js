@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.0
+// @version      1.6.1
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -166,7 +166,7 @@ const codeToCatMap = reverseMapping(catCodeMap);
 // converts key to a category code (number in URL)
 const catKeyMap = {
     'v': 'Movies',
-    's': 'TV show',
+    's': 'TV shows',
     'm': 'Music',
     'w': 'Software',
     'x': 'XXX',
@@ -395,6 +395,12 @@ const SearchEngines = {
                 'title': '',
                 'type': 'checkbox',
             },
+            'autoExitIndex80php': {
+                'label': 'autoExitIndex80php',
+                'default': true,
+                'title': '',
+                'type': 'checkbox',
+            },
             'staticSearchbar': {
                 'label': 'staticSearchbar',
                 'default': false,
@@ -407,7 +413,7 @@ const SearchEngines = {
             },
             // blocking
             'block Movies': {   'label': 'block Movies',   'default': false, 'type': 'checkbox', 'title': 'Movies', 'section': 'Block categories', },
-            'block TV show': {  'label': 'block TV show',  'default': false, 'type': 'checkbox', 'title': 'TV show', },
+            'block TV shows': {  'label': 'block TV shows',  'default': false, 'type': 'checkbox', 'title': 'TV shows', },
             'block Music': {    'label': 'block Music',    'default': false, 'type': 'checkbox', 'title': 'Music', },
             'block Software': { 'label': 'block Software', 'default': false, 'type': 'checkbox', 'title': 'Software', },
             'block XXX': {      'label': 'block XXX',      'default': false, 'type': 'checkbox', 'title': 'XXX', },
@@ -868,6 +874,10 @@ a.extra-tb {
                 } else {
                     console.warn('"tpageurl" is not in the location params!');
                     window.close();
+                }
+            } else if (location.pathname === '/index80.php') {
+                if (GM_config.get('autoExitIndex80php')) {
+                    location.assign('/torrents.php');
                 }
             }
 
@@ -1592,13 +1602,14 @@ a.extra-tb {
     function addImageSearchAnchor(torrentAnchor) {
         var blocklist = [];
         if (GM_config.get('block Movies')) blocklist = blocklist.concat(catCodeMap['Movies']);
-        if (GM_config.get('block TV show')) blocklist = blocklist.concat(catCodeMap['TV show']);
+        if (GM_config.get('block TV shows')) blocklist = blocklist.concat(catCodeMap['TV shows']);
         if (GM_config.get('block Music')) blocklist = blocklist.concat(catCodeMap['Music']);
         if (GM_config.get('block Software')) blocklist = blocklist.concat(catCodeMap['Software']);
         if (GM_config.get('block XXX')) blocklist = blocklist.concat(catCodeMap['XXX']);
         if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
         var selector = blocklist.map(c=>`img[src="https://dyncdn2.com/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
         try {
+            console.log('blocking using selector:', selector)
             document.querySelectorAll(selector).forEach(img=>img.closest('tr').remove());
         } catch(e) {}
 

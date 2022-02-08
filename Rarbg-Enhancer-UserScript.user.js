@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.1
+// @version      1.6.2
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -68,6 +68,7 @@ var meta = {
 // ==/UserScript==
     }
 };
+unsafeWindow.GM_fetch2 = GM_fetch;
 if (meta.rawmdb && meta.rawmdb.toString && (meta.rawmdb = meta.rawmdb.toString())) {
     var kv, row = /\/\/\s+@(\S+)\s+(.+)/g;
     while ((kv = row.exec(meta.rawmdb)) !== null) {
@@ -262,6 +263,36 @@ function parse_AF_initDataCallback(doc) {
     return metasMap;
 }
 
+function replaceAllImageHosts() {
+    // fullres for imgprime.com
+    // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
+    // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
+    replaceImageHostImageWithOriginal("https://imgprime.com/", {
+        'imga-': '',
+        '.html': '',
+        '/small/': '/big/',
+        '/u/s/': '/u/b/',
+    });
+    // imagecurl.com
+    replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { '_thumb': '' });
+    // imagefruit.com
+    replaceImageHostImageWithOriginal("/tn/t", { '/tn/t': '/tn/i' });
+    // 22pixx.xyz
+    replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
+        '22pixx.xyz/os/': '22pixx.xyz/o/',
+        '22pixx.xyz/s/': '22pixx.xyz/i/',
+    });
+    // trueimg.xyz
+    replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
+        'trueimg.xyz/s/': 'trueimg.xyz/b/',
+    });
+    // trueimg.xyz
+    replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
+        'https://imgtaxi.com/images/small/': 'https://imgtaxi.com/images/big/',
+    });
+
+}
+
 
 function removeDoubleSpaces(str) {
     return !!str ? str.replace(/(\s\s+)/g, ' ') : str;
@@ -346,11 +377,11 @@ const SearchEngines = {
                 'title': '',
                 'type': 'checkbox',
             },
-            'fetchExtraThumbnails': {
-                'label': 'fetchExtraThumbnails',
-                'title': 'fetches extra thumbnails from Google images and adds them to the torrent row in the search page',
-                'type': 'int',
-                'default': 5,
+            'alwaysFetchExtraThumbnails': {
+                'label': 'alwaysFetchExtraThumbnails',
+                'title': 'automatically press fetch extra thumbnails',
+                'type': 'checkbox',
+                'default': false,
             },
             'ImageSearchEngine': {
                 'label': 'ImageSearchEngine',
@@ -680,34 +711,7 @@ a.extra-tb {
                 if (vpnR) {
                     vpnR[0].remove();
                 }
-
-                // fullres for imgprime.com
-                // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
-                // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-                replaceImageHostImageWithOriginal("https://imgprime.com/", {
-                    'imga-': '',
-                    '.html': '',
-                    '/small/': '/big/',
-                    '/u/s/': '/u/b/',
-                });
-                // imagecurl.com
-                replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { '_thumb': '' });
-                // imagefruit.com
-                replaceImageHostImageWithOriginal("/tn/t", { '/tn/t': '/tn/i' });
-                // 22pixx.xyz
-                replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
-                    '22pixx.xyz/os/': '22pixx.xyz/o/',
-                    '22pixx.xyz/s/': '22pixx.xyz/i/',
-                });
-                // trueimg.xyz
-                replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
-                    'trueimg.xyz/s/': 'trueimg.xyz/b/',
-                });
-                // trueimg.xyz
-                replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
-                    'https://imgtaxi.com/images/small/': 'https://imgtaxi.com/images/big/',
-                });
-
+                replaceAllImageHosts();
 
                 // putting the "Description:" row before the "Others:" row
                 getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].appendChild(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
@@ -1675,17 +1679,54 @@ a.extra-tb {
         searchLink.appendChild(qText);
         torrentAnchor.after(searchLink);
 
-        if (GM_config.get('fetchExtraThumbnails') > 0) {
+        var extraThumbnailsLink = document.createElement('a');
+        extraThumbnailsLink.style['text-decoration']= 'underline';
+        extraThumbnailsLink.style['cursor']= 'pointer';
+        extraThumbnailsLink.style['padding']= '20px';
+        extraThumbnailsLink.style['background']= 'lightgray';
+        extraThumbnailsLink.textContent = '➕ more thumbnails';
+        // extraThumbnailsLink.firstElementChild.src = '';
+        searchLink.after(extraThumbnailsLink);
+
+        var div = document.createElement('div');
+        div.classList.add('row');
+        torrentAnchor.parentNode.append(div);
+
+        extraThumbnailsLink.addEventListener('click', async function(e) {
+            try {
+                var [descriptionSrc, descriptionHref] = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var img = doc.querySelector("#description > a > img");
+                    return [img.src, img.closest('a').href]
+                });
+                
+                var a = document.createElement('a');
+                a.href = descriptionHref;
+                // a.style.maxHeight = '400px';
+                a.style.maxWidth = '400px';
+                a.innerText = 'Description';
+                a.classList.add('description-tb');
+                a.style["font-size"] = "20px";
+                a.style["display"] = "grid";
+
+                var img = document.createElement('img');
+                img.src = descriptionSrc;
+                //https://stackoverflow.com/a/70725756/7771202
+                img.setAttribute('onerror', "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['"+meta.tu+"'])");
+
+                a.append(img);
+                div.append(a);
+
+            } catch(ee) {
+                var descriptionSrc = '';
+            }
+            replaceAllImageHosts();
             var query = clearSymbolsFromString(torrentAnchor.innerText)
             .replace(/\s\s+/g, ' ') // removes double spaces
             .trim()
             ;
             getGoogleImages(query).then(metas=> {
                 metas = Object.values(metas);
-                // console.log(q, metas[0].ou)
-                var div = document.createElement('div');
-                div.classList.add('row');
-                torrentAnchor.parentNode.append(div);
                 var i = 0;
                 for (const meta of metas) {
                     if (/dyncdn/.test(meta.ou)) {
@@ -1709,13 +1750,20 @@ a.extra-tb {
                     subdiv.classList.add('column');
                     subdiv.append(a);
                     div.append(subdiv);
-
-                    if (++i > GM_config.get('fetchExtraThumbnails')) {
-                        break
-                    }
                 }
             });
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            extraThumbnailsLink.remove();
+            return false;
+        });
+        
+
+        if (GM_config.get('alwaysFetchExtraThumbnails')) {
+            extraThumbnailsLink.click();
         }
+
         
     }
 

@@ -24,7 +24,7 @@ This script adds features and enhances the [Rarbg](https://rarbgunblocked.org/) 
   ![](screenshots/extra_thumbnails.gif)
 ### Add magnet link and torrent links
 ### Dropdown list to go to other Rarbg mirrors  
-  ![](screenshots/Screenshot_Rarbg_mirrorDropdown.png")
+  ![](screenshots/Screenshot_Rarbg_mirrorDropdown.png)
 ### Download all torrrents button  
   ![](screenshots/Screenshot_Rarbg_download_all_torrents.png)
 ### Color torrent rows red/green depending on seeders count

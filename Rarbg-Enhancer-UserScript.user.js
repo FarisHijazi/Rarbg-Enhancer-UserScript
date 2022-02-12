@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.2
+// @version      1.6.3
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -795,7 +795,7 @@ a.extra-tb {
                     GM_setValue('isFirstVisit', false);
                 }
 
-                const mldlCol = appendColumn('ML DL', 'File', addDlAndMl);
+                const mldlCol = appendColumn('ML DL<br>Download all', 'File', addDlAndMl);
                 mldlCol.header.addEventListener('click', downloadAllTorrents);
 
                 if (GM_config.get('infiniteScrolling')) { // infiniteScrolling
@@ -1684,7 +1684,7 @@ a.extra-tb {
         extraThumbnailsLink.style['cursor']= 'pointer';
         extraThumbnailsLink.style['padding']= '20px';
         extraThumbnailsLink.style['background']= 'lightgray';
-        extraThumbnailsLink.textContent = '➕ more thumbnails';
+        extraThumbnailsLink.textContent = '➕ fetch description thumbnail';
         // extraThumbnailsLink.firstElementChild.src = '';
         searchLink.after(extraThumbnailsLink);
 
@@ -1693,69 +1693,71 @@ a.extra-tb {
         torrentAnchor.parentNode.append(div);
 
         extraThumbnailsLink.addEventListener('click', async function(e) {
-            try {
-                var [descriptionSrc, descriptionHref] = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
-                    var doc = new DOMParser().parseFromString(html, 'text/html');
-                    var img = doc.querySelector("#description > a > img");
-                    return [img.src, img.closest('a').href]
-                });
-                
-                var a = document.createElement('a');
-                a.href = descriptionHref;
-                // a.style.maxHeight = '400px';
-                a.style.maxWidth = '400px';
-                a.innerText = 'Description';
-                a.classList.add('description-tb');
-                a.style["font-size"] = "20px";
-                a.style["display"] = "grid";
-
-                var img = document.createElement('img');
-                img.src = descriptionSrc;
-                //https://stackoverflow.com/a/70725756/7771202
-                img.setAttribute('onerror', "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['"+meta.tu+"'])");
-
-                a.append(img);
-                div.append(a);
-
-            } catch(ee) {
-                var descriptionSrc = '';
-            }
-            replaceAllImageHosts();
-            var query = clearSymbolsFromString(torrentAnchor.innerText)
-            .replace(/\s\s+/g, ' ') // removes double spaces
-            .trim()
-            ;
-            getGoogleImages(query).then(metas=> {
-                metas = Object.values(metas);
-                var i = 0;
-                for (const meta of metas) {
-                    if (/dyncdn/.test(meta.ou)) {
-                        continue; // skip rarbg thumbnails
-                    }
+            if (extraThumbnailsLink.textContent === '➕ fetch description thumbnail') {
+                try {
+                    var [descriptionSrc, descriptionHref] = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
+                        var doc = new DOMParser().parseFromString(html, 'text/html');
+                        var img = doc.querySelector("#description > a > img");
+                        return [img.src, img.closest('a').href]
+                    });
+                    
                     var a = document.createElement('a');
-                    a.href = meta.st;
-                    a.innerText = meta.pt;
-                    a.classList.add('extra-tb');
-                    a.style["font-size"] = "5px";
-                    a.style["display"] = "table-caption";
-
+                    a.href = descriptionHref;
+                    // a.style.maxHeight = '400px';
+                    a.style.maxWidth = '400px';
+                    a.innerText = 'Description';
+                    a.classList.add('description-tb');
+                    a.style["font-size"] = "20px";
+                    a.style["display"] = "grid";
+    
                     var img = document.createElement('img');
-                    a.classList.add('zoom');
-                    img.src = meta.ou;
-                    //https://stackoverflow.com/a/70725756/7771202
-                    img.setAttribute('onerror', "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['"+meta.tu+"'])");
+                    img.src = descriptionSrc;
 
                     a.append(img);
-                    var subdiv = document.createElement('div');
-                    subdiv.classList.add('column');
-                    subdiv.append(a);
-                    div.append(subdiv);
+                    div.append(a);
+                    replaceAllImageHosts();
+                } catch(ee) {
+                    var descriptionSrc = '';
                 }
-            });
+                extraThumbnailsLink.textContent = '➕ fetch more thumbnails';
+            } else {
+                var query = clearSymbolsFromString(torrentAnchor.innerText)
+                .replace(/\s\s+/g, ' ') // removes double spaces
+                .trim()
+                ;
+                getGoogleImages(query).then(metas=> {
+                    metas = Object.values(metas);
+                    var i = 0;
+                    for (const meta of metas) {
+                        if (/dyncdn/.test(meta.ou)) {
+                            continue; // skip rarbg thumbnails
+                        }
+                        var a = document.createElement('a');
+                        a.href = meta.st;
+                        a.innerText = meta.pt;
+                        a.classList.add('extra-tb');
+                        a.style["font-size"] = "5px";
+                        a.style["display"] = "table-caption";
+    
+                        var img = document.createElement('img');
+                        a.classList.add('zoom');
+                        img.src = meta.ou;
+                        //https://stackoverflow.com/a/70725756/7771202
+                        img.setAttribute('onerror', "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['"+meta.tu+"'])");
+    
+                        a.append(img);
+                        var subdiv = document.createElement('div');
+                        subdiv.classList.add('column');
+                        subdiv.append(a);
+                        div.append(subdiv);
+                    }
+                });
+                extraThumbnailsLink.remove();
+            }
+
             e.preventDefault();
             e.stopImmediatePropagation();
             e.stopPropagation();
-            extraThumbnailsLink.remove();
             return false;
         });
         
@@ -2354,6 +2356,4 @@ function fetchB64ImgUrl(url, opts) {
         return output;
     }
 }
-
-
 

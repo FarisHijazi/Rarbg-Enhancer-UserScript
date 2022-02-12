@@ -6,30 +6,35 @@
 - Click the [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js) link of the script to install it to your userscript client
 - Open [Rarbg](https://rarbgunblocked.org/) or any of its mirrors and the changes should be there
 
+![](screenshots/Screenshot_Rarbg_general.png)
+
 ## Features
 
 This script adds features and enhances the [Rarbg](https://rarbgunblocked.org/) website
 
-<img src="screenshots/Screenshot_Rarbg_general.png" alt="General Screenshot" max-height="400"/>
-
-- Auto-solve CAPTCHA, and bypass the "Click to verify browser" page  
-    ![Automatic CAPTCHA solver and clicks "click here link"](screenshots/Screenshot_auto-captcha.gif)
-- Infinite scrolling (Auto-append next page)  
-    ![Infinite scrolling](screenshots/infinit-scroll.gif)
+### Auto-solve CAPTCHA, and bypass the "Click to verify browser" page  
+  ![Automatic CAPTCHA solver and clicks "click here link"](screenshots/Screenshot_auto-captcha.gif)
+### Infinite scrolling (Auto-append next page)  
   The next page is appended at the bottom so there's no need to manually navigate to it
-- Adds thumbnails to torrents  
-    ![Adding thumbnails](screenshots/Screenshot_thumbnails-before-after.gif)
-- Add magnet link and torrent links
-- Add image search links for torrents
 
-- Dropdown list to go to other Rarbg mirrors  
-<img src="screenshots/Screenshot_Rarbg_mirrorDropdown.png" alt="Dropdown list to go to other Rarbg mirrors" height=""/>
+  ![Infinite scrolling](screenshots/infinit-scroll.gif)
+### Adds thumbnails to torrents  
+  ![Adding thumbnails](screenshots/Screenshot_thumbnails-before-after.gif)
+### Add image search links to fetch Description thumbnail (from torrent page) and fetch extra images from Google Images
+  ![](screenshots/extra_thumbnails.gif)
+### Add magnet link and torrent links
+### Dropdown list to go to other Rarbg mirrors  
+  ![](screenshots/Screenshot_Rarbg_mirrorDropdown.png")
+### Download all torrrents button  
+  ![](screenshots/Screenshot_Rarbg_download_all_torrents.png)
+### Color torrent rows red/green depending on seeders count
+### Disable some adds/redirect links
 
-- Download all torrrents button  
-<img src="screenshots/Screenshot_Rarbg_download_all_torrents.png" alt="Download all torrrents button" height="350"/>
+where the entire page is covered with an invisible redirect button
 
-- Color torrent rows red/green depending on seeders count
-- Disable some adds/redirect links (where the entire page is covered with an invisible redirect button)
+### Options menu
+  1. ![](screenshots/options_button.png)
+  2. ![](screenshots/rarbg-options.png)
 
 ## Keyboard Shortcuts
 
@@ -53,31 +58,3 @@ The script is written by me, however I have encorperated some code form other th
 ## Licence
 
 This project licenced under the [MIT](LICENSE) license, this script is for educational purposes, I am NOT promoting piracy, this is just a tool to improve a website's UI.
-
-----
-
-## Todo
-
-- [ ] Grouping: grouping the same torrent (but with different resolutions for example) to be in the same box
-  - [ ] identify what should be grouped
-  - [ ] make table grouping in HTML
-
-- [ ] Add menu to change options
-- [ ] Add ability to change search engine
-- [ ] Add a search filter bar
-- [ ] Fix search filter, make it so that not each space is replaced with a disjunction, rather make it match the entire phrase, until we reach a `-`.
-
-## Done
-
-- [x] Remove `searchEngine` variable and use `Options.searchEngine` instead, this way you won't have to manually use `GM_setValue` and `GM_getValue` for it
-- [x] Fix appended thumbnail magnet links (sometimes they have "undefined" in them)
-- [x] Remove extra header elements (the ones appended from infiniteScroll())
-- [x] When choosing categories with hotkeys, rather than pressing the category button, make it change the urlparams so that way seach terms won't be lost
-- [x] maybe change hotkeys to Mousetrap
-- [x] FIX random extra "DL ML" columns appearing
-- [x] Make script run independently of other scripts
-- [x] Add an option to change what the thumbnail downloads (magnet link or torrent file)
-- [x] Maybe make the colors extra red/green depending on the seeds
-- [x] Add forward slash hotkey to go to the search bar
-- [x] If there's no next page, scrolling down shouldn't append an extra link
-- [x] Complete category search

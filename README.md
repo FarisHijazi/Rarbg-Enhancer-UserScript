@@ -34,7 +34,7 @@ where the entire page is covered with an invisible redirect button
 
 ### Options menu
   1. ![](screenshots/options_button.png)
-  2. ![](screenshots/rarbg-options.png)
+  2. ![](screenshots/rarbg-options-page.png)
 
 ## Keyboard Shortcuts
 

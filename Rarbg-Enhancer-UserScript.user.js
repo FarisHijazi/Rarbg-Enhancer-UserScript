@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.3
+// @version      1.6.4
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -1613,7 +1613,6 @@ a.extra-tb {
         if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
         var selector = blocklist.map(c=>`img[src="https://dyncdn2.com/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
         try {
-            console.log('blocking using selector:', selector)
             document.querySelectorAll(selector).forEach(img=>img.closest('tr').remove());
         } catch(e) {}
 
@@ -1684,7 +1683,7 @@ a.extra-tb {
         extraThumbnailsLink.style['cursor']= 'pointer';
         extraThumbnailsLink.style['padding']= '20px';
         extraThumbnailsLink.style['background']= 'lightgray';
-        extraThumbnailsLink.textContent = '➕ fetch description thumbnail';
+        extraThumbnailsLink.textContent = '➕ fetch description thumbnails';
         // extraThumbnailsLink.firstElementChild.src = '';
         searchLink.after(extraThumbnailsLink);
 
@@ -1693,28 +1692,31 @@ a.extra-tb {
         torrentAnchor.parentNode.append(div);
 
         extraThumbnailsLink.addEventListener('click', async function(e) {
-            if (extraThumbnailsLink.textContent === '➕ fetch description thumbnail') {
+            if (extraThumbnailsLink.textContent === '➕ fetch description thumbnails') {
                 try {
-                    var [descriptionSrc, descriptionHref] = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
+                    var descriptionSrcsDescriptionHrefs = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
                         var doc = new DOMParser().parseFromString(html, 'text/html');
-                        var img = doc.querySelector("#description > a > img");
-                        return [img.src, img.closest('a').href]
+                        var imgs = doc.querySelectorAll("#description > a > img");
+                        return Array.from(imgs).map(img => [img.src, img.closest('a').href])
                     });
-                    
-                    var a = document.createElement('a');
-                    a.href = descriptionHref;
-                    // a.style.maxHeight = '400px';
-                    a.style.maxWidth = '400px';
-                    a.innerText = 'Description';
-                    a.classList.add('description-tb');
-                    a.style["font-size"] = "20px";
-                    a.style["display"] = "grid";
+                    console.log('descriptionSrcsDescriptionHrefs', descriptionSrcsDescriptionHrefs);
+                    for (var [descriptionSrc, descriptionHref] of descriptionSrcsDescriptionHrefs) {
+                        var a = document.createElement('a');
+                        a.href = descriptionHref;
+                        // a.style.maxHeight = '400px';
+                        a.style.maxWidth = '400px';
+                        a.innerText = 'Description';
+                        a.classList.add('description-tb');
+                        a.style["font-size"] = "20px";
+                        a.style["display"] = "grid";
+                        a.target = '_blank';
+        
+                        var img = document.createElement('img');
+                        img.src = descriptionSrc;
     
-                    var img = document.createElement('img');
-                    img.src = descriptionSrc;
-
-                    a.append(img);
-                    div.append(a);
+                        a.append(img);
+                        div.append(a);
+                    }
                     replaceAllImageHosts();
                 } catch(ee) {
                     var descriptionSrc = '';
@@ -1738,6 +1740,7 @@ a.extra-tb {
                         a.classList.add('extra-tb');
                         a.style["font-size"] = "5px";
                         a.style["display"] = "table-caption";
+                        a.target = '_blank';
     
                         var img = document.createElement('img');
                         a.classList.add('zoom');
@@ -1785,11 +1788,9 @@ a.extra-tb {
         const visibleTorrentAnchors = document.querySelectorAll('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t > tbody > tr.lista2 .torrent-dl:not([style*="display: none;"])');
 
         if (confirm(`Would you like to download all the torrents on the page? (${visibleTorrentAnchors.length})`)) {
-            for (const dlAnchor of visibleTorrentAnchors) {
-                saveByAnchor(dlAnchor.href, new URL(dlAnchor.href).searchParams.get('f'));
-            }
             // click all magnet links
-            document.querySelectorAll("a.torrent-ml").forEach(a => a.click());
+            document.querySelectorAll("a.torrent-dl").forEach(a => window.open(a.click(), '_blank'));
+            document.querySelectorAll("a.torrent-ml").forEach(a => window.open(a.click(), '_blank'));
         }
     }
 

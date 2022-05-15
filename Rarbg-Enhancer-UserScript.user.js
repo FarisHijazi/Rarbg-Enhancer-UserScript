@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.5
+// @version      1.6.6
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -86,7 +86,7 @@ if (meta.hasOwnProperty('nodups')) {
     if (new Set(unsafeWindow.scriptMetas.map(meta=>meta.namespace+meta.name)).has(meta.namespace+meta.name)) {
         console.warn('Another script is trying to execute but @nodups is set. Stopping execution.\n',
             meta.namespace+meta.name);
-        return;
+        throw new Error('Another script is trying to execute but @nodups is set. Stopping execution.\n' + meta.namespace+meta.name);
     }
 }
 unsafeWindow.GM_fetch2 = GM_fetch;
@@ -1520,6 +1520,19 @@ a.extra-tb {
 
             torrentLink.classList.add('modded');
         }
+
+        var blocklist = [];
+        if (GM_config.get('block Movies')) blocklist = blocklist.concat(catCodeMap['Movies']);
+        if (GM_config.get('block TV shows')) blocklist = blocklist.concat(catCodeMap['TV shows']);
+        if (GM_config.get('block Music')) blocklist = blocklist.concat(catCodeMap['Music']);
+        if (GM_config.get('block Software')) blocklist = blocklist.concat(catCodeMap['Software']);
+        if (GM_config.get('block XXX')) blocklist = blocklist.concat(catCodeMap['XXX']);
+        if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
+        var selector = blocklist.map(c=>`img[src$="/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
+        try {
+            document.querySelectorAll(selector).forEach(img=>img.closest('tr').remove());
+        } catch(e) {}
+
     }
 
     function setThumbnail(thumbnail) {
@@ -1605,19 +1618,6 @@ a.extra-tb {
     }
 
     function addImageSearchAnchor(torrentAnchor) {
-        var blocklist = [];
-        if (GM_config.get('block Movies')) blocklist = blocklist.concat(catCodeMap['Movies']);
-        if (GM_config.get('block TV shows')) blocklist = blocklist.concat(catCodeMap['TV shows']);
-        if (GM_config.get('block Music')) blocklist = blocklist.concat(catCodeMap['Music']);
-        if (GM_config.get('block Software')) blocklist = blocklist.concat(catCodeMap['Software']);
-        if (GM_config.get('block XXX')) blocklist = blocklist.concat(catCodeMap['XXX']);
-        if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
-        var selector = blocklist.map(c=>`img[src="https://dyncdn2.com/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
-        try {
-            document.querySelectorAll(selector).forEach(img=>img.closest('tr').remove());
-        } catch(e) {}
-
-
         const searchTd = document.createElement('td'),
             searchLink = document.createElement('a')
             ;

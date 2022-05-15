@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.6
+// @version      1.6.7
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -468,9 +468,11 @@ const SearchEngines = {
         GM_config.save();
     }
 
-    GM_registerMenuCommand('Rarbg options', () => {
-        GM_config.open();
-    });
+    if (typeof GM_registerMenuCommand !== 'undefined') {
+        GM_registerMenuCommand('Rarbg options', () => {
+            GM_config.open();
+        });
+    }
 
 
     Math.clamp = function (a, min, max) {

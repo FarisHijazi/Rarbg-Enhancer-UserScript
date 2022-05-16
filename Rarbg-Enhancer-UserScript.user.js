@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.7
+// @version      1.6.8
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -1523,13 +1523,26 @@ a.extra-tb {
             torrentLink.classList.add('modded');
         }
 
+        var blockCatlist = [];
+        if (GM_config.get('block Movies')) blockCatlist.push('/torrents.php?category=movies')
+        if (GM_config.get('block XXX')) blockCatlist.push('/torrents.php?category=2;4')
+        if (GM_config.get('block TV shows')) blockCatlist.push('/torrents.php?category=2;18;41;49')
+        if (GM_config.get('block Games')) blockCatlist.push('/torrents.php?category=2;27;28;29;30;31;53')
+        if (GM_config.get('block Music')) blockCatlist.push('/torrents.php?category=2;23;24;25;26')
+        if (GM_config.get('block Software')) blockCatlist.push('/torrents.php?category=2;33;34;43')
+        var selectorMenu = blockCatlist.map(c=>`tr > td > a.anal[href$="${c}"]`).join(', ')
+        try {
+            document.querySelectorAll(selectorMenu).forEach(a=>a.closest('tr').remove());
+        } catch(e) {}
+
+
         var blocklist = [];
         if (GM_config.get('block Movies')) blocklist = blocklist.concat(catCodeMap['Movies']);
+        if (GM_config.get('block XXX')) blocklist = blocklist.concat(catCodeMap['XXX']);
         if (GM_config.get('block TV shows')) blocklist = blocklist.concat(catCodeMap['TV shows']);
+        if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
         if (GM_config.get('block Music')) blocklist = blocklist.concat(catCodeMap['Music']);
         if (GM_config.get('block Software')) blocklist = blocklist.concat(catCodeMap['Software']);
-        if (GM_config.get('block XXX')) blocklist = blocklist.concat(catCodeMap['XXX']);
-        if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
         var selector = blocklist.map(c=>`img[src$="/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
         try {
             document.querySelectorAll(selector).forEach(img=>img.closest('tr').remove());

@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.8
+// @version      1.6.9
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -1699,7 +1699,13 @@ a.extra-tb {
         extraThumbnailsLink.style['cursor']= 'pointer';
         extraThumbnailsLink.style['padding']= '20px';
         extraThumbnailsLink.style['background']= 'lightgray';
-        extraThumbnailsLink.textContent = '➕ fetch description thumbnails';
+        const STR_FETCH_DESCRIPTION_THUMBNAILS = '➕ fetch description thumbnails';
+        const STR_FETCH_EXTRA_THUMBNAILS = '➕ fetch more thumbnails';
+
+        extraThumbnailsLink.textContent = STR_FETCH_DESCRIPTION_THUMBNAILS;
+        if (isOnSingleTorrentPage) {
+            extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
+        }
         // extraThumbnailsLink.firstElementChild.src = '';
         searchLink.after(extraThumbnailsLink);
 
@@ -1708,7 +1714,7 @@ a.extra-tb {
         torrentAnchor.parentNode.append(div);
 
         extraThumbnailsLink.addEventListener('click', async function(e) {
-            if (extraThumbnailsLink.textContent === '➕ fetch description thumbnails') {
+            if (extraThumbnailsLink.textContent === STR_FETCH_DESCRIPTION_THUMBNAILS) {
                 try {
                     var descriptionSrcsDescriptionHrefs = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
                         var doc = new DOMParser().parseFromString(html, 'text/html');
@@ -1737,7 +1743,7 @@ a.extra-tb {
                 } catch(ee) {
                     var descriptionSrc = '';
                 }
-                extraThumbnailsLink.textContent = '➕ fetch more thumbnails';
+                extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
             } else {
                 var query = clearSymbolsFromString(torrentAnchor.innerText)
                 .replace(/\s\s+/g, ' ') // removes double spaces

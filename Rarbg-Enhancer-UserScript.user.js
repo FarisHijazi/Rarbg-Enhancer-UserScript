@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.10
+// @version      1.6.11
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -353,6 +353,7 @@ const SearchEngines = {
     }
 };
 
+var isOnSingleTorrentPage = false;
 // main
 (function () {
     'use strict';
@@ -1797,7 +1798,9 @@ a.extra-tb {
                         
                         var img = document.createElement('img');
                         img.src = descriptionSrc;
-                        img.style.maxWidth = GM_config.get('imgScale');
+                        img.style.maxWidth = GM_config.get('imgScale') + 'px';
+                        img.classList.add('description');
+                        img.classList.add('zoom');
     
                         a.append(img);
                         div.append(a);
@@ -2174,7 +2177,9 @@ function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
             console.log('replacing thumbnail:', img.src, '->', fullres, '\n', img);
             img.src = fullres;
             img.closest('a').href = fullres;
-            img.style['max-width'] = '100%';
+            if (isOnSingleTorrentPage) {
+                img.style['max-width'] = '100%';
+            }
             // img.style['max-height'] = '400px';
         }
     }

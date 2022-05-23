@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.9
+// @version      1.6.10
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -264,6 +264,34 @@ function parse_AF_initDataCallback(doc) {
     return metasMap;
 }
 
+class DDG {
+    static get color() {
+        return '#FFA500';
+    }
+    static test(url) {
+        return /^https:\/\/proxy\.duckduckgo\.com/.test(url);
+    }
+    static proxy(url) {
+        return DDG.test(url) || /^(javascript)/i.test(url) ? url : (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(url)}&f=1`);
+    }
+    static isDdgUrl() {
+        new Error('This function "isDdgUrl()" is deprecated, use "PProxy.DDG.test()" instead');
+    }
+    static reverse(url) {
+        // if (isZscalarUrl(url)) s = getOGZscalarUrl(url); // extra functionality:
+        if (!DDG.test(url)) {
+            return url;
+        }
+        return new URL(location.href).searchParams.get('u');
+    }
+}
+
+function proxifyDescriptionThumbnails() {
+    document.querySelectorAll("#description > a > img, a.description-tb > img").forEach(img=> {
+        img.src = DDG.proxy(img.src);
+    });
+}
+
 function replaceAllImageHosts() {
     // fullres for imgprime.com
     // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
@@ -282,6 +310,7 @@ function replaceAllImageHosts() {
     replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
         '22pixx.xyz/os/': '22pixx.xyz/o/',
         '22pixx.xyz/s/': '22pixx.xyz/i/',
+        '22pixx.xyz/rs/': '22pixx.xyz/r/',
     });
     // trueimg.xyz
     replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
@@ -292,6 +321,7 @@ function replaceAllImageHosts() {
         'https://imgtaxi.com/images/small/': 'https://imgtaxi.com/images/big/',
     });
 
+    proxifyDescriptionThumbnails();
 }
 
 
@@ -349,7 +379,7 @@ const SearchEngines = {
             'thumbnailLink': {
                 'section': [GM_config.create('Rarbg Settings'), 'here you can configure settings for the rarbg-enhancer-userscript. Be aware that the page will reload after saving'],
                 'label': 'thumbnailLink',
-                'default': 'magnetLink',
+                'default': 'torrentPageLink',
                 'title': 'where should clicking the thumbnail take you',
                 'options':  ['magnetLink','torrentLink','torrentPageLink', 'img'],
                 'type': 'radio',
@@ -411,13 +441,13 @@ const SearchEngines = {
             },
             'imgScale': {
                 'label': 'imgScale',
-                'default': 0.5,
+                'default': 50,
                 'title': '',
                 'type': 'float',
             },
             'imgHoverPopupScale': {
                 'label': 'imgHoverPopupScale',
-                'default': 2.0,
+                'default': 3.0,
                 'title': '',
                 'type': 'float',
             },
@@ -433,10 +463,29 @@ const SearchEngines = {
                 'title': '',
                 'type': 'checkbox',
             },
+            'duplicateTorrentsManagement': {
+                'label': 'duplicateTorrentsManagement',
+                'default': 'none',
+                'title': 'what to do when there are multiple torrents of the same item',
+                'type': 'radio',
+                'options': ['none', /* 'deduplicate', */ 'group']
+            },
             'staticSearchbar': {
                 'label': 'staticSearchbar',
                 'default': false,
                 'title': '',
+                'type': 'checkbox',
+            },
+            'includeDescriptionsButton': {
+                'label': 'includeDescriptionsButton',
+                'default': true,
+                'title': 'add a link for each row to search for getting the description thumbnails',
+                'type': 'checkbox',
+            },
+            'includeSearchForImagesButton': {
+                'label': 'includeSearchForImagesButton',
+                'default': true,
+                'title': 'add a link for each row to search for images using a search engine (google, ddg, yandex..)',
                 'type': 'checkbox',
             },
             'isFirstVisit': {
@@ -505,10 +554,9 @@ const SearchEngines = {
     if (!tbodyEl) console.warn('tbody element not found!');
 
 
-    let width = 150, maxwidth = 300, maxheight = 200;
-
     var thumbnailsCssBlock = addCss('');
     // language=CSS
+
     addCss(
         `
 /*this keeps the tableCells in the groups at equal heights*/
@@ -516,23 +564,11 @@ table.groupTable > tbody > tr > td {
     height: 10px !important;
 }
 
-td.thumbnail-cell {
-    text-align: center;
-    height: ${maxheight}px;
-}
-
-td.thumbnail-cell > a {
-    display: contents;
-    padding: 9px;
-}
 
 /*the horsey suggestion thumbnails*/
 .suggestion-thumbnail {
     max-width: 100px;
     max-height: 100px;
-}
-
-table.lista2t tr.lista2 td {
 }
 
 a.torrent-ml, a.torrent-dl {
@@ -541,16 +577,13 @@ a.torrent-ml, a.torrent-dl {
 }
 
 a.torrent-ml > img, a.torrent-dl > img {
-    width: 40px;
+    max-width: 30px;
 }
 
-.search {
-    font-size: 15px;
-    padding: 20px;
-    display: inline-block;
-    background-color: #b7b7b73b;
+
+/*add margin*/
+td.lista > * {
     margin: 10px;
-    font-family: sans-serif;
 }
 
 a.search:link { color: red; }
@@ -559,34 +592,11 @@ a.search:hover { color: hotpink; }
 a.search:active { color: blue; }
 
 .zoom {
-    /*padding: 50px;*/
     transition: transform .2s; /* Animation */
     margin: 0 auto;
 }
 .zoom:hover {
     transform: scale(${GM_config.get('imgHoverPopupScale')}); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
-}
-
-td.lista {
-    color: #000;
-    font-size: 10pt;
-    font-family: sans-serif;
-}
-
-/*torrent links*/
-tr.lista2 > td.lista > a[onmouseover] {
-    width: max-content;
-    /*font-size: 15px !important;*/
-    /*padding: 20px !important;*/
-    /*display: -webkit-box !important;*/
-    background-color: rgba(183, 183, 183, 0.23) !important;
-    margin: 10px !important;
-    font-family: sans-serif !important;
-}
-
-a.extra-tb img {
-    max-height: 100px;
-    max-width: 100px;
 }
 
 a.extra-tb {
@@ -623,6 +633,15 @@ a.extra-tb {
 
 
     // === end of variable declarations ===
+
+    function decrementImageSize(e) {
+        GM_config.set('imgScale', Math.max(GM_config.get('imgScale') - 50, 0));
+        toggleThumbnailSize('update only');
+    }
+    function incrementImageSize(e) {
+        GM_config.set('imgScale', Math.min(GM_config.get('imgScale') + 50, 400));
+        toggleThumbnailSize('update only');
+    }
 
     $(document).ready(function main() {
         if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
@@ -706,7 +725,7 @@ a.extra-tb {
                     thumbnailImg.style.width = 'auto';
                     thumbnailImg.style['max-height'] = '500px';
                     thumbnailImg.style['max-width'] = '400px';
-                    thumbnailImg.style['margin-bottom'] = '20px';
+                    // thumbnailImg.style['margin-bottom'] = '20px';
                 }
 
                 // remove VPN row
@@ -786,6 +805,7 @@ a.extra-tb {
                         searchContainer.style.left = '';
                     }
                     GM_config.set('staticSearchbar', checkbox.checked);
+                    GM_config.write();
                 };
 
                 if (GM_config.get('staticSearchbar')) {
@@ -825,8 +845,12 @@ a.extra-tb {
                                 }
                             }
 
-                            // remove extra appended headers
-                            tbodyEl.nextElementSibling.remove();
+                            try {
+                                // remove extra appended headers
+                                tbodyEl.nextElementSibling.remove();
+                            } catch (error) {
+                                
+                            }
                             // filter the new torrents that just arrived
                             updateSearch();
                         });
@@ -1004,7 +1028,18 @@ a.extra-tb {
             observeDocument((target) => {
                 if (isOnIndexPage) {
                     const newCol = appendColumn('Thumbnails', 'Cat.', addThumbnailColumn);
-                    newCol.header.addEventListener('click', () => toggleThumbnailSize());
+                    if (!newCol.header.querySelector('.decrementImageSizeBtn')) {
+                        var decrementImageSizeBtn = createElement('<a href="#" style="margin: 2px" class="decrementImageSizeBtn">(-)</a>');
+                        decrementImageSizeBtn.addEventListener('click', decrementImageSize);
+    
+                        var incrementImageSizeBtn = createElement('<a href="#" style="margin: 2px" class="incrementImageSizeBtn">(+)</a>');
+                        incrementImageSizeBtn.addEventListener('click', incrementImageSize);
+    
+                        var nobr = document.createElement('nobr');
+                        newCol.header.appendChild(nobr);
+                        nobr.appendChild(decrementImageSizeBtn);
+                        nobr.appendChild(incrementImageSizeBtn);
+                    }
                 }
 
                 dealWithTorrents(target);
@@ -1014,9 +1049,19 @@ a.extra-tb {
                 titleGroups = updateTorrentGroups();
                 for (const [torrentTitle, torrentAnchors] of Object.entries(titleGroups)) {
                     if (torrentAnchors.length > 1) {
-                        groupTorrents(torrentTitle, torrentAnchors);
+                        switch (GM_config.get('duplicateTorrentsManagement')) {
+                            case 'group':
+                                groupTorrents(torrentTitle, torrentAnchors);
+                                break;
+                            case 'deduplicate':
+                                deduplicateTorrents(torrentTitle, torrentAnchors);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
+                
 
                 // remove links for adds that cover the screen
                 for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
@@ -1109,15 +1154,9 @@ a.extra-tb {
         });
 
         // increase thumbnail size
-        Mousetrap.bind('=', function (e) {
-            GM_config.set('imgScale', Math.min(GM_config.get('imgScale') + 0.2, 10));
-            toggleThumbnailSize('update only');
-        });
+        Mousetrap.bind('=', incrementImageSize);
         // decrease thumbnail size
-        Mousetrap.bind('-', function (e) {
-            GM_config.set('imgScale', Math.max(GM_config.get('imgScale') - 0.2, 0.2));
-            toggleThumbnailSize('update only');
-        });
+        Mousetrap.bind('-', decrementImageSize);
 
         // binding each key to a category
         // then you can change categories by pressing that key (like "m" for (M)ovie)
@@ -1332,11 +1371,10 @@ a.extra-tb {
     }
 
     function updateCss() {
-        thumbnailsCssBlock.innerText =
-            'td.thumbnail-cell > a > img.preview-image {' +
-            ' max-width: ' + maxwidth * GM_config.get('imgScale') + 'px;' +
-            ' max-height: ' + maxheight * GM_config.get('imgScale') + 'px; ' +
-            '}';
+        thumbnailsCssBlock.innerText = `td.thumbnail-cell > a > img.preview-image, a.extra-tb > img {
+                max-width: ${GM_config.get('imgScale')}px;
+                max-height: ${GM_config.get('imgScale')}px;
+            }`;
     }
 
     function observeDocument(callback) {
@@ -1473,7 +1511,7 @@ a.extra-tb {
 
                 const diffInMinutes = (Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60);
 
-                var diffFinal = diffInMinutes + ' minutes';
+                var diffFinal = Math.round(diffInMinutes) + ' minutes';
 
                 if (diffInMinutes / (60 * 24) >= 365 * 2) { // > 2years
                     diffFinal = Math.round(diffInMinutes / (60 * 24 * 365)) + ' years';
@@ -1599,6 +1637,8 @@ a.extra-tb {
         } else if (newSize === 'toggle') {
             GM_config.set('largeThumbnails', !GM_config.get('largeThumbnails'));
         }
+        GM_config.write();
+
         console.log('toggleThumbnailSize(' + newSize + ')');
         document.querySelectorAll('.preview-image').forEach(setThumbnail);
         updateCss();
@@ -1637,8 +1677,8 @@ a.extra-tb {
             searchLink = document.createElement('a')
             ;
         searchTd.classList.add('search');
-        searchTd.style['border-top-width'] = '10px';
-        searchTd.style['padding-top'] = '10px';
+        // searchTd.style['border-top-width'] = '10px';
+        // searchTd.style['padding-top'] = '10px';
 
         //replacing common useless torrent terms
         let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText)
@@ -1686,35 +1726,58 @@ a.extra-tb {
         // searchIcon.src = SEARCH_ICON_URL;
         searchIcon.src = 'https://www.google.com/s2/favicons?domain=' + searchEngine.name.toLowerCase() + '.com';
 
-        searchIcon.style.height = '20px';
-        searchIcon.style.width = '20px';
-        searchLink.style.padding = '20px';
+        searchIcon.style.height = '15px';
+        searchIcon.style.width = '15px';
+        // searchLink.style.padding = '20px';
         searchLink.appendChild(searchIcon);
         // searchLink.appendChild(searchEngineText);
         searchLink.appendChild(qText);
+        
         torrentAnchor.after(searchLink);
+        if (!GM_config.get('includeSearchForImagesButton')) {
+            searchLink.style.display = 'none';
+        }
 
         var extraThumbnailsLink = document.createElement('a');
-        extraThumbnailsLink.style['text-decoration']= 'underline';
+        // extraThumbnailsLink.style['text-decoration']= 'underline';
         extraThumbnailsLink.style['cursor']= 'pointer';
-        extraThumbnailsLink.style['padding']= '20px';
-        extraThumbnailsLink.style['background']= 'lightgray';
-        const STR_FETCH_DESCRIPTION_THUMBNAILS = '➕ fetch description thumbnails';
-        const STR_FETCH_EXTRA_THUMBNAILS = '➕ fetch more thumbnails';
+        // extraThumbnailsLink.style['padding']= '20px';
+        // extraThumbnailsLink.style['background']= 'lightgray';
+        const ICON_DESCRIPTION_WIDE = "https://i.imgur.com/xreLTXq.gif";
+        const ICON_DESCRIPTION_TALL = "https://i.imgur.com/6gG2QGj.gif";
+        const ICON_THUMBNAILS_WIDE = "https://i.imgur.com/9xh3vuU.gif";
+        const ICON_THUMBNAILS_TALL = "https://i.imgur.com/XMV45fY.gif";
+        const ICON_THUMBNAILS = "https://i.imgur.com/nA2dRWu.gif";
+        const ICON_DESCRIPTION = "https://i.imgur.com/UxbSq2o.gif";
+        const ICON_MORE_BLUE = 'https://i.imgur.com/FGwOuVT.gif';
+        const ICON_EXTRA_GREEN = 'https://i.imgur.com/HU6J9kS.gif';
+
+        const STR_FETCH_DESCRIPTION_THUMBNAILS = '';
+        const STR_FETCH_EXTRA_THUMBNAILS = '';
+
+
+        var moreIcon = createElement('<img src="' + ICON_DESCRIPTION + '"></img>')
+        moreIcon.alt = STR_FETCH_DESCRIPTION_THUMBNAILS;
 
         extraThumbnailsLink.textContent = STR_FETCH_DESCRIPTION_THUMBNAILS;
         if (isOnSingleTorrentPage) {
             extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
+            moreIcon.src = ICON_MORE_BLUE;
+            moreIcon.alt = STR_FETCH_EXTRA_THUMBNAILS;
         }
         // extraThumbnailsLink.firstElementChild.src = '';
         searchLink.after(extraThumbnailsLink);
+        extraThumbnailsLink.appendChild(moreIcon);
+        if (!GM_config.get('includeDescriptionsButton')) {
+            moreIcon.style.display = 'none';
+        }
 
         var div = document.createElement('div');
         div.classList.add('row');
         torrentAnchor.parentNode.append(div);
 
         extraThumbnailsLink.addEventListener('click', async function(e) {
-            if (extraThumbnailsLink.textContent === STR_FETCH_DESCRIPTION_THUMBNAILS) {
+            if (moreIcon.src === ICON_DESCRIPTION) {
                 try {
                     var descriptionSrcsDescriptionHrefs = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
                         var doc = new DOMParser().parseFromString(html, 'text/html');
@@ -1726,15 +1789,15 @@ a.extra-tb {
                         var a = document.createElement('a');
                         a.href = descriptionHref;
                         // a.style.maxHeight = '400px';
-                        a.style.maxWidth = '400px';
                         a.innerText = 'Description';
                         a.classList.add('description-tb');
                         a.style["font-size"] = "20px";
                         a.style["display"] = "grid";
                         a.target = '_blank';
-        
+                        
                         var img = document.createElement('img');
                         img.src = descriptionSrc;
+                        img.style.maxWidth = GM_config.get('imgScale');
     
                         a.append(img);
                         div.append(a);
@@ -1743,7 +1806,9 @@ a.extra-tb {
                 } catch(ee) {
                     var descriptionSrc = '';
                 }
-                extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
+                // extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
+                moreIcon.src = ICON_MORE_BLUE;
+                moreIcon.alt = STR_FETCH_EXTRA_THUMBNAILS;
             } else {
                 var query = clearSymbolsFromString(torrentAnchor.innerText)
                 .replace(/\s\s+/g, ' ') // removes double spaces
@@ -1811,7 +1876,7 @@ a.extra-tb {
 
         if (confirm(`Would you like to download all the torrents on the page? (${visibleTorrentAnchors.length})`)) {
             // click all magnet links
-            document.querySelectorAll("a.torrent-dl").forEach(a => window.open(a.click(), '_blank'));
+            // document.querySelectorAll("a.torrent-dl").-forEach(a => window.open(a.click(), '_blank'));
             document.querySelectorAll("a.torrent-ml").forEach(a => window.open(a.click(), '_blank'));
         }
     }
@@ -1883,6 +1948,7 @@ a.extra-tb {
             header.setAttribute('align', 'center');
             header.classList.add('header6');
             header.id = sanitizedTitle + '-head';
+            // header.style.display = 'inline-flex';
             oldColumnEntries[0].insertAdjacentElement('afterend', header);
             if (debug) console.log('header:', header);
         }

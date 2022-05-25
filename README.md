@@ -2,9 +2,12 @@
 
 ## Installation
 
-- Install any [UserScript client](https://www.greasyfork.org/) to your browser (this script has only been tested on [Tampermonkey](https://tampermonkey.net/))
-- Click the [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js) link of the script to install it to your userscript client
-- Open [Rarbg](https://rarbgunblocked.org/) or any of its mirrors and the changes should be there
+- <a href="https://tampermonkey.net/"><img src="icons/tampermonkey_logo.png" style="width: 50px"></a> Install [Tampermonkey](https://tampermonkey.net/) (this script is tested with tampermonkey). Or any other [UserScript client](https://www.greasyfork.org/) to your browser (this script has only been tested on
+- <a href="https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js"><img src="icons/download_button.png" style="width: 50px"></a> Click the [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js) link of the script to install it to your userscript client
+- <a href="https://rarbgunblocked.org/"><img src="icons/RARBG_Logo.png" style="width: 50px"></a> Open [Rarbg](https://rarbgunblocked.org/) or any of its mirrors and the changes should be there
+
+(optional)  
+if you just wanted the CAPTCHA bypass script and not the rest of the features, then use this [RAW](https://github.com/buzamahmooza/Rarbg-Enhancer-UserScript/raw/master/Rarbg-CAPTCHA-solver.user.js) link instead
 
 ![](screenshots/Screenshot_Rarbg_general.png)
 

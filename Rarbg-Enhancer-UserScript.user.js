@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.11
+// @version      1.6.12
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -311,6 +311,7 @@ function replaceAllImageHosts() {
         '22pixx.xyz/os/': '22pixx.xyz/o/',
         '22pixx.xyz/s/': '22pixx.xyz/i/',
         '22pixx.xyz/rs/': '22pixx.xyz/r/',
+        '22pixx.xyz/as/': '22pixx.xyz/a/',
     });
     // trueimg.xyz
     replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
@@ -319,6 +320,10 @@ function replaceAllImageHosts() {
     // trueimg.xyz
     replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
         'https://imgtaxi.com/images/small/': 'https://imgtaxi.com/images/big/',
+    });
+
+    replaceImageHostImageWithOriginal("http://pictureme.xyz/upload/big/", {
+        'http://pictureme.xyz/upload/small/': 'http://pictureme.xyz/upload/big/',
     });
 
     proxifyDescriptionThumbnails();
@@ -458,8 +463,8 @@ var isOnSingleTorrentPage = false;
                 'title': '',
                 'type': 'checkbox',
             },
-            'autoExitIndex80php': {
-                'label': 'autoExitIndex80php',
+            'autoExitIndexPhp': {
+                'label': 'autoExitIndexPhp',
                 'default': true,
                 'title': '',
                 'type': 'checkbox',
@@ -551,7 +556,7 @@ var isOnSingleTorrentPage = false;
 
     var tbodyEl = isOnSingleTorrentPage && row_others ?
         row_others.parentElement.querySelector('tbody') :
-        document.querySelector('body > table > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table.lista2t > tbody');
+        document.querySelector('body > table > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table[class*="list"] > tbody');
     if (!tbodyEl) console.warn('tbody element not found!');
 
 
@@ -907,8 +912,8 @@ a.extra-tb {
                     console.warn('"tpageurl" is not in the location params!');
                     window.close();
                 }
-            } else if (location.pathname === '/index80.php') {
-                if (GM_config.get('autoExitIndex80php')) {
+            } else if (/\/index\d+\.php/.test(location.pathname)) {
+                if (GM_config.get('autoExitIndexPhp')) {
                     location.assign('/torrents.php');
                 }
             }
@@ -1890,7 +1895,7 @@ a.extra-tb {
      */
     function getColumnIndex(headerTitle) {
         var headerTitles = ["Cat.", "Thumbnails", "File", "ML DL", "Added", "Size", "S.", "L.", "", "Uploader"];
-        var headerTitles = Array.from(document.querySelectorAll("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t > tbody > tr:nth-child(1) > td")).map(el=>el.innerText)
+        var headerTitles = Array.from(document.querySelectorAll('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table[class*="list"] > tbody > tr:nth-child(1) > td')).map(el=>el.innerText)
 
         var idx = headerTitles.indexOf(headerTitle);
         if (idx >= 0) {

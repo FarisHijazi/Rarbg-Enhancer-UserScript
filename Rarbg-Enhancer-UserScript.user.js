@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.14
+// @version      1.6.15
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -17,6 +17,7 @@ var meta = {
 // @icon         https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rarbg.to&size=16
 // @run-at       document-idle
 // @updateUrl    https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
+// @downloadURL  https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      https://code.jquery.com/jquery-3.4.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js

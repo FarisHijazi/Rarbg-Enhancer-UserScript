@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.13
+// @version      1.6.14
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -1908,7 +1908,7 @@ a.extra-tb {
      * @returns {number} the index of the column given the column header text
      */
     function getColumnIndex(headerTitle) {
-        var headerTitles = Array.from(document.querySelectorAll("td > table.lista2t > tbody > tr:nth-child(1) > td")).map(el=>el.innerText.trim());
+        var headerTitles = Array.from(document.querySelectorAll('td > table.lista2t > tbody > tr:nth-child(1) > td, body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table[class*="list"] > tbody > tr:nth-child(1) > td')).map(el=>el.innerText.trim())
         if (!headerTitles) {
             console.warn('did not find header titles');
             headerTitles = ["Cat.", "Thumbnails", "File", "ML DL", "Added", "Size", "S.", "L.", "", "Uploader"];

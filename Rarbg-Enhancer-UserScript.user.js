@@ -83,10 +83,10 @@ if (typeof unsafeWindow === 'undefined') {
 }
 (unsafeWindow.scriptMetas = unsafeWindow.scriptMetas || []);
 if (meta.hasOwnProperty('nodups')) {
-    if (new Set(unsafeWindow.scriptMetas.map(meta=>meta.namespace+meta.name)).has(meta.namespace+meta.name)) {
+    if (new Set(unsafeWindow.scriptMetas.map(meta => meta.namespace + meta.name)).has(meta.namespace + meta.name)) {
         console.warn('Another script is trying to execute but @nodups is set. Stopping execution.\n',
-            meta.namespace+meta.name);
-        throw new Error('Another script is trying to execute but @nodups is set. Stopping execution.\n' + meta.namespace+meta.name);
+            meta.namespace + meta.name);
+        throw new Error('Another script is trying to execute but @nodups is set. Stopping execution.\n' + meta.namespace + meta.name);
     }
 }
 unsafeWindow.GM_fetch = GM_fetch;
@@ -163,158 +163,6 @@ const ICON_THUMBNAILS = "https://i.imgur.com/nA2dRWu.gif";
 const ICON_DESCRIPTION = "https://i.imgur.com/UxbSq2o.gif";
 const ICON_MORE_BLUE = 'https://i.imgur.com/FGwOuVT.gif';
 const ICON_EXTRA_GREEN = 'https://i.imgur.com/HU6J9kS.gif';
-
-function getGoogleImages(query) {
-    if (typeof getGoogleImages.cache === 'undefined') getGoogleImages.cache = {};
-
-    if (Object.keys(getGoogleImages.cache).includes(query)) {
-        console.log('getGoogleImages(): using cache for query:', query);
-        return getGoogleImages[query];
-    }
-
-
-    return GM_fetch("https://www.google.com/search?q="+encodeURIComponent(query)+"&tbm=isch", {
-      "headers": {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-        "accept-language": "en-US,en;q=0.9,ar;q=0.8",
-      },
-      "referrer": "https://www.google.com/",
-      "referrerPolicy": "origin",
-      "body": null,
-      "method": "GET",
-      "mode": "cors",
-      "credentials": "include"
-    }).then(response => response.text()).then(text => {
-        let result;
-        const doc = new DOMParser().parseFromString(text, 'text/html');
-        try {
-            result = parse_AF_initDataCallback(doc);
-            getGoogleImages[query] = result;
-        } catch(e) {
-            console.warn('parse_AF_initDataCallback failed for query:', query, e);
-            result = {};
-        }
-
-        return result;
-    });
-}
-
-function parse_AF_initDataCallback(doc) {
-    var data = Array.from(doc.querySelectorAll('script[nonce]'))
-        .map(s => s.innerText)
-        .filter(t => /^AF_initDataCallback/.test(t))
-        .map(t => eval(t.replace(/^AF_initDataCallback/, '')).data)
-        .filter(d => d && d.length && d.reduce((acc, el) => acc || el && el.length))
-    ;
-
-    var entry = data.slice(-1)[0];
-    var imgMetas = entry[31][0][12][2].map(meta => meta[1]); // confirmed
-    var metas = imgMetas.map(meta => {
-        try {
-            const rg_meta = ({
-                'id': '',  // thumbnail
-                'tu': '', 'th': '', 'tw': '',  // original
-                'ou': '', 'oh': '', 'ow': '',  // site and name
-                'pt': '', 'st': '',  // titles
-                'ity': '',
-                'rh': 'IMAGE_HOST',
-                'ru': 'IMAGE_SOURCE',
-            });
-
-            rg_meta.id = meta[1];
-            [rg_meta.tu, rg_meta.th, rg_meta.tw] = meta[2];
-            [rg_meta.ou, rg_meta.oh, rg_meta.ow] = meta[3];
-
-            const siteAndNameInfo = meta[9] || meta[11];
-
-            if (siteAndNameInfo[2003]) {
-                rg_meta.pt = siteAndNameInfo[2003][3];
-            } else {
-                rg_meta.pt = siteAndNameInfo[2003][2];
-            }
-
-            try {
-                rg_meta.st = siteAndNameInfo[183836587][0]; // infolink TODO: doublecheck
-            } catch (error) {
-                try {
-                    rg_meta.st = siteAndNameInfo[2003][2]; // infolink TODO: doublecheck
-                } catch (error) {
-                }
-            }
-
-            return rg_meta;
-        } catch (e) {
-        }
-    }).filter(meta => !!meta);
-
-    metasMap = Object.fromEntries(metas.map(meta => [meta.id, meta])); // same as metas, but is an object with the "id" as the key
-
-    parse_AF_initDataCallback.metasMap = metasMap;
-    return metasMap;
-}
-
-// DuckDuckGo proxy
-class DDG {
-    static get color() {
-        return '#FFA500';
-    }
-    static test(url) {
-        return /^https:\/\/proxy\.duckduckgo\.com/.test(url);
-    }
-    static proxy(url) {
-        return DDG.test(url) || /^(javascript)/i.test(url) ? url : (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(url)}&f=1`);
-    }
-    static reverse(url) {
-        // if (isZscalarUrl(url)) s = getOGZscalarUrl(url); // extra functionality:
-        if (!DDG.test(url)) {
-            return url;
-        }
-        return new URL(location.href).searchParams.get('u');
-    }
-}
-
-function proxifyDescriptionThumbnails() {
-    document.querySelectorAll("#description > a > img, a.description-tb > img").forEach(img=> {
-        img.src = DDG.proxy(img.src);
-    });
-}
-
-function replaceAllImageHosts() {
-    // fullres for imgprime.com
-    // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
-    // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-    replaceImageHostImageWithOriginal("https://imgprime.com/", {
-        'imga-': '',
-        '.html': '',
-        '/small/': '/big/',
-        '/u/s/': '/u/b/',
-    });
-    // imagecurl.com
-    replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { '_thumb': '' });
-    // imagefruit.com
-    replaceImageHostImageWithOriginal("/tn/t", { '/tn/t': '/tn/i' });
-    // 22pixx.xyz
-    replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
-        '22pixx.xyz/os/': '22pixx.xyz/o/',
-        '22pixx.xyz/s/': '22pixx.xyz/i/',
-        '22pixx.xyz/rs/': '22pixx.xyz/r/',
-        '22pixx.xyz/as/': '22pixx.xyz/a/',
-    });
-    // trueimg.xyz
-    replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
-        'trueimg.xyz/s/': 'trueimg.xyz/b/',
-    });
-    // trueimg.xyz
-    replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
-        'https://imgtaxi.com/images/small/': 'https://imgtaxi.com/images/big/',
-    });
-
-    replaceImageHostImageWithOriginal("http://pictureme.xyz/upload/big/", {
-        'http://pictureme.xyz/upload/small/': 'http://pictureme.xyz/upload/big/',
-    });
-
-    proxifyDescriptionThumbnails();
-}
 
 const SearchEngines = {
     google: {
@@ -409,7 +257,7 @@ const SearchEngines = {
             },
             'seedEffects': {
                 'label': 'seedEffects',
-                'default': true,
+                'default': false,
                 'title': 'coloring the torrent rows based on the number of seeders',
                 'type': 'checkbox',
             },
@@ -476,7 +324,7 @@ const SearchEngines = {
             'block TV shows': {  'label': 'block TV shows',  'default': false, 'type': 'checkbox', 'title': 'TV shows', },
             'block Music': {    'label': 'block Music',    'default': false, 'type': 'checkbox', 'title': 'Music', },
             'block Software': { 'label': 'block Software', 'default': false, 'type': 'checkbox', 'title': 'Software', },
-            'block XXX': {      'label': 'block XXX',      'default': false, 'type': 'checkbox', 'title': 'XXX', },
+            'block XXX': {      'label': 'block XXX',      'default': true, 'type': 'checkbox', 'title': 'XXX', },
             'block Games': {    'label': 'block Games',    'default': false, 'type': 'checkbox', 'title': 'Games', },
         },
         events:
@@ -660,7 +508,6 @@ a.extra-tb {
                     }
 
                     unsafeEval(solveCaptchaTesseract, Tesseract);
-
                 }
             }
         } else { // on torrent(s) page
@@ -679,7 +526,6 @@ a.extra-tb {
                 // adding thumbnails
                 for (const torrent of document.querySelectorAll('a[href^="/torrent/"]')) {
                     //creating and adding thumbnails
-                    const row = torrent.closest('tr.lista_related');
                     const cell = document.createElement('td');
                     const thumbnailLink = document.createElement('a');
                     const thumbnailImg = document.createElement('img');
@@ -883,6 +729,7 @@ a.extra-tb {
                             window.open(extractUrlFromMirrorHost(hostnames), '_blank');
                         }
                     }
+
                     function extractUrlFromMirrorHost(hostnameText) {
                         const split = location.href.split('/').slice(2);
                         split[0] = hostnameText;
@@ -907,12 +754,13 @@ a.extra-tb {
                         const option = document.createElement('option');
                         option.className = 'mirrors-option';
                         option.value = mirror;
-                        try{
+                        try {
                             option.innerText = new URL(mirror).hostname;
                             if (option.innerText !== location.hostname) {
                                 mirrorsSelect.appendChild(option);
                             }
-                        }catch(e){}
+                        } catch (e) {
+                        }
                     }
 
                     // adding another last one (which would be THIS hostsname's url)
@@ -939,7 +787,7 @@ a.extra-tb {
                     var lastTab = document.querySelector("tbody > tr > td > table > tbody > tr > td:last-child.header3");
                     var settingsTab = lastTab.cloneNode();
                     settingsTab.id = 'settingsTab';
-                    settingsTab.onclick = function(e) {
+                    settingsTab.onclick = function (e) {
                         GM_config.open();
                     };
                     var a = document.createElement('a');
@@ -975,7 +823,7 @@ a.extra-tb {
                 for (const [torrentTitle, torrentAnchors] of Object.entries(titleGroups)) {
                     if (torrentAnchors.length > 1) {
                         if (GM_config.get('deduplicateTorrents')) {
-                            groupTorrents(torrentTitle, torrentAnchors);
+                            deduplicateTorrents(torrentTitle, torrentAnchors);
                         }
                     }
                 }
@@ -1323,7 +1171,7 @@ a.extra-tb {
      *
      * @param {*} torrentLinks
      */
-    function groupTorrents(torrentTitle, torrentLinks) {
+    function deduplicateTorrents(torrentTitle, torrentLinks) {
         Array.from(torrentLinks).slice(1).forEach(el=>el.parentElement.parentElement.remove());
     }
     /**
@@ -1649,7 +1497,6 @@ a.extra-tb {
                         var imgs = doc.querySelectorAll("#description > a > img");
                         return Array.from(imgs).map(img => [img.src, img.closest('a').href])
                     });
-                    console.log('descriptionSrcsDescriptionHrefs', descriptionSrcsDescriptionHrefs);
                     for (var [descriptionSrc, descriptionHref] of descriptionSrcsDescriptionHrefs) {
                         var a = document.createElement('a');
                         a.href = descriptionHref;
@@ -1969,6 +1816,161 @@ a.extra-tb {
 
 // == below are general helper functions, not specific to this script ==
 
+// DuckDuckGo proxy
+class DDG {
+    static get color() {
+        return '#FFA500';
+    }
+
+    static test(url) {
+        return /^https:\/\/proxy\.duckduckgo\.com/.test(url);
+    }
+
+    static proxy(url) {
+        return DDG.test(url) || /^(javascript)/i.test(url) ? url : (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(url)}&f=1`);
+    }
+
+    static reverse(url) {
+        // if (isZscalarUrl(url)) s = getOGZscalarUrl(url); // extra functionality:
+        if (!DDG.test(url)) {
+            return url;
+        }
+        return new URL(location.href).searchParams.get('u');
+    }
+}
+
+function getGoogleImages(query) {
+    if (typeof getGoogleImages.cache === 'undefined') getGoogleImages.cache = {};
+
+    if (Object.keys(getGoogleImages.cache).includes(query)) {
+        console.log('getGoogleImages(): using cache for query:', query);
+        return getGoogleImages[query];
+    }
+
+
+    return GM_fetch("https://www.google.com/search?q=" + encodeURIComponent(query) + "&tbm=isch", {
+        "headers": {
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8",
+        },
+        "referrer": "https://www.google.com/",
+        "referrerPolicy": "origin",
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.text()).then(text => {
+        let result;
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        try {
+            result = parse_AF_initDataCallback(doc);
+            getGoogleImages[query] = result;
+        } catch (e) {
+            console.warn('parse_AF_initDataCallback failed for query:', query, e);
+            result = {};
+        }
+
+        return result;
+    });
+}
+
+function parse_AF_initDataCallback(doc) {
+    var data = Array.from(doc.querySelectorAll('script[nonce]'))
+        .map(s => s.innerText)
+        .filter(t => /^AF_initDataCallback/.test(t))
+        .map(t => eval(t.replace(/^AF_initDataCallback/, '')).data)
+        .filter(d => d && d.length && d.reduce((acc, el) => acc || el && el.length))
+    ;
+
+    var entry = data.slice(-1)[0];
+    var imgMetas = entry[31][0][12][2].map(meta => meta[1]); // confirmed
+    var metas = imgMetas.map(meta => {
+        try {
+            const rg_meta = ({
+                'id': '',  // thumbnail
+                'tu': '', 'th': '', 'tw': '',  // original
+                'ou': '', 'oh': '', 'ow': '',  // site and name
+                'pt': '', 'st': '',  // titles
+                'ity': '',
+                'rh': 'IMAGE_HOST',
+                'ru': 'IMAGE_SOURCE',
+            });
+
+            rg_meta.id = meta[1];
+            [rg_meta.tu, rg_meta.th, rg_meta.tw] = meta[2];
+            [rg_meta.ou, rg_meta.oh, rg_meta.ow] = meta[3];
+
+            const siteAndNameInfo = meta[9] || meta[11];
+
+            if (siteAndNameInfo[2003]) {
+                rg_meta.pt = siteAndNameInfo[2003][3];
+            } else {
+                rg_meta.pt = siteAndNameInfo[2003][2];
+            }
+
+            try {
+                rg_meta.st = siteAndNameInfo[183836587][0]; // infolink TODO: doublecheck
+            } catch (error) {
+                try {
+                    rg_meta.st = siteAndNameInfo[2003][2]; // infolink TODO: doublecheck
+                } catch (error) {
+                }
+            }
+
+            return rg_meta;
+        } catch (e) {
+        }
+    }).filter(meta => !!meta);
+
+    metasMap = Object.fromEntries(metas.map(meta => [meta.id, meta])); // same as metas, but is an object with the "id" as the key
+
+    parse_AF_initDataCallback.metasMap = metasMap;
+    return metasMap;
+}
+
+function proxifyDescriptionThumbnails() {
+    document.querySelectorAll("#description > a > img, a.description-tb > img").forEach(img => {
+        img.src = DDG.proxy(img.src);
+    });
+}
+
+function replaceAllImageHosts() {
+    // fullres for imgprime.com
+    // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
+    // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
+    replaceImageHostImageWithOriginal("https://imgprime.com/", {
+        'imga-': '',
+        '.html': '',
+        '/small/': '/big/',
+        '/u/s/': '/u/b/',
+    });
+    // imagecurl.com
+    replaceImageHostImageWithOriginal("https://imagecurl.com/images/", {'_thumb': ''});
+    // imagefruit.com
+    replaceImageHostImageWithOriginal("/tn/t", {'/tn/t': '/tn/i'});
+    // 22pixx.xyz
+    replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
+        '22pixx.xyz/os/': '22pixx.xyz/o/',
+        '22pixx.xyz/s/': '22pixx.xyz/i/',
+        '22pixx.xyz/rs/': '22pixx.xyz/r/',
+        '22pixx.xyz/as/': '22pixx.xyz/a/',
+    });
+    // trueimg.xyz
+    replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
+        'trueimg.xyz/s/': 'trueimg.xyz/b/',
+    });
+    // trueimg.xyz
+    replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
+        'https://imgtaxi.com/images/small/': 'https://imgtaxi.com/images/big/',
+    });
+
+    replaceImageHostImageWithOriginal("http://pictureme.xyz/upload/big/", {
+        'http://pictureme.xyz/upload/small/': 'http://pictureme.xyz/upload/big/',
+    });
+
+    proxifyDescriptionThumbnails();
+}
+
 function unsafeEval(func, ...arguments) {
     let body = 'return (' + func + ').apply(this, arguments)';
     unsafeWindow.Function(body).apply(unsafeWindow, arguments);
@@ -2015,7 +2017,7 @@ function fromEntriesMultivalue(entries) {
 function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
     const callback = typeof (replaceMethod) === 'function' ? replaceMethod :
         src => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src) // if object
-        ;
+    ;
     for (const img of document.querySelectorAll('img[src*="' + imgCommonUrl + '"]')) {
         if (img) {
             const fullres = callback(img.src);
@@ -2065,12 +2067,13 @@ function hex2rgb(c) {
 }
 
 function makeTextFile(text) {
-    const data = new Blob([text], { type: 'text/plain' });
+    const data = new Blob([text], {type: 'text/plain'});
     var textFile = null;
     // If we are replacing a previously generated file we need to manually revoke the object URL to avoid memory leaks.
     if (textFile !== null) window.URL.revokeObjectURL(textFile);
     return window.URL.createObjectURL(data);
 }
+
 /** Create an element by HTML.
  example:   var myAnchor = createElement('<a href="https://example.com">Go to example.com</a>');*/
 function createElement(html) {
@@ -2104,7 +2107,6 @@ function addCss(cssStr, id = '') {
     style.classList.add('addCss');
     return document.getElementsByTagName('head')[0].appendChild(style);
 }
-
 
 function fetchDoc(url) {
     return fetch(url, {
@@ -2188,7 +2190,7 @@ function fetchB64ImgUrl(url, opts) {
                 // resolve(resp);
 
                 var binResp = customBase64Encode(resp.responseText);
-                resolve('data:image/png;base64,'+binResp);
+                resolve('data:image/png;base64,' + binResp);
             },
             'overrideMimeType': 'text/plain; charset=x-user-defined'
         });

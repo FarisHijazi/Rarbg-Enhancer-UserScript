@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.16
+// @version      1.6.17
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -22,7 +22,6 @@ var meta = {
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // @require      https://raw.githubusercontent.com/mitchellmebane/GM_fetch/master/GM_fetch.js
-// @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @include      https://*rarbg.*
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
@@ -89,7 +88,6 @@ if (meta.hasOwnProperty('nodups')) {
         throw new Error('Another script is trying to execute but @nodups is set. Stopping execution.\n' + meta.namespace + meta.name);
     }
 }
-unsafeWindow.GM_fetch = GM_fetch;
 unsafeWindow.scriptMetas.push(meta);
 console.log('Script:', meta.name, 'meta:', meta);
 
@@ -255,12 +253,6 @@ const SearchEngines = {
                 'title': '',
                 'type': 'textarea',
             },
-            'seedEffects': {
-                'label': 'seedEffects',
-                'default': false,
-                'title': 'coloring the torrent rows based on the number of seeders',
-                'type': 'checkbox',
-            },
             'imgScale': {
                 'label': 'imgScale',
                 'default': 50,
@@ -330,7 +322,6 @@ const SearchEngines = {
         events:
         {
           open: function(doc) {
-
           },
           save: function(values) {
             // All the values that aren't saved are passed to this function
@@ -823,7 +814,7 @@ a.extra-tb {
                 for (const [torrentTitle, torrentAnchors] of Object.entries(titleGroups)) {
                     if (torrentAnchors.length > 1) {
                         if (GM_config.get('deduplicateTorrents')) {
-                            deduplicateTorrents(torrentTitle, torrentAnchors);
+                            Array.from(torrentAnchors).slice(1).forEach(el => el.parentElement.parentElement.remove());
                         }
                     }
                 }
@@ -843,7 +834,7 @@ a.extra-tb {
         Mousetrap.bind(['space'], (e) => {
             solveCaptcha(); // TODO: remove this, this is just for debugging
         });
-        
+
         Mousetrap.bind('ctrl+/', function (e) {
             GM_config.open();
         });
@@ -862,10 +853,10 @@ a.extra-tb {
 
         // saves an html and json file for all torrents on page
         Mousetrap.bind(['ctrl+s'], (e) => {
-            document.querySelectorAll("body > table > tbody > tr > td:nth-child(4) > a.torrent-ml").forEach(a=>a.protocol='magnet:');
+            document.querySelectorAll("body > table > tbody > tr > td:nth-child(4) > a.torrent-ml").forEach(a => a.protocol = 'magnet:');
 
             document.querySelectorAll('a').forEach(
-                a=>a.setAttribute('href', relativeToAbsoluteURL(a.getAttribute('href'), 'https://rarbgprx.org/'))
+                a => a.setAttribute('href', relativeToAbsoluteURL(a.getAttribute('href'), 'https://rarbgprx.org/'))
                 // TODO: remove rarbgprx.org and put something more general
             );
 
@@ -875,7 +866,7 @@ a.extra-tb {
                     img => new Promise((resolve, reject) => {
 
                         fetchB64ImgUrl(img.src)
-                            .then(bin => resolve(img.src = bin||img.src))
+                            .then(bin => resolve(img.src = bin || img.src))
                             .catch(reject);
 
                         setTimeout(resolve, 2000);
@@ -883,7 +874,7 @@ a.extra-tb {
                 )
             ).then(promises => {
                 console.log("SUCCESSFULLY converted image urls to base64", promises);
-            }).finally(function(promises) {
+            }).finally(function (promises) {
 
                 const rows = document.querySelectorAll('table > tbody > tr.lista2');
                 const torrentJsons = Array.from(rows).map(row => {
@@ -917,8 +908,8 @@ a.extra-tb {
             });
 
         });
-        Mousetrap.bind(['d a'], function(e) {
-            document.querySelectorAll(`img[src="${ICON_DESCRIPTION}"]`).forEach(img=>img.parentElement.click());
+        Mousetrap.bind(['d a'], function (e) {
+            document.querySelectorAll(`img[src="${ICON_DESCRIPTION}"]`).forEach(img => img.parentElement.click());
         });
 
         // increase thumbnail size
@@ -1110,8 +1101,8 @@ a.extra-tb {
         })();
 
         const regex = new RegExp(convertedQuery.replace(/-/g, '|')
-            .replace(/\|\|/g, '|')
-            .replace(/^\|/, ''),// '|' that is at the beginning of a word
+                .replace(/\|\|/g, '|')
+                .replace(/^\|/, ''),// '|' that is at the beginning of a word
             'ig');
 
 
@@ -1167,14 +1158,6 @@ a.extra-tb {
     }
 
     /**
-     * takes a list of torrentLinks and groups them into the first one
-     *
-     * @param {*} torrentLinks
-     */
-    function deduplicateTorrents(torrentTitle, torrentLinks) {
-        Array.from(torrentLinks).slice(1).forEach(el=>el.parentElement.parentElement.remove());
-    }
-    /**
      * grouping similar torrents together
      * this is useful when you have 3 torrents of the same movie but different resolutions, there's no need to see it 3 times
      * @returns {{string: HTMLAnchorElement[]}}
@@ -1193,7 +1176,7 @@ a.extra-tb {
         ).sort() // sort to maximize conflicts (we want the same title with different word orderings to be in the same group)
             .join(' ');
 
-        const titleToLinkEntries = getTorrentLinks().map( a => [a.cleanTitle = a.cleanTitle||extractCleanTitle(a), a] );
+        const titleToLinkEntries = getTorrentLinks().map(a => [a.cleanTitle = a.cleanTitle || extractCleanTitle(a), a]);
         /* 
          * looks like:
          *
@@ -1250,37 +1233,6 @@ a.extra-tb {
                 column_Added.innerHTML = (column_Added.innerHTML + '<br>\n' + (diffFinal + ' ago').replace(' ', '&nbsp'));
             })();
 
-            // color backgrounds depending on the number of seeders
-            if (GM_config.get('seedEffects')) {
-                (function seedEffects() {
-                    /**
-                     * @param numberOfSeeders
-                     * @return {number} alpha channel (between 0 and 1 but clamped between [0.2, 0.6]) according to the number of seeders
-                     */
-                    const mapSeedersToScale = numberOfSeeders => {
-                        return Math.clamp(0.013 * Math.log(1.0 + numberOfSeeders) / Math.log(0.05), 0.1, 999999999.0) * 10.0;
-                    };
-
-                    const seedersFont = row.querySelector('font[color]');
-
-                    const statusRGB = hex2rgb(seedersFont.getAttribute('color')); // to color the row
-                    const scaler = mapSeedersToScale(parseInt(seedersFont.innerText));
-                    console.debug(`mapSeedersToScale(${seedersFont.innerText}) -> `, scaler);
-
-                    /*
-                    increasing font size and element sizes for more seeds
-                    */
-                    // seedersFont.style['font-size'] = Math.max(20, (parseInt(seedersFont.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
-                    // torrentLink.style['font-size'] = Math.max(20, (parseInt(torrentLink.style['font-size'].match(/[d].+/)) || 1) * scaler) + 'px';
-
-                    const alphaScaler = Math.clamp(scaler, 0.1, 0.4);
-                    statusRGB.map(x => x * alphaScaler);
-                    statusRGB.push(alphaScaler); // add alpha channel
-
-                    row.style.background = 'rgb(' + statusRGB.join(', ') + ')';
-                })();
-            }
-
             addImageSearchAnchor(torrentLink);
 
             torrentLink.classList.add('modded');
@@ -1293,10 +1245,11 @@ a.extra-tb {
         if (GM_config.get('block Games')) blockCatlist.push('/torrents.php?category=2;27;28;29;30;31;53')
         if (GM_config.get('block Music')) blockCatlist.push('/torrents.php?category=2;23;24;25;26')
         if (GM_config.get('block Software')) blockCatlist.push('/torrents.php?category=2;33;34;43')
-        var selectorMenu = blockCatlist.map(c=>`tr > td > a.anal[href$="${c}"]`).join(', ')
+        var selectorMenu = blockCatlist.map(c => `tr > td > a.anal[href$="${c}"]`).join(', ')
         try {
-            document.querySelectorAll(selectorMenu).forEach(a=>a.closest('tr').remove());
-        } catch(e) {}
+            document.querySelectorAll(selectorMenu).forEach(a => a.closest('tr').remove());
+        } catch (e) {
+        }
 
 
         var blocklist = [];
@@ -1306,10 +1259,11 @@ a.extra-tb {
         if (GM_config.get('block Games')) blocklist = blocklist.concat(catCodeMap['Games']);
         if (GM_config.get('block Music')) blocklist = blocklist.concat(catCodeMap['Music']);
         if (GM_config.get('block Software')) blocklist = blocklist.concat(catCodeMap['Software']);
-        var selector = blocklist.map(c=>`img[src$="/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
+        var selector = blocklist.map(c => `img[src$="/static/20/images/categories/cat_new${c}.gif"]`).join(', ')
         try {
-            document.querySelectorAll(selector).forEach(img=>img.closest('tr').remove());
-        } catch(e) {}
+            document.querySelectorAll(selector).forEach(img => img.closest('tr').remove());
+        } catch (e) {
+        }
 
     }
 
@@ -1369,6 +1323,7 @@ a.extra-tb {
         updateCss();
         if (debug) console.log('toggling thumbnail sizes. GM_config.set(largeThumbnails,', GM_config.get('largeThumbnails'), ')');
     }
+
     // gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
     function getLargeThumbnail(smallThumbUrl) {
         // Movie example
@@ -1400,7 +1355,7 @@ a.extra-tb {
     function addImageSearchAnchor(torrentAnchor) {
         const searchTd = document.createElement('td'),
             searchLink = document.createElement('a')
-            ;
+        ;
         searchTd.classList.add('search');
         // searchTd.style['border-top-width'] = '10px';
         // searchTd.style['padding-top'] = '10px';
@@ -1409,7 +1364,7 @@ a.extra-tb {
         let searchQuery = clearSymbolsFromString(torrentAnchor.title || torrentAnchor.innerText)
             .replace(/\s\s+/g, ' ') // removes double spaces
             .trim()
-            ;
+        ;
 
         /**
          * @return {string} the category of the torrent (Movies, XXX, TV Shows, Games, Music, Software, Non XXX)
@@ -1457,14 +1412,14 @@ a.extra-tb {
         searchLink.appendChild(searchIcon);
         // searchLink.appendChild(searchEngineText);
         searchLink.appendChild(qText);
-        
+
         torrentAnchor.after(searchLink);
         if (!GM_config.get('includeSearchForImagesButton')) {
             searchLink.style.display = 'none';
         }
 
         var extraThumbnailsLink = document.createElement('a');
-        extraThumbnailsLink.style['cursor']= 'pointer';
+        extraThumbnailsLink.style['cursor'] = 'pointer';
         const STR_FETCH_DESCRIPTION_THUMBNAILS = '';
         const STR_FETCH_EXTRA_THUMBNAILS = '';
 
@@ -1489,10 +1444,10 @@ a.extra-tb {
         div.classList.add('row');
         torrentAnchor.parentNode.append(div);
 
-        extraThumbnailsLink.addEventListener('click', async function(e) {
+        extraThumbnailsLink.addEventListener('click', async function (e) {
             if (moreIcon.src === ICON_DESCRIPTION) {
                 try {
-                    var descriptionSrcsDescriptionHrefs = await GM_fetch(torrentAnchor.href).then(r=>r.text()).then(html=>{
+                    var descriptionSrcsDescriptionHrefs = await GM_fetch(torrentAnchor.href).then(r => r.text()).then(html => {
                         var doc = new DOMParser().parseFromString(html, 'text/html');
                         var imgs = doc.querySelectorAll("#description > a > img");
                         return Array.from(imgs).map(img => [img.src, img.closest('a').href])
@@ -1506,30 +1461,29 @@ a.extra-tb {
                         a.style["font-size"] = "20px";
                         a.style["display"] = "grid";
                         a.target = '_blank';
-                        
+
                         var img = document.createElement('img');
                         img.src = descriptionSrc;
                         img.style.maxWidth = GM_config.get('imgScale') + 'px';
                         img.classList.add('description');
                         img.classList.add('zoom');
-    
+
                         a.append(img);
                         div.append(a);
                     }
                     replaceAllImageHosts();
-                } catch(ee) {
+                } catch (ee) {
                 }
                 // extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
                 moreIcon.src = ICON_MORE_BLUE;
                 moreIcon.alt = STR_FETCH_EXTRA_THUMBNAILS;
             } else {
                 var query = clearSymbolsFromString(torrentAnchor.innerText)
-                .replace(/\s\s+/g, ' ') // removes double spaces
-                .trim()
+                    .replace(/\s\s+/g, ' ') // removes double spaces
+                    .trim()
                 ;
-                getGoogleImages(query).then(metas=> {
+                getGoogleImages(query).then(metas => {
                     metas = Object.values(metas);
-                    var i = 0;
                     for (const meta of metas) {
                         if (/dyncdn/.test(meta.ou)) {
                             continue; // skip rarbg thumbnails
@@ -1541,13 +1495,13 @@ a.extra-tb {
                         a.style["font-size"] = "5px";
                         a.style["display"] = "table-caption";
                         a.target = '_blank';
-    
+
                         var img = document.createElement('img');
                         a.classList.add('zoom');
                         img.src = meta.ou;
                         //https://stackoverflow.com/a/70725756/7771202
-                        img.setAttribute('onerror', "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['"+meta.tu+"'])");
-    
+                        img.setAttribute('onerror', "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['" + meta.tu + "'])");
+
                         a.append(img);
                         var subdiv = document.createElement('div');
                         subdiv.classList.add('column');
@@ -1563,13 +1517,13 @@ a.extra-tb {
             e.stopPropagation();
             return false;
         });
-        
+
 
         if (GM_config.get('alwaysFetchExtraThumbnails')) {
             extraThumbnailsLink.click();
         }
 
-        
+
     }
 
     function initSearchEngine() {
@@ -1599,7 +1553,7 @@ a.extra-tb {
      * @returns {number} the index of the column given the column header text
      */
     function getColumnIndex(headerTitle) {
-        var headerTitles = Array.from(document.querySelectorAll('td > table.lista2t > tbody > tr:nth-child(1) > td, body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table[class*="list"] > tbody > tr:nth-child(1) > td')).map(el=>el.innerText.trim())
+        var headerTitles = Array.from(document.querySelectorAll('td > table.lista2t > tbody > tr:nth-child(1) > td, body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table[class*="list"] > tbody > tr:nth-child(1) > td')).map(el => el.innerText.trim())
         if (!headerTitles) {
             console.warn('did not find header titles');
             headerTitles = ["Cat.", "Thumbnails", "File", "ML DL", "Added", "Size", "S.", "L.", "", "Uploader"];
@@ -1614,6 +1568,7 @@ a.extra-tb {
             return [].map.call(allHeaders, header => header.innerText).indexOf(headerTitle);
         }
     }
+
     /**
      * Adds a column to the torrents table. Safe to call this function multiple times for the same column, it will not add duplicate cells to a row that already has this header.
      * @author https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
@@ -2056,14 +2011,6 @@ function clearSymbolsFromString(str) {
 
     return str && removeDoubleSpaces(clearDatesFromString(str).replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, ' ')
         .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, ' ')).trim();
-}
-
-function hex2rgb(c) {
-    if (c[0] === '#') c = c.substr(1);
-    const r = parseInt(c.slice(0, 2), 16),
-        g = parseInt(c.slice(2, 4), 16),
-        b = parseInt(c.slice(4, 6), 16);
-    return [r, g, b];
 }
 
 function makeTextFile(text) {

@@ -28,7 +28,7 @@ This script adds features and enhances the [Rarbg](https://rarbgunblocked.org/) 
 ### Add magnet link and torrent links
 ### Dropdown list to go to other Rarbg mirrors  
   ![](screenshots/Screenshot_Rarbg_mirrorDropdown.png)
-### Download all torrrents button  
+### Download all torrents button  
   ![](screenshots/Screenshot_Rarbg_download_all_torrents.png)
 ### Disable some adds/redirect links
 

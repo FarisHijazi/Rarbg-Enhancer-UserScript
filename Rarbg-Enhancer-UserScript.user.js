@@ -19,7 +19,6 @@ var meta = {
 // @updateUrl    https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @downloadURL  https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/Rarbg-Enhancer-UserScript.user.js
 // @require      https://code.jquery.com/jquery-3.4.0.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
 // @require      https://unpkg.com/infinite-scroll@3.0.5/dist/infinite-scroll.pkgd.min.js
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // @require      https://raw.githubusercontent.com/mitchellmebane/GM_fetch/master/GM_fetch.js
@@ -90,8 +89,7 @@ if (meta.hasOwnProperty('nodups')) {
         throw new Error('Another script is trying to execute but @nodups is set. Stopping execution.\n' + meta.namespace+meta.name);
     }
 }
-unsafeWindow.GM_fetch2 = GM_fetch;
-GM_fetch2 = GM_fetch;
+unsafeWindow.GM_fetch = GM_fetch;
 unsafeWindow.scriptMetas.push(meta);
 console.log('Script:', meta.name, 'meta:', meta);
 
@@ -122,26 +120,6 @@ if (Element.prototype.after === undefined) {
     };
 }
 // "Set" operations
-Set.prototype.addAll = function (range) {
-    if (range) {
-        for (const x of range) {
-            this.add(x);
-        }
-    }
-    return this;
-};
-Set.prototype.union = function (other) {
-    if (!other.concat) other = Array.from(other);
-    return new Set(
-        other.concat(Array.from(this))
-    );
-};
-Set.prototype.intersection = function (other) {
-    if (!other.filter) other = Array.from(other);
-    return new Set(
-        other.filter(x => this.has(x))
-    );
-};
 /** this - other
  * @param other
  * @returns {Set} containing what this has but other doesn't */
@@ -177,6 +155,15 @@ const catKeyMap = {
     'n': 'Non XXX',
 };
 
+const ICON_DESCRIPTION_WIDE = "https://i.imgur.com/xreLTXq.gif";
+const ICON_DESCRIPTION_TALL = "https://i.imgur.com/6gG2QGj.gif";
+const ICON_THUMBNAILS_WIDE = "https://i.imgur.com/9xh3vuU.gif";
+const ICON_THUMBNAILS_TALL = "https://i.imgur.com/XMV45fY.gif";
+const ICON_THUMBNAILS = "https://i.imgur.com/nA2dRWu.gif";
+const ICON_DESCRIPTION = "https://i.imgur.com/UxbSq2o.gif";
+const ICON_MORE_BLUE = 'https://i.imgur.com/FGwOuVT.gif';
+const ICON_EXTRA_GREEN = 'https://i.imgur.com/HU6J9kS.gif';
+
 function getGoogleImages(query) {
     if (typeof getGoogleImages.cache === 'undefined') getGoogleImages.cache = {};
 
@@ -198,13 +185,14 @@ function getGoogleImages(query) {
       "mode": "cors",
       "credentials": "include"
     }).then(response => response.text()).then(text => {
+        let result;
         const doc = new DOMParser().parseFromString(text, 'text/html');
         try {
-            var result =  parse_AF_initDataCallback(doc);
+            result = parse_AF_initDataCallback(doc);
             getGoogleImages[query] = result;
         } catch(e) {
             console.warn('parse_AF_initDataCallback failed for query:', query, e);
-            var result = {};
+            result = {};
         }
 
         return result;
@@ -265,6 +253,7 @@ function parse_AF_initDataCallback(doc) {
     return metasMap;
 }
 
+// DuckDuckGo proxy
 class DDG {
     static get color() {
         return '#FFA500';
@@ -274,9 +263,6 @@ class DDG {
     }
     static proxy(url) {
         return DDG.test(url) || /^(javascript)/i.test(url) ? url : (`https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(url)}&f=1`);
-    }
-    static isDdgUrl() {
-        new Error('This function "isDdgUrl()" is deprecated, use "PProxy.DDG.test()" instead');
     }
     static reverse(url) {
         // if (isZscalarUrl(url)) s = getOGZscalarUrl(url); // extra functionality:
@@ -330,20 +316,6 @@ function replaceAllImageHosts() {
     proxifyDescriptionThumbnails();
 }
 
-
-function removeDoubleSpaces(str) {
-    return !!str ? str.replace(/(\s\s+)/g, ' ') : str;
-}
-
-function clearSymbolsFromString(str) {
-    function clearDatesFromString(str) {
-        return !!str ? removeDoubleSpaces(str.replace(/\d+([.\-])(\d+)([.\-])\d*/g, ' ')) : str;
-    }
-
-    return str && removeDoubleSpaces(clearDatesFromString(str).replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, ' ')
-        .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, ' ')).trim();
-}
-
 const SearchEngines = {
     google: {
         name: 'Google',
@@ -359,7 +331,6 @@ const SearchEngines = {
     }
 };
 
-var isOnSingleTorrentPage = false;
 // main
 (function () {
     'use strict';
@@ -371,11 +342,7 @@ var isOnSingleTorrentPage = false;
 
     const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
-    
-    // TODO: make this open on the first time the script runs, and have a screenshot that shows how to open these settings
-    unsafeWindow.GM_config = GM_config
-    createElement
-    
+
     var title = createElement('<div><div><a href="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript">Rarbg-Enhancer-UserScript Settings</a><pre style=" font-size: medium; ">You can get to this options page by pressing "ctrl+/" or by navigating to the menu as shown bellow</pre></div><img src="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/screenshots/rarbg-options.png"></div>')
 
     GM_config.init({
@@ -470,12 +437,11 @@ var isOnSingleTorrentPage = false;
                 'title': '',
                 'type': 'checkbox',
             },
-            'duplicateTorrentsManagement': {
-                'label': 'duplicateTorrentsManagement',
+            'deduplicateTorrents': {
+                'label': 'deduplicateTorrents',
                 'default': 'none',
-                'title': 'what to do when there are multiple torrents of the same item',
-                'type': 'radio',
-                'options': ['none', /* 'deduplicate', */ 'group']
+                'title': 'attempt to remove duplicates when there are multiple torrents of the same item',
+                'type': 'checkbox',
             },
             'staticSearchbar': {
                 'label': 'staticSearchbar',
@@ -547,11 +513,6 @@ var isOnSingleTorrentPage = false;
 
     // click to verify browser
     document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
-
-    //TODO: change detection from detecting page blocked to detecting a unique element on the rarbg pages, this way it'll work for more than just ksa blocked pages
-    if (isPageBlockedKSA()) {
-        location.assign(GM_config.get('mirrors').split('\n')[Math.floor(Math.random() * GM_config.get('mirrors').split('\n').length)]);
-    }
 
     const searchBox = document.querySelector('#searchinput');
     const isOnIndexPage = searchBox !== null;
@@ -642,12 +603,13 @@ a.extra-tb {
         };
     }());
 
-    var snd = function() {
+    let snd = function () {
     };
     snd.play = function() {
     };
     if (GM_config.get('thumbnailHoverSound')) {
         // sound file from: http://freesound.org/data/previews/166/166186_3034894-lq.mp3
+        // noinspection JSUnusedAssignment
         snd = PlaySound('data:audio/wav;base64,' + '//OAxAAAAAAAAAAAAFhpbmcAAAAPAAAABwAABpwAIyMjIyMjIyMjIyMjIyNiYmJiYmJiYmJiYmJiYoaGhoaGhoaGhoaGhoaGs7Ozs7Ozs7Ozs7Ozs7Oz19fX19fX19fX19fX19f7+/v7+/v7+/v7+/v7+///////////////////AAAAOUxBTUUzLjk4cgJuAAAAACxtAAAURiQEPiIAAEYAAAacNLR+MgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/zgMQALgJKEAVceAEvDWSMMdDU1bDzruVPa709biTpr5M/jQ3RMD9vzP38U8LPTe65NBlcxiE041bC8AGAaC7/IYAAAAIAFxGSOmCkAyBIBcB6CcGgoKqxWRIafOc0zTOs6FA8ze+GBDCdlzNND1e/ve9KPGBWKxWMkT0/97v36sVjyJr/FH79+/fv49/e/9KUpS99//5u8eUpTX//+b3vf///+lH78P/+AAAAOAP6HhgB4/APDw98MP////+IAO/MR4ePAwggCEEBhlgu6Yz/87DEC08cMg1xn9gAUFGpgKgI8YZyf4mAmgxxgXaoyfOykqmKxmJhs74sUAAkAyBkZoMB1AejExQ1wwfcDgMFkANDAFQA8FB1g8ALmfoxhjKcxftxg6UudRxoxUmEloGBEyY0Ky6eMNHLJhBGZEMlAKDhGXz4oFOPDkMCoAi0IQoxUSSnBQEh3v+n+3+dH1bbQ+gEOAwcOA8jBgGhSMAOsmPZZ3o9FKV/qf+ylaqOymKmCmzSlAmRrDffwlX7xoeZZWIZxt26tmfdnTuyyIxWCqty1Ko1hzKzv8eYfq7jdzlGGGPc+fnUxoZVXpc6Wkmb1B9qmwtXe/v7mu7/HX8/m+W//D88N/v/5zCtnVxq4Vb1bH8sss8vs/Vwv939q1vWv1+9/++fr9Y6z3v+fy9vDnPta1zWOOt7v/OGusQqIYBGAuGA4gPRgKoCWYIUDPmEzB9Ji+xBObVsQ7GCXgaRgKQKyYHCAXGAeAHZgf/zgMQuOXr6CAPfoAH0AdmAmANJgHwBCAgBVejUn0jsOSx745R34tLB4ICRUug0UiAo2TUumpXNDcsmxUIEBQKQ4c5RJIGyyaKhVIaH6idjE3RQLpifZRiZibSJmJfSnFHHMnMSJJoGNFSa0lOdINrNzibuYOqank2OrW1NSRsmydabOpVMySUi7LXRTTWpjdDuz1JvdJNZrRUs2SspSSS6aFFC6JgepKhgJaH/XfYtMr3+kinu7+vO0SdXtgCRW+T/74ZPIbgEARJQKAaCiYD/85DECznDlgAS8w1xgE4YIIuJiNPGHGH/mYMYzBgohNmCuBaPCQGNGFURBpCwACTSsEgiEAtdcGkbtuS3pbGrbi6EAAI8AnOQ/BsFSmdkk5NxqGhUASH8OROljFy/RSuXxNXhJNyErYUMPvkQ1EMZ2dSJHXWIomnSqv7z+Gry3NuboB23/L5NIkblFlTkefY88Xc+hrCq+7A+U6Vq5X2NXyxE/FzzIHk8pGki6Nge+WGRqyoUSpUsovx9LRpJp0tMu2jWQrcO7RbT287sQ/+p0/Zn2P8K2ah68b8iYfeuva7yTjP08JiMFkFACA8A2HAqGDWCCUCamT2NodzfBxmwhkmIIFT/84DEHDesQfgC8w0dGBoDIYLYXpiaBLgACJpbMILcppb034fmaHGWtdh1/pfDENM+GgElJ/CvOENQbQH1C2GZNiZWR9H1/4zWO+7dc8SvOkbZqnb3sWxLfe1Ly3W1jcFfflePRRge3ptHW7TlLTq3Zd1pmO5drPOW+lt+lLM525XBdGHwPQHBoK0CtE6dIrjlRBmRm3KEuXic5/OsuMt6qsiOYW+PFNuo1pC0TWqinrGLw8qU23L7s05+zIvSCntp1ethSHTNMtKlT4SLhsk6//OAxAAweyXsPOpHHAkpzAEKjBoHSUAzFoVTEUgjNKmz5rGTUQxjLsQTD8GzBkmjI8IjA4BZUiawV3ZI7LWXFvSqNRqm3TWspqHo6JaohZpZEiRPFK5LFDHyksqz1UPvP/GlmpETUUKGMc8UOkJKzZC6V7KSKVbREQikUoWVmsAYMikUoYoSUsKmZXGJCSoWf5LSjiyIhCopIUOfVvVQESq0qqqqr6qq5dVS/+qq////qsDCn9NYLB0jIkSz6sqCoNAUBBUFn56DRpKgaeSX8f/zEMQBATgFEAAARgCCws02TEFNRTMuOTgu');
     }
 
@@ -685,13 +647,11 @@ a.extra-tb {
                     * https://tesseract.projectnaptha.com/
                     * https://cdn.jsdelivr.net/gh/naptha/tesseract.js@v1.0.14/dist/tesseract.min.js
                     */
-                    (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Tesseract=f()}})(function(){var define,module,exports;return function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}({1:[function(require,module,exports){var process=module.exports={};var cachedSetTimeout;var cachedClearTimeout;function defaultSetTimout(){throw new Error("setTimeout has not been defined")}function defaultClearTimeout(){throw new Error("clearTimeout has not been defined")}(function(){try{if(typeof setTimeout==="function"){cachedSetTimeout=setTimeout}else{cachedSetTimeout=defaultSetTimout}}catch(e){cachedSetTimeout=defaultSetTimout}try{if(typeof clearTimeout==="function"){cachedClearTimeout=clearTimeout}else{cachedClearTimeout=defaultClearTimeout}}catch(e){cachedClearTimeout=defaultClearTimeout}})();function runTimeout(fun){if(cachedSetTimeout===setTimeout){return setTimeout(fun,0)}if((cachedSetTimeout===defaultSetTimout||!cachedSetTimeout)&&setTimeout){cachedSetTimeout=setTimeout;return setTimeout(fun,0)}try{return cachedSetTimeout(fun,0)}catch(e){try{return cachedSetTimeout.call(null,fun,0)}catch(e){return cachedSetTimeout.call(this,fun,0)}}}function runClearTimeout(marker){if(cachedClearTimeout===clearTimeout){return clearTimeout(marker)}if((cachedClearTimeout===defaultClearTimeout||!cachedClearTimeout)&&clearTimeout){cachedClearTimeout=clearTimeout;return clearTimeout(marker)}try{return cachedClearTimeout(marker)}catch(e){try{return cachedClearTimeout.call(null,marker)}catch(e){return cachedClearTimeout.call(this,marker)}}}var queue=[];var draining=false;var currentQueue;var queueIndex=-1;function cleanUpNextTick(){if(!draining||!currentQueue){return}draining=false;if(currentQueue.length){queue=currentQueue.concat(queue)}else{queueIndex=-1}if(queue.length){drainQueue()}}function drainQueue(){if(draining){return}var timeout=runTimeout(cleanUpNextTick);draining=true;var len=queue.length;while(len){currentQueue=queue;queue=[];while(++queueIndex<len){if(currentQueue){currentQueue[queueIndex].run()}}queueIndex=-1;len=queue.length}currentQueue=null;draining=false;runClearTimeout(timeout)}process.nextTick=function(fun){var args=new Array(arguments.length-1);if(arguments.length>1){for(var i=1;i<arguments.length;i++){args[i-1]=arguments[i]}}queue.push(new Item(fun,args));if(queue.length===1&&!draining){runTimeout(drainQueue)}};function Item(fun,array){this.fun=fun;this.array=array}Item.prototype.run=function(){this.fun.apply(null,this.array)};process.title="browser";process.browser=true;process.env={};process.argv=[];process.version="";process.versions={};function noop(){}process.on=noop;process.addListener=noop;process.once=noop;process.off=noop;process.removeListener=noop;process.removeAllListeners=noop;process.emit=noop;process.prependListener=noop;process.prependOnceListener=noop;process.listeners=function(name){return[]};process.binding=function(name){throw new Error("process.binding is not supported")};process.cwd=function(){return"/"};process.chdir=function(dir){throw new Error("process.chdir is not supported")};process.umask=function(){return 0}},{}],2:[function(require,module,exports){module.exports={name:"tesseract.js",version:"1.0.13",description:"Pure Javascript Multilingual OCR",main:"src/index.js",scripts:{start:'concurrently --kill-others "watchify src/index.js  -t [ envify --NODE_ENV development ] -t [ babelify --presets [ es2015 ] ] -o dist/tesseract.dev.js --standalone Tesseract" "watchify src/browser/worker.js  -t [ envify --NODE_ENV development ] -t [ babelify --presets [ es2015 ] ] -o dist/worker.dev.js" "http-server -p 7355"',build:"browserify src/index.js -t [ babelify --presets [ es2015 ] ] -o dist/tesseract.js --standalone Tesseract && browserify src/browser/worker.js -t [ babelify --presets [ es2015 ] ] -o dist/worker.js && uglifyjs dist/tesseract.js --source-map -o dist/tesseract.min.js && uglifyjs dist/worker.js --source-map -o dist/worker.min.js",release:"npm run build && git commit -am 'new release' && git push && git tag `jq -r '.version' package.json` && git push origin --tags && npm publish"},browser:{"./src/node/index.js":"./src/browser/index.js"},author:"",license:"Apache-2.0",devDependencies:{"babel-preset-es2015":"^6.16.0",babelify:"^7.3.0",browserify:"^13.1.0",concurrently:"^3.1.0",envify:"^3.4.1","http-server":"^0.9.0",pako:"^1.0.3","uglify-js":"^3.4.9",watchify:"^3.7.0"},dependencies:{"file-type":"^3.8.0","isomorphic-fetch":"^2.2.1","is-url":"1.2.2","jpeg-js":"^0.2.0","level-js":"^2.2.4","node-fetch":"^1.6.3","object-assign":"^4.1.0","png.js":"^0.2.1","tesseract.js-core":"^1.0.2"},repository:{type:"git",url:"https://github.com/naptha/tesseract.js.git"},bugs:{url:"https://github.com/naptha/tesseract.js/issues"},homepage:"https://github.com/naptha/tesseract.js"}},{}],3:[function(require,module,exports){(function(process){"use strict";var defaultOptions={corePath:"https://cdn.jsdelivr.net/gh/naptha/tesseract.js-core@0.1.0/index.js",langPath:"https://tessdata.projectnaptha.com/3.02/"};if(process.env.NODE_ENV==="development"){console.debug("Using Development Configuration");defaultOptions.workerPath=location.protocol+"//"+location.host+"/dist/worker.dev.js?nocache="+Math.random().toString(36).slice(3)}else{var version=require("../../package.json").version;defaultOptions.workerPath="https://cdn.jsdelivr.net/gh/naptha/tesseract.js@"+version+"/dist/worker.js"}exports.defaultOptions=defaultOptions;exports.spawnWorker=function spawnWorker(instance,workerOptions){if(window.Blob&&window.URL){var blob=new Blob(['importScripts("'+workerOptions.workerPath+'");']);var worker=new Worker(window.URL.createObjectURL(blob))}else{var worker=new Worker(workerOptions.workerPath)}worker.onmessage=function(e){var packet=e.data;instance._recv(packet)};return worker};exports.terminateWorker=function(instance){instance.worker.terminate()};exports.sendPacket=function sendPacket(instance,packet){loadImage(packet.payload.image,function(img){packet.payload.image=img;instance.worker.postMessage(packet)})};function loadImage(image,cb){if(typeof image==="string"){if(/^\#/.test(image)){return loadImage(document.querySelector(image),cb)}else if(/(blob|data)\:/.test(image)){var im=new Image;im.src=image;im.onload=function(e){return loadImage(im,cb)};return}else{var xhr=new XMLHttpRequest;xhr.open("GET",image,true);xhr.responseType="blob";xhr.onload=function(e){return loadImage(xhr.response,cb)};xhr.onerror=function(e){if(/^https?:\/\//.test(image)&&!/^https:\/\/crossorigin.me/.test(image)){console.debug("Attempting to load image with CORS proxy");loadImage("https://crossorigin.me/"+image,cb)}};xhr.send(null);return}}else if(image instanceof File){var fr=new FileReader;fr.onload=function(e){return loadImage(fr.result,cb)};fr.readAsDataURL(image);return}else if(image instanceof Blob){return loadImage(URL.createObjectURL(image),cb)}else if(image.getContext){return loadImage(image.getContext("2d"),cb)}else if(image.tagName=="IMG"||image.tagName=="VIDEO"){var c=document.createElement("canvas");c.width=image.naturalWidth||image.videoWidth;c.height=image.naturalHeight||image.videoHeight;var ctx=c.getContext("2d");ctx.drawImage(image,0,0);return loadImage(ctx,cb)}else if(image.getImageData){var data=image.getImageData(0,0,image.canvas.width,image.canvas.height);return loadImage(data,cb)}else{return cb(image)}throw new Error("Missing return in loadImage cascade")}}).call(this,require("_process"))},{"../../package.json":2,_process:1}],4:[function(require,module,exports){"use strict";module.exports=function circularize(page){page.paragraphs=[];page.lines=[];page.words=[];page.symbols=[];page.blocks.forEach(function(block){block.page=page;block.lines=[];block.words=[];block.symbols=[];block.paragraphs.forEach(function(para){para.block=block;para.page=page;para.words=[];para.symbols=[];para.lines.forEach(function(line){line.paragraph=para;line.block=block;line.page=page;line.symbols=[];line.words.forEach(function(word){word.line=line;word.paragraph=para;word.block=block;word.page=page;word.symbols.forEach(function(sym){sym.word=word;sym.line=line;sym.paragraph=para;sym.block=block;sym.page=page;sym.line.symbols.push(sym);sym.paragraph.symbols.push(sym);sym.block.symbols.push(sym);sym.page.symbols.push(sym)});word.paragraph.words.push(word);word.block.words.push(word);word.page.words.push(word)});line.block.lines.push(line);line.page.lines.push(line)});para.page.paragraphs.push(para)})});return page}},{}],5:[function(require,module,exports){"use strict";var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor)}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor}}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function")}}var adapter=require("../node/index.js");var jobCounter=0;module.exports=function(){function TesseractJob(instance){_classCallCheck(this,TesseractJob);this.id="Job-"+ ++jobCounter+"-"+Math.random().toString(16).slice(3,8);this._instance=instance;this._resolve=[];this._reject=[];this._progress=[];this._finally=[]}_createClass(TesseractJob,[{key:"then",value:function then(resolve,reject){if(this._resolve.push){this._resolve.push(resolve)}else{resolve(this._resolve)}if(reject)this.catch(reject);return this}},{key:"catch",value:function _catch(reject){if(this._reject.push){this._reject.push(reject)}else{reject(this._reject)}return this}},{key:"progress",value:function progress(fn){this._progress.push(fn);return this}},{key:"finally",value:function _finally(fn){this._finally.push(fn);return this}},{key:"_send",value:function _send(action,payload){adapter.sendPacket(this._instance,{jobId:this.id,action:action,payload:payload})}},{key:"_handle",value:function _handle(packet){var data=packet.data;var runFinallyCbs=false;if(packet.status==="resolve"){if(this._resolve.length===0)console.log(data);this._resolve.forEach(function(fn){var ret=fn(data);if(ret&&typeof ret.then=="function"){console.warn("TesseractJob instances do not chain like ES6 Promises. To convert it into a real promise, use Promise.resolve.")}});this._resolve=data;this._instance._dequeue();runFinallyCbs=true}else if(packet.status==="reject"){if(this._reject.length===0)console.error(data);this._reject.forEach(function(fn){return fn(data)});this._reject=data;this._instance._dequeue();runFinallyCbs=true}else if(packet.status==="progress"){this._progress.forEach(function(fn){return fn(data)})}else{console.warn("Message type unknown",packet.status)}if(runFinallyCbs){this._finally.forEach(function(fn){return fn(data)})}}}]);return TesseractJob}()},{"../node/index.js":3}],6:[function(require,module,exports){"use strict";var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor)}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor}}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function")}}var adapter=require("./node/index.js");var circularize=require("./common/circularize.js");var TesseractJob=require("./common/job");var version=require("../package.json").version;var create=function create(){var workerOptions=arguments.length>0&&arguments[0]!==undefined?arguments[0]:{};var worker=new TesseractWorker(Object.assign({},adapter.defaultOptions,workerOptions));worker.create=create;worker.version=version;return worker};var TesseractWorker=function(){function TesseractWorker(workerOptions){_classCallCheck(this,TesseractWorker);this.worker=null;this.workerOptions=workerOptions;this._currentJob=null;this._queue=[]}_createClass(TesseractWorker,[{key:"recognize",value:function recognize(image){var _this=this;var options=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};return this._delay(function(job){if(typeof options==="string")options={lang:options};options.lang=options.lang||"eng";job._send("recognize",{image:image,options:options,workerOptions:_this.workerOptions})})}},{key:"detect",value:function detect(image){var _this2=this;var options=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};return this._delay(function(job){job._send("detect",{image:image,options:options,workerOptions:_this2.workerOptions})})}},{key:"terminate",value:function terminate(){if(this.worker)adapter.terminateWorker(this);this.worker=null;this._currentJob=null;this._queue=[]}},{key:"_delay",value:function _delay(fn){var _this3=this;if(!this.worker)this.worker=adapter.spawnWorker(this,this.workerOptions);var job=new TesseractJob(this);this._queue.push(function(e){_this3._queue.shift();_this3._currentJob=job;fn(job)});if(!this._currentJob)this._dequeue();return job}},{key:"_dequeue",value:function _dequeue(){this._currentJob=null;if(this._queue.length){this._queue[0]()}}},{key:"_recv",value:function _recv(packet){if(packet.status==="resolve"&&packet.action==="recognize"){packet.data=circularize(packet.data)}if(this._currentJob.id===packet.jobId){this._currentJob._handle(packet)}else{console.warn("Job ID "+packet.jobId+" not known.")}}}]);return TesseractWorker}();module.exports=create()},{"../package.json":2,"./common/circularize.js":4,"./common/job":5,"./node/index.js":3}]},{},[6])(6)});
-
-                    unsafeWindow.Tesseract = Tesseract;
+                    (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Tesseract=f()}})(function(){var define,module,exports;return function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}({1:[function(require,module,exports){var process=module.exports={};var cachedSetTimeout;var cachedClearTimeout;function defaultSetTimout(){throw new Error("setTimeout has not been defined")}function defaultClearTimeout(){throw new Error("clearTimeout has not been defined")}(function(){try{if(typeof setTimeout==="function"){cachedSetTimeout=setTimeout}else{cachedSetTimeout=defaultSetTimout}}catch(e){cachedSetTimeout=defaultSetTimout}try{if(typeof clearTimeout==="function"){cachedClearTimeout=clearTimeout}else{cachedClearTimeout=defaultClearTimeout}}catch(e){cachedClearTimeout=defaultClearTimeout}})();function runTimeout(fun){if(cachedSetTimeout===setTimeout){return setTimeout(fun,0)}if((cachedSetTimeout===defaultSetTimout||!cachedSetTimeout)&&setTimeout){cachedSetTimeout=setTimeout;return setTimeout(fun,0)}try{return cachedSetTimeout(fun,0)}catch(e){try{return cachedSetTimeout.call(null,fun,0)}catch(e){return cachedSetTimeout.call(this,fun,0)}}}function runClearTimeout(marker){if(cachedClearTimeout===clearTimeout){return clearTimeout(marker)}if((cachedClearTimeout===defaultClearTimeout||!cachedClearTimeout)&&clearTimeout){cachedClearTimeout=clearTimeout;return clearTimeout(marker)}try{return cachedClearTimeout(marker)}catch(e){try{return cachedClearTimeout.call(null,marker)}catch(e){return cachedClearTimeout.call(this,marker)}}}var queue=[];var draining=false;var currentQueue;var queueIndex=-1;function cleanUpNextTick(){if(!draining||!currentQueue){return}draining=false;if(currentQueue.length){queue=currentQueue.concat(queue)}else{queueIndex=-1}if(queue.length){drainQueue()}}function drainQueue(){if(draining){return}var timeout=runTimeout(cleanUpNextTick);draining=true;var len=queue.length;while(len){currentQueue=queue;queue=[];while(++queueIndex<len){if(currentQueue){currentQueue[queueIndex].run()}}queueIndex=-1;len=queue.length}currentQueue=null;draining=false;runClearTimeout(timeout)}process.nextTick=function(fun){var args=new Array(arguments.length-1);if(arguments.length>1){for(var i=1;i<arguments.length;i++){args[i-1]=arguments[i]}}queue.push(new Item(fun,args));if(queue.length===1&&!draining){runTimeout(drainQueue)}};function Item(fun,array){this.fun=fun;this.array=array}Item.prototype.run=function(){this.fun.apply(null,this.array)};process.title="browser";process.browser=true;process.env={};process.argv=[];process.version="";process.versions={};function noop(){}process.on=noop;process.addListener=noop;process.once=noop;process.off=noop;process.removeListener=noop;process.removeAllListeners=noop;process.emit=noop;process.prependListener=noop;process.prependOnceListener=noop;process.listeners=function(name){return[]};process.binding=function(name){throw new Error("process.binding is not supported")};process.cwd=function(){return"/"};process.chdir=function(dir){throw new Error("process.chdir is not supported")};process.umask=function(){return 0}},{}],2:[function(require,module,exports){module.exports={name:"tesseract.js",version:"1.0.13",description:"Pure Javascript Multilingual OCR",main:"src/index.js",scripts:{start:'concurrently --kill-others "watchify src/index.js  -t [ envify --NODE_ENV development ] -t [ babelify --presets [ es2015 ] ] -o dist/tesseract.dev.js --standalone Tesseract" "watchify src/browser/worker.js  -t [ envify --NODE_ENV development ] -t [ babelify --presets [ es2015 ] ] -o dist/worker.dev.js" "http-server -p 7355"',build:"browserify src/index.js -t [ babelify --presets [ es2015 ] ] -o dist/tesseract.js --standalone Tesseract && browserify src/browser/worker.js -t [ babelify --presets [ es2015 ] ] -o dist/worker.js && uglifyjs dist/tesseract.js --source-map -o dist/tesseract.min.js && uglifyjs dist/worker.js --source-map -o dist/worker.min.js",release:"npm run build && git commit -am 'new release' && git push && git tag `jq -r '.version' package.json` && git push origin --tags && npm publish"},browser:{"./src/node/index.js":"./src/browser/index.js"},author:"",license:"Apache-2.0",devDependencies:{"babel-preset-es2015":"^6.16.0",babelify:"^7.3.0",browserify:"^13.1.0",concurrently:"^3.1.0",envify:"^3.4.1","http-server":"^0.9.0",pako:"^1.0.3","uglify-js":"^3.4.9",watchify:"^3.7.0"},dependencies:{"file-type":"^3.8.0","isomorphic-fetch":"^2.2.1","is-url":"1.2.2","jpeg-js":"^0.2.0","level-js":"^2.2.4","node-fetch":"^1.6.3","object-assign":"^4.1.0","png.js":"^0.2.1","tesseract.js-core":"^1.0.2"},repository:{type:"git",url:"https://github.com/naptha/tesseract.js.git"},bugs:{url:"https://github.com/naptha/tesseract.js/issues"},homepage:"https://github.com/naptha/tesseract.js"}},{}],3:[function(require,module,exports){(function(process){"use strict";var defaultOptions={corePath:"https://cdn.jsdelivr.net/gh/naptha/tesseract.js-core@0.1.0/index.js",langPath:"https://tessdata.projectnaptha.com/3.02/"};if(process.env.NODE_ENV==="development"){console.debug("Using Development Configuration");defaultOptions.workerPath=location.protocol+"//"+location.host+"/dist/worker.dev.js?nocache="+Math.random().toString(36).slice(3)}else{var version=require("../../package.json").version;defaultOptions.workerPath="https://cdn.jsdelivr.net/gh/naptha/tesseract.js@"+version+"/dist/worker.js"}exports.defaultOptions=defaultOptions;exports.spawnWorker=function spawnWorker(instance,workerOptions){if(window.Blob&&window.URL){var blob=new Blob(['importScripts("'+workerOptions.workerPath+'");']);var worker=new Worker(window.URL.createObjectURL(blob))}else{var worker=new Worker(workerOptions.workerPath)}worker.onmessage=function(e){var packet=e.data;instance._recv(packet)};return worker};exports.terminateWorker=function(instance){instance.worker.terminate()};exports.sendPacket=function sendPacket(instance,packet){loadImage(packet.payload.image,function(img){packet.payload.image=img;instance.worker.postMessage(packet)})};function loadImage(image,cb){if(typeof image==="string"){if(/^\#/.test(image)){return loadImage(document.querySelector(image),cb)}else if(/(blob|data)\:/.test(image)){var im=new Image;im.src=image;im.onload=function(e){return loadImage(im,cb)};return}else{var xhr=new XMLHttpRequest;xhr.open("GET",image,true);xhr.responseType="blob";xhr.onload=function(e){return loadImage(xhr.response,cb)};xhr.onerror=function(e){if(/^https?:\/\//.test(image)&&!/^https:\/\/crossorigin.me/.test(image)){console.debug("Attempting to load image with CORS proxy");loadImage("https://crossorigin.me/"+image,cb)}};xhr.send(null);return}}else if(image instanceof File){var fr=new FileReader;fr.onload=function(e){return loadImage(fr.result,cb)};fr.readAsDataURL(image);return}else if(image instanceof Blob){return loadImage(URL.createObjectURL(image),cb)}else if(image.getContext){return loadImage(image.getContext("2d"),cb)}else if(image.tagName==="IMG"||image.tagName==="VIDEO"){var c=document.createElement("canvas");c.width=image.naturalWidth||image.videoWidth;c.height=image.naturalHeight||image.videoHeight;var ctx=c.getContext("2d");ctx.drawImage(image,0,0);return loadImage(ctx,cb)}else if(image.getImageData){var data=image.getImageData(0,0,image.canvas.width,image.canvas.height);return loadImage(data,cb)}else{return cb(image)}throw new Error("Missing return in loadImage cascade")}}).call(this,require("_process"))},{"../../package.json":2,_process:1}],4:[function(require,module,exports){"use strict";module.exports=function circularize(page){page.paragraphs=[];page.lines=[];page.words=[];page.symbols=[];page.blocks.forEach(function(block){block.page=page;block.lines=[];block.words=[];block.symbols=[];block.paragraphs.forEach(function(para){para.block=block;para.page=page;para.words=[];para.symbols=[];para.lines.forEach(function(line){line.paragraph=para;line.block=block;line.page=page;line.symbols=[];line.words.forEach(function(word){word.line=line;word.paragraph=para;word.block=block;word.page=page;word.symbols.forEach(function(sym){sym.word=word;sym.line=line;sym.paragraph=para;sym.block=block;sym.page=page;sym.line.symbols.push(sym);sym.paragraph.symbols.push(sym);sym.block.symbols.push(sym);sym.page.symbols.push(sym)});word.paragraph.words.push(word);word.block.words.push(word);word.page.words.push(word)});line.block.lines.push(line);line.page.lines.push(line)});para.page.paragraphs.push(para)})});return page}},{}],5:[function(require,module,exports){"use strict";var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor)}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor}}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function")}}var adapter=require("../node/index.js");var jobCounter=0;module.exports=function(){function TesseractJob(instance){_classCallCheck(this,TesseractJob);this.id="Job-"+ ++jobCounter+"-"+Math.random().toString(16).slice(3,8);this._instance=instance;this._resolve=[];this._reject=[];this._progress=[];this._finally=[]}_createClass(TesseractJob,[{key:"then",value:function then(resolve,reject){if(this._resolve.push){this._resolve.push(resolve)}else{resolve(this._resolve)}if(reject)this.catch(reject);return this}},{key:"catch",value:function _catch(reject){if(this._reject.push){this._reject.push(reject)}else{reject(this._reject)}return this}},{key:"progress",value:function progress(fn){this._progress.push(fn);return this}},{key:"finally",value:function _finally(fn){this._finally.push(fn);return this}},{key:"_send",value:function _send(action,payload){adapter.sendPacket(this._instance,{jobId:this.id,action:action,payload:payload})}},{key:"_handle",value:function _handle(packet){var data=packet.data;var runFinallyCbs=false;if(packet.status==="resolve"){if(this._resolve.length===0)console.log(data);this._resolve.forEach(function(fn){var ret=fn(data);if(ret&&typeof ret.then=="function"){console.warn("TesseractJob instances do not chain like ES6 Promises. To convert it into a real promise, use Promise.resolve.")}});this._resolve=data;this._instance._dequeue();runFinallyCbs=true}else if(packet.status==="reject"){if(this._reject.length===0)console.error(data);this._reject.forEach(function(fn){return fn(data)});this._reject=data;this._instance._dequeue();runFinallyCbs=true}else if(packet.status==="progress"){this._progress.forEach(function(fn){return fn(data)})}else{console.warn("Message type unknown",packet.status)}if(runFinallyCbs){this._finally.forEach(function(fn){return fn(data)})}}}]);return TesseractJob}()},{"../node/index.js":3}],6:[function(require,module,exports){"use strict";var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor)}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor}}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function")}}var adapter=require("./node/index.js");var circularize=require("./common/circularize.js");var TesseractJob=require("./common/job");var version=require("../package.json").version;var create=function create(){var workerOptions=arguments.length>0&&arguments[0]!==undefined?arguments[0]:{};var worker=new TesseractWorker(Object.assign({},adapter.defaultOptions,workerOptions));worker.create=create;worker.version=version;return worker};var TesseractWorker=function(){function TesseractWorker(workerOptions){_classCallCheck(this,TesseractWorker);this.worker=null;this.workerOptions=workerOptions;this._currentJob=null;this._queue=[]}_createClass(TesseractWorker,[{key:"recognize",value:function recognize(image){var _this=this;var options=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};return this._delay(function(job){if(typeof options==="string")options={lang:options};options.lang=options.lang||"eng";job._send("recognize",{image:image,options:options,workerOptions:_this.workerOptions})})}},{key:"detect",value:function detect(image){var _this2=this;var options=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};return this._delay(function(job){job._send("detect",{image:image,options:options,workerOptions:_this2.workerOptions})})}},{key:"terminate",value:function terminate(){if(this.worker)adapter.terminateWorker(this);this.worker=null;this._currentJob=null;this._queue=[]}},{key:"_delay",value:function _delay(fn){var _this3=this;if(!this.worker)this.worker=adapter.spawnWorker(this,this.workerOptions);var job=new TesseractJob(this);this._queue.push(function(e){_this3._queue.shift();_this3._currentJob=job;fn(job)});if(!this._currentJob)this._dequeue();return job}},{key:"_dequeue",value:function _dequeue(){this._currentJob=null;if(this._queue.length){this._queue[0]()}}},{key:"_recv",value:function _recv(packet){if(packet.status==="resolve"&&packet.action==="recognize"){packet.data=circularize(packet.data)}if(this._currentJob.id===packet.jobId){this._currentJob._handle(packet)}else{console.warn("Job ID "+packet.jobId+" not known.")}}}]);return TesseractWorker}();module.exports=create()},{"../package.json":2,"./common/circularize.js":4,"./common/job":5,"./node/index.js":3}]},{},[6])(6)});
 
                     function solveCaptchaTesseract(Tesseract) {
                         Tesseract.recognize(container.querySelector('img'), {
-                            tessedit_char_whitelist: '123456789' + 'ABCDEFGHIJKLMNOPQRSTUVWXY' // ',.' + 'abcdefghijklmnopqrstuvwxyz'
+                            tessedit_char_whitelist: '123456789' + 'ABCDEFGHIJKLMNOPQRSTUVWXY',
                         }).then(function (result) {
                             console.log('result', result, '\n', result.text);
                             document.querySelector('#solve_string').value = result;
@@ -755,51 +715,7 @@ a.extra-tb {
                 replaceAllImageHosts();
 
                 // putting the "Description:" row before the "Others:" row
-                getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].appendChild(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
-
-                Mousetrap.bind('d', function (e) {
-                    const torrent = document.querySelector('a[onmouseover="return overlib(\'Click here to download torrent\')"]');
-                    torrent.click();
-
-                    function getRow(rowText) {
-                        return getElementsByXPath(`(//tr[contains(., "${rowText}")])[last()]`);
-                    }
-
-                    const torrentName = torrent.innerText;
-                    const descriptionImgs = getElementsByXPath('(//tr[contains(., "Description\:")])[last()]//img');
-                    const posterImg = getRow('Poster:')[0];
-                    posterImg.alt = torrentName + '_poster';
-                    var i = 1;
-                    for (const descriptionImg of descriptionImgs) {
-                        descriptionImg.alt = torrentName + '_description_' + (i++);
-                    }
-                    descriptionImgs.push(posterImg);
-                    descriptionImgs.push({ fileURL: torrent.href, fileName: torrentName });
-                    var zip = zipFiles(descriptionImgs);
-                    zip.file(document.title + '.html', new Blob([document.body.outerHTML], { type: 'text/plain' }));
-                    const rowsObj = {};
-                    ['Title:', 'Genres:', 'Actors:', 'Stars:', 'Series:', 'Plot:', 'Tags:'].forEach(row => {
-                        let rowContent = getRow(row)[0];
-                        if (rowContent)
-                            rowsObj[row] = rowContent.innerText;
-                    });
-                    const rowsText = JSON.stringify(rowsObj, null, 4);
-                    console.debug('rowsObj: ', rowsObj);
-                    let summary = document.title + '\n\n' + rowsText;
-                    zip.file(document.title + ' (summary).txt', new Blob([summary], { type: 'text/plain' }));
-
-                    let zipped = false;
-                    zip.onGenZip = function () {
-                        zipped = true;
-                    };
-
-                    setTimeout(function () {
-                        if (!zipped) {
-                            console.log('zip timed out, forcing download');
-                            zip.genZip();
-                        }
-                    }, 3000);
-                });
+                getElementsByXPath('(//tr[contains(., "Poster\:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description\:")])[last()]')[0]);
 
                 void (0);
             } else if (isOnIndexPage) { // if on torrent page (index)
@@ -868,7 +784,7 @@ a.extra-tb {
                                 // remove extra appended headers
                                 tbodyEl.nextElementSibling.remove();
                             } catch (error) {
-                                
+
                             }
                             // filter the new torrents that just arrived
                             updateSearch();
@@ -901,15 +817,6 @@ a.extra-tb {
                         }
                     });
                 }
-
-                // click sort by seeds
-                Mousetrap.bind('t s', function (e) {
-                    let columnIndex = getColumnIndex('S.');
-                    if (columnIndex !== -1) {
-                        tbodyEl.querySelectorAll('tr > td.header6')[columnIndex].querySelector('a').click();
-                    }
-                });
-
             } else if (isOnWrongTorrentLinkPage) {
                 // this torrent link has failed, then we have to go to the torrent page and download it
                 const torrentPageUrl = new URL(location.href).searchParams.get('tpageurl'); // get the previously injected page url here
@@ -1050,10 +957,10 @@ a.extra-tb {
                     if (!newCol.header.querySelector('.decrementImageSizeBtn')) {
                         var decrementImageSizeBtn = createElement('<a href="#" style="margin: 2px" class="decrementImageSizeBtn">(-)</a>');
                         decrementImageSizeBtn.addEventListener('click', decrementImageSize);
-    
+
                         var incrementImageSizeBtn = createElement('<a href="#" style="margin: 2px" class="incrementImageSizeBtn">(+)</a>');
                         incrementImageSizeBtn.addEventListener('click', incrementImageSize);
-    
+
                         var nobr = document.createElement('nobr');
                         newCol.header.appendChild(nobr);
                         nobr.appendChild(decrementImageSizeBtn);
@@ -1062,25 +969,16 @@ a.extra-tb {
                 }
 
                 dealWithTorrents(target);
-                // forceAbsoluteLinks();
 
                 // group torrents
                 titleGroups = updateTorrentGroups();
                 for (const [torrentTitle, torrentAnchors] of Object.entries(titleGroups)) {
                     if (torrentAnchors.length > 1) {
-                        switch (GM_config.get('duplicateTorrentsManagement')) {
-                            case 'group':
-                                groupTorrents(torrentTitle, torrentAnchors);
-                                break;
-                            case 'deduplicate':
-                                deduplicateTorrents(torrentTitle, torrentAnchors);
-                                break;
-                            default:
-                                break;
+                        if (GM_config.get('deduplicateTorrents')) {
+                            groupTorrents(torrentTitle, torrentAnchors);
                         }
                     }
                 }
-                
 
                 // remove links for adds that cover the screen
                 for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
@@ -1170,6 +1068,9 @@ a.extra-tb {
 
             });
 
+        });
+        Mousetrap.bind(['d a'], function(e) {
+            document.querySelectorAll(`img[src="${ICON_DESCRIPTION}"]`).forEach(img=>img.parentElement.click());
         });
 
         // increase thumbnail size
@@ -1423,52 +1324,7 @@ a.extra-tb {
      * @param {*} torrentLinks
      */
     function groupTorrents(torrentTitle, torrentLinks) {
-        const $rows = $(torrentLinks).closest('tr').filter(':not(.grouped)');
-        var $firstRow = $rows.filter('.firstRow');
-        if ($firstRow.length || $firstRow.children('td').length) {
-            console.warn('groupTorrents() not allowed to call twice, found a firstRow:', $firstRow);
-            return;
-        } else {
-            $firstRow = $rows.first();
-        }
-
-        $firstRow.addClass('firstRow');
-        var $groupTables = $firstRow.closest('table.groupTable');
-        if (!$groupTables.length) {
-            $groupTables = $firstRow.children('td')
-                .append('<table class="groupTable">')
-                .end()
-                .find('table.groupTable').remove();
-
-            // for each row
-            $rows.each(
-                // move the td elements and add it in a new row in the table 
-                (_, row) => $(row).children('td')
-                    .each((i, td) => (i < $groupTables.length) && $groupTables[i].insertRow().appendChild(td))
-            );
-
-            $firstRow
-                .append(
-                    // create 10 'td' elements
-                    ($(Array($groupTables.length).fill(null).map(() => document.createElement('td'))))
-                        .each((i, td) => (i < $groupTables.length) && td.appendChild($groupTables[i]))
-                );
-        }
-
-
-
-        // const dividerRowHTML = `<tr>
-        // <td align="center" class="" style="width:48px;">Cat.</td><td align="center">Thumbnails</td>
-        // <td align="center" class=""><a class="anal tdlinkfull3">File</a></td><td align="center">ML DL</td>
-        // <td align="center" class=""><a class="anal tdlinkfull3"><i class="icon-arrow-down"></i>Added</a></td>
-        // <td align="center" class=""><a class="anal tdlinkfull3">Size</a></td>
-        // <td align="center" class=""><a class="anal tdlinkfull3">S.</a></td>
-        // <td align="center" class=""><a class="anal tdlinkfull3">L.</a></td>
-        // <td align="center" class=""><img src="https://dyncdn2.com/static/20/images/comments.gif" border="0" alt="comments"></td>
-        // <td align="center" class="">Uploader</td>
-        // </tr>`;
-
-        $rows.addClass('grouped');
+        Array.from(torrentLinks).slice(1).forEach(el=>el.parentElement.parentElement.remove());
     }
     /**
      * grouping similar torrents together
@@ -1653,7 +1509,7 @@ a.extra-tb {
     function toggleThumbnailSize(newSize = 'toggle') {
         if (newSize === "large") {
             GM_config.set('largeThumbnails', true);
-        } else if (newSize == "small") {
+        } else if (newSize === "small") {
             GM_config.set('largeThumbnails', false);
         } else if (newSize === 'toggle') {
             GM_config.set('largeThumbnails', !GM_config.get('largeThumbnails'));
@@ -1760,19 +1616,7 @@ a.extra-tb {
         }
 
         var extraThumbnailsLink = document.createElement('a');
-        // extraThumbnailsLink.style['text-decoration']= 'underline';
         extraThumbnailsLink.style['cursor']= 'pointer';
-        // extraThumbnailsLink.style['padding']= '20px';
-        // extraThumbnailsLink.style['background']= 'lightgray';
-        const ICON_DESCRIPTION_WIDE = "https://i.imgur.com/xreLTXq.gif";
-        const ICON_DESCRIPTION_TALL = "https://i.imgur.com/6gG2QGj.gif";
-        const ICON_THUMBNAILS_WIDE = "https://i.imgur.com/9xh3vuU.gif";
-        const ICON_THUMBNAILS_TALL = "https://i.imgur.com/XMV45fY.gif";
-        const ICON_THUMBNAILS = "https://i.imgur.com/nA2dRWu.gif";
-        const ICON_DESCRIPTION = "https://i.imgur.com/UxbSq2o.gif";
-        const ICON_MORE_BLUE = 'https://i.imgur.com/FGwOuVT.gif';
-        const ICON_EXTRA_GREEN = 'https://i.imgur.com/HU6J9kS.gif';
-
         const STR_FETCH_DESCRIPTION_THUMBNAILS = '';
         const STR_FETCH_EXTRA_THUMBNAILS = '';
 
@@ -1800,7 +1644,7 @@ a.extra-tb {
         extraThumbnailsLink.addEventListener('click', async function(e) {
             if (moreIcon.src === ICON_DESCRIPTION) {
                 try {
-                    var descriptionSrcsDescriptionHrefs = await GM_fetch2(torrentAnchor.href).then(r=>r.text()).then(html=>{
+                    var descriptionSrcsDescriptionHrefs = await GM_fetch(torrentAnchor.href).then(r=>r.text()).then(html=>{
                         var doc = new DOMParser().parseFromString(html, 'text/html');
                         var imgs = doc.querySelectorAll("#description > a > img");
                         return Array.from(imgs).map(img => [img.src, img.closest('a').href])
@@ -1827,7 +1671,6 @@ a.extra-tb {
                     }
                     replaceAllImageHosts();
                 } catch(ee) {
-                    var descriptionSrc = '';
                 }
                 // extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
                 moreIcon.src = ICON_MORE_BLUE;
@@ -2152,27 +1995,6 @@ function reverseMapping(o) {
 }
 
 /**
- * reverse map but support multiple values, for collisions: concat in array
- *
- * @param {*} o
- * @returns
- */
-function reverseMappingMultivalue(o) {
-    const r = {};
-
-    for (const [k, v] of Object.entries(o)) {
-        var values = [v];
-        for (const val of values) {
-            if (r.hasOwnProperty(val)) {
-                r[val].push(k);
-            } else {
-                r[val] = [k];
-            }
-        }
-    }
-    return r;
-}
-/**
  * same as Object.fromEntries(), but support multiple values in case of key collision.
  * resolution: concat conflicts in an array
  * @param {*} entries
@@ -2221,10 +2043,6 @@ function anchorClick(href, downloadValue, target) {
     a.remove();
 }
 
-function saveByAnchor(url, dlName) {
-    anchorClick(url, dlName);
-}
-
 function removeDoubleSpaces(str) {
     return !!str ? str.replace(/(\s\s+)/g, ' ') : str;
 }
@@ -2236,12 +2054,6 @@ function clearSymbolsFromString(str) {
 
     return str && removeDoubleSpaces(clearDatesFromString(str).replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, ' ')
         .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, ' ')).trim();
-}
-
-function isPageBlockedKSA() {
-    const msgText = document.querySelector('#r4 > td[dir="ltr"].english');
-    return !!msgText && msgText.innerText === 'If you believe the requested page should not be blocked please click here.' &&
-        !!document.querySelector('[href^="http://www.internet.gov.sa/resources-ar/block-unblock-request-ar/view?set_language"]');
 }
 
 function hex2rgb(c) {
@@ -2265,11 +2077,6 @@ function createElement(html) {
     return $(html)[0];
 }
 
-function htmlToElements(html) {
-    return new DOMParser().parseFromString(html, 'text/html').body.childNodes;
-}
-
-
 function getElementsByXPath(xpath, parent) {
     let results = [];
     let query = document.evaluate(xpath,
@@ -2291,7 +2098,9 @@ function addCss(cssStr, id = '') {
     } else {
         style.innerText = cssStr;
     }
-    if (!!id) style.id = id;
+    if (!!id) {
+        style.id = id;
+    }
     style.classList.add('addCss');
     return document.getElementsByTagName('head')[0].appendChild(style);
 }
@@ -2322,68 +2131,52 @@ function fetchDoc(url) {
         });
 }
 
-function forceAbsoluteLinks() {
-    // force absolute URLs
-    for (const a of document.querySelectorAll('a[href]')) {
-        const oldHref = a.getAttribute('href');
-        // is it a relative URL or a rarbg URL?
-        const a_hostname = a.hostname;
-        const isRarbgHostname = a_hostname === location.hostname ;
-        const isRarbgHostname2 = /rarbg/.test(a_hostname);
-        const isRelative = /^(\/|#)/.test(oldHref);
-        if (!((isRarbgHostname||isRarbgHostname2) && isRelative) ) {
-            a.setAttribute('href', a.getAttribute('href').replace(a.protocol + '//' + a_hostname, ''));
-            // console.log(oldHref, '->', a.getAttribute('href'));
-        }
-    }
-}
-function relativeToAbsoluteURL(url, base=null){
+function relativeToAbsoluteURL(url, base = null) {
     if (!base) base = document.baseURI;
-    if('string'!==typeof url || url==null){
+    if ('string' !== typeof url || url == null) {
         return null; // wrong or empty url
-    } else if(url.match(/^[a-z]+\:\/\//i)){
+    } else if (url.match(/^[a-z]+\:\/\//i)) {
         return url; // url is absolute already 
-    } else if(url.match(/^\/\//)){
-        return 'http:'+url; // url is absolute already
-    } else if(url.match(/^[a-z]+\:/i)){
+    } else if (url.match(/^\/\//)) {
+        return 'http:' + url; // url is absolute already
+    } else if (url.match(/^[a-z]+\:/i)) {
         return url; // data URI, mailto:, tel:, etc.
-    } else if('string'!==typeof base){
-        var a=document.createElement('a');
-        a.href=url; // try to resolve url without base
-        if(!a.pathname){
+    } else if ('string' !== typeof base) {
+        var a = document.createElement('a');
+        a.href = url; // try to resolve url without base
+        if (!a.pathname) {
             return null; // url not valid 
         }
-        return 'http://'+url;
-    } else{
-        base=relativeToAbsoluteURL(base); // check base
-        if(base===null){
+        return 'http://' + url;
+    } else {
+        base = relativeToAbsoluteURL(base); // check base
+        if (base === null) {
             return null; // wrong base
         }
     }
-    var a=document.createElement('a');
-    a.href=base;
+    var a = document.createElement('a');
+    a.href = base;
 
-    if(url[0]==='/'){
-        base=[]; // rooted path
-    } else{
-        base=a.pathname.split('/'); // relative path
+    if (url[0] === '/') {
+        base = []; // rooted path
+    } else {
+        base = a.pathname.split('/'); // relative path
         base.pop();
     }
-    url=url.split('/');
-    for(var i=0; i<url.length; ++i){
-        if(url[i]==='.'){ // current directory
+    url = url.split('/');
+    for (var i = 0; i < url.length; ++i) {
+        if (url[i] === '.') { // current directory
             continue;
         }
-        if(url[i]==='..'){ // parent directory
-            if('undefined'===typeof base.pop() || base.length===0){
+        if (url[i] === '..') { // parent directory
+            if ('undefined' === typeof base.pop() || base.length === 0) {
                 return null; // wrong url accessing non-existing parent directories
             }
-        }
-        else{ // child directory
+        } else { // child directory
             base.push(url[i]);
         }
     }
-    return a.protocol+'//'+a.hostname+base.join('/');
+    return a.protocol + '//' + a.hostname + base.join('/');
 }
 
 function fetchB64ImgUrl(url, opts) {

@@ -659,8 +659,8 @@ a.extra-tb {
                 const torrentPageUrl = new URL(location.href).searchParams.get('tpageurl'); // get the previously injected page url here
                 if (torrentPageUrl) {
                     fetchDoc(torrentPageUrl).then(doc => {
-                        const torrentdownloadLink = doc.querySelector("td.lista a[onmouseover]");
-                        location.assign(torrentdownloadLink.href);
+                        const torrentDownloadLink = doc.querySelector("td.lista a[onmouseover]");
+                        location.assign(torrentDownloadLink.href);
                         document.addEventListener('DOMContentLoaded', () => document.close());
                         document.addEventListener('load', () => document.close());
                         setTimeout(() => window.close(), 1000);

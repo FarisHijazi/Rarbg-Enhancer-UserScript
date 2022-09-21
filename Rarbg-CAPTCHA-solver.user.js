@@ -1,3 +1,4 @@
+// prettier-ignore
 var meta = {
     rawmdb: function () {
 // ==UserScript==
@@ -85,117 +86,124 @@ var meta = {
     }
 };
 if (meta.rawmdb && meta.rawmdb.toString && (meta.rawmdb = meta.rawmdb.toString())) {
-    var kv, row = /\/\/\s+@(\S+)\s+(.+)/g;
+    var kv,
+        row = /\/\/\s+@(\S+)\s+(.+)/g;
     while ((kv = row.exec(meta.rawmdb)) !== null) {
         if (meta[kv[1]]) {
-            if (typeof meta[kv[1]] == 'string') meta[kv[1]] = [meta[kv[1]]];
+            if (typeof meta[kv[1]] == "string") meta[kv[1]] = [meta[kv[1]]];
             meta[kv[1]].push(kv[2]);
         } else meta[kv[1]] = kv[2];
     }
 }
 meta.window = this;
-if (typeof unsafeWindow === 'undefined') {
+if (typeof unsafeWindow === "undefined") {
     var unsafeWindow = window;
 }
-(unsafeWindow.scriptMetas = unsafeWindow.scriptMetas || []);
-if (meta.hasOwnProperty('nodups')) {
-    if (new Set(unsafeWindow.scriptMetas.map(meta=>meta.namespace+meta.name)).has(meta.namespace+meta.name)) {
-        console.warn('Another script is trying to execute but @nodups is set. Stopping execution.\n',
-            meta.namespace+meta.name);
+unsafeWindow.scriptMetas = unsafeWindow.scriptMetas || [];
+if (meta.hasOwnProperty("nodups")) {
+    if (new Set(unsafeWindow.scriptMetas.map((meta) => meta.namespace + meta.name)).has(meta.namespace + meta.name)) {
+        console.warn("Another script is trying to execute but @nodups is set. Stopping execution.\n", meta.namespace + meta.name);
         return;
     }
 }
 unsafeWindow.scriptMetas.push(meta);
-console.log('Script:', meta.name, 'meta:', meta);
-
+console.log("Script:", meta.name, "meta:", meta);
 
 function solveCaptcha(OCRAD) {
-    console.log('solving captcha...');
-    const container = document.querySelector('tbody > :nth-child(2)');
-    const img = container.querySelector('img');
-    const captcha = document.querySelector('#solve_string');
-    const submitBtn = document.querySelector('#button_submit');
+    console.log("solving captcha...");
+    const container = document.querySelector("tbody > :nth-child(2)");
+    const img = container.querySelector("img");
+    const captcha = document.querySelector("#solve_string");
+    const submitBtn = document.querySelector("#button_submit");
     const url = new URL(location.href);
-
 
     function uriToImageData(uri) {
         return new Promise(function (resolve, reject) {
             if (uri == null) return reject();
-            var canvas = document.createElement('canvas'),
-                context = canvas.getContext('2d'),
+            var canvas = document.createElement("canvas"),
+                context = canvas.getContext("2d"),
                 image = new Image();
-            image.addEventListener('load', function () {
-                canvas.width = image.width;
-                canvas.height = image.height;
-                context.drawImage(image, 0, 0, canvas.width, canvas.height);
-                resolve(context.getImageData(0, 0, canvas.width, canvas.height));
-            }, false);
+            image.addEventListener(
+                "load",
+                function () {
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+                    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                    resolve(context.getImageData(0, 0, canvas.width, canvas.height));
+                },
+                false,
+            );
             image.src = uri;
         });
     }
 
     function getBase64Image(img, excludeUrlProtocol = false) {
         // Create an empty canvas element
-        var canvas = document.createElement('canvas');
+        var canvas = document.createElement("canvas");
         canvas.width = img.width;
         canvas.height = img.height;
 
         // Copy the image contents to the canvas
-        var ctx = canvas.getContext('2d');
+        var ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0);
 
         // Get the data-URL formatted image
         // Firefox supports PNG and JPEG. You could check img.src to
         // guess the original format, but be aware the using "image/jpg"
         // will re-encode the image.
-        var dataURL = canvas.toDataURL('image/png');
+        var dataURL = canvas.toDataURL("image/png");
 
-        return excludeUrlProtocol && dataURL.replace(/^data:image\/(png|jpg);base64,/, '') || dataURL;
+        return (excludeUrlProtocol && dataURL.replace(/^data:image\/(png|jpg);base64,/, "")) || dataURL;
     }
 
-    console.log('solveCAPTHA fetching image ...');
+    console.log("solveCAPTHA fetching image ...");
 
-    return new Promise(resolve => { // wait for image to load
+    return new Promise((resolve) => {
+        // wait for image to load
         if (img.complete) {
             return resolve();
         }
         img.onload = resolve;
-    }).then(() => uriToImageData(getBase64Image(img)).then((imageData) => {
-        if (img.naturalHeight === 0 && img.naturalWidth === 0) {
-            console.warn('image hasn\'t loaded, refreshing to new captha page');
-            url.searchParams.set('defence', '1');
-            location.assign(url.toString());
-            return;
-        }
+    })
+        .then(() =>
+            uriToImageData(getBase64Image(img)).then((imageData) => {
+                if (img.naturalHeight === 0 && img.naturalWidth === 0) {
+                    console.warn("image hasn't loaded, refreshing to new captha page");
+                    url.searchParams.set("defence", "1");
+                    location.assign(url.toString());
+                    return;
+                }
 
-        console.log('feeding image to OCR ...');
-        var imageText = OCRAD(imageData);
-        console.log('OCRAD result:', imageText);
-        if (!imageText) {
-            throw Error("OCRAD result is empty");
-        }
-        captcha.value = imageText;
-        submitBtn.display = '';
-        submitBtn.click();
-    })).catch(e => {
-        console.error(e);
-        url.searchParams.set('defence', '1');
-        location.assign(url.toString());
-    });
+                console.log("feeding image to OCR ...");
+                var imageText = OCRAD(imageData);
+                console.log("OCRAD result:", imageText);
+                if (!imageText) {
+                    throw Error("OCRAD result is empty");
+                }
+                captcha.value = imageText;
+                submitBtn.display = "";
+                submitBtn.click();
+            }),
+        )
+        .catch((e) => {
+            console.error(e);
+            url.searchParams.set("defence", "1");
+            location.assign(url.toString());
+        });
 }
 
-(function() {
-    'use strict';
+(function () {
+    "use strict";
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
     $(document).ready(function main() {
         // click to verify browser
-        document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach(a => a.click());
-        if (isOnThreatDefencePage) { // OnThreatDefencePage: check for captcha
-            if (document.querySelector('#solve_string')) {
-                console.log('Rarbg threat defence page');
+        document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach((a) => a.click());
+        if (isOnThreatDefencePage) {
+            // OnThreatDefencePage: check for captcha
+            if (document.querySelector("#solve_string")) {
+                console.log("Rarbg threat defence page");
                 solveCaptcha(OCRAD);
             }
         }
     });
-
 })();

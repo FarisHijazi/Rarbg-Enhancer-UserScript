@@ -1,5 +1,5 @@
 # Code
-This file explains some of the code and how the script works. 
+This file explains some of the code and how the script works.
 
 -----
 ### Below is the HTML of one of the rows:

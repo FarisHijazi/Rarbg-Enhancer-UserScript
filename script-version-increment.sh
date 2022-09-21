@@ -4,7 +4,7 @@ GIT_VERSION=`git describe --abbrev=0 --tags 2>/dev/null`
 GIT_VERSION=${GIT_VERSION:-'0.0.0'}
 
 
-VERSION_LINE=$(grep "@version" Rarbg-Enhancer-UserScript.user.js)
+VERSION_LINE=$(grep "@version" "${1}")
 VERSION=$(echo ${VERSION_LINE##* })
 
 if [[ "${GIT_VERSION}" != "v${VERSION}" ]]; then

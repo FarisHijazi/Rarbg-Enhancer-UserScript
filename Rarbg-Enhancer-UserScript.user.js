@@ -154,6 +154,7 @@ const catKeyMap = {
     'n': 'Non XXX',
 };
 
+
 const ICON_DESCRIPTION_WIDE = "https://i.imgur.com/xreLTXq.gif";
 const ICON_DESCRIPTION_TALL = "https://i.imgur.com/6gG2QGj.gif";
 const ICON_THUMBNAILS_WIDE = "https://i.imgur.com/9xh3vuU.gif";

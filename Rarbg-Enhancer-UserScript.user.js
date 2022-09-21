@@ -3,7 +3,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.19
+// @version      1.6.20
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -153,7 +153,6 @@ const catKeyMap = {
     'g': 'Games',
     'n': 'Non XXX',
 };
-
 
 const ICON_DESCRIPTION_WIDE = "https://i.imgur.com/xreLTXq.gif";
 const ICON_DESCRIPTION_TALL = "https://i.imgur.com/6gG2QGj.gif";

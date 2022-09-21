@@ -280,7 +280,7 @@ const SearchEngines = {
             },
             'deduplicateTorrents': {
                 'label': 'deduplicateTorrents',
-                'default': 'none',
+                'default': false,
                 'title': 'attempt to remove duplicates when there are multiple torrents of the same item',
                 'type': 'checkbox',
             },
@@ -628,32 +628,6 @@ a.extra-tb {
                             updateSearch();
                         });
                     })();
-                }
-
-                // TODO: use horsey and fuzzysearch for string matching and for showing suggestions
-                // TODO: try to put updateSearch() into the horsey source() option
-                if (typeof (horsey) !== 'undefined') {
-                    console.log('horsey is defined WARNING!')
-                    const myHorsey = horsey(searchBox, {
-                        source: [{
-                            list: getTorrentLinks().map(a => ({
-                                text: a.title || a.innerText,
-                                value: a
-                            }))
-                        }],
-                        getText: 'text',
-                        getValue: 'value',
-                        renderItem: function (li, suggestion) {
-                            console.debug(
-                                'Suggestion:', suggestion,
-                                '\nli:', li
-                            );
-                            var image = '<img class="suggestion-thumbnail" src="' +
-                                suggestion.value.closest('.lista2').querySelector('img.preview-image').src +
-                                '"  alt="' + suggestion.text + '"/>';
-                            li.innerHTML = `${image}<span>${suggestion.text}</span>`;
-                        }
-                    });
                 }
             } else if (isOnWrongTorrentLinkPage) {
                 // this torrent link has failed, then we have to go to the torrent page and download it

@@ -102,7 +102,10 @@ if (typeof unsafeWindow === "undefined") {
 unsafeWindow.scriptMetas = unsafeWindow.scriptMetas || [];
 if (meta.hasOwnProperty("nodups")) {
     if (new Set(unsafeWindow.scriptMetas.map((meta) => meta.namespace + meta.name)).has(meta.namespace + meta.name)) {
-        console.warn("Another script is trying to execute but @nodups is set. Stopping execution.\n", meta.namespace + meta.name);
+        console.warn(
+            "Another script is trying to execute but @nodups is set. Stopping execution.\n",
+            meta.namespace + meta.name
+        );
         return;
     }
 }
@@ -131,7 +134,7 @@ function solveCaptcha(OCRAD) {
                     context.drawImage(image, 0, 0, canvas.width, canvas.height);
                     resolve(context.getImageData(0, 0, canvas.width, canvas.height));
                 },
-                false,
+                false
             );
             image.src = uri;
         });
@@ -183,7 +186,7 @@ function solveCaptcha(OCRAD) {
                 captcha.value = imageText;
                 submitBtn.display = "";
                 submitBtn.click();
-            }),
+            })
         )
         .catch((e) => {
             console.error(e);

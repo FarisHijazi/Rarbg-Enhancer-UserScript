@@ -86,8 +86,13 @@ if (typeof unsafeWindow === "undefined") {
 unsafeWindow.scriptMetas = unsafeWindow.scriptMetas || [];
 if (meta.hasOwnProperty("nodups")) {
     if (new Set(unsafeWindow.scriptMetas.map((meta) => meta.namespace + meta.name)).has(meta.namespace + meta.name)) {
-        console.warn("Another script is trying to execute but @nodups is set. Stopping execution.\n", meta.namespace + meta.name);
-        throw new Error("Another script is trying to execute but @nodups is set. Stopping execution.\n" + meta.namespace + meta.name);
+        console.warn(
+            "Another script is trying to execute but @nodups is set. Stopping execution.\n",
+            meta.namespace + meta.name
+        );
+        throw new Error(
+            "Another script is trying to execute but @nodups is set. Stopping execution.\n" + meta.namespace + meta.name
+        );
     }
 }
 unsafeWindow.scriptMetas.push(meta);
@@ -140,7 +145,10 @@ const catCodeMap = {
     "TV shows": "18;41;49".split(";"),
     Software: "33;34;43".split(";"),
     Games: "27;28;29;30;31;32;40;53".split(";"),
-    "Non XXX": "2;14;15;16;17;21;22;42;18;19;41;27;28;29;30;31;32;40;23;24;25;26;33;34;43;44;45;46;47;48;49;50;51;52;54".split(";"),
+    "Non XXX":
+        "2;14;15;16;17;21;22;42;18;19;41;27;28;29;30;31;32;40;23;24;25;26;33;34;43;44;45;46;47;48;49;50;51;52;54".split(
+            ";"
+        ),
 };
 // categories map, given the category number (in the URL), returns the name of it
 const codeToCatMap = reverseMapping(catCodeMap);
@@ -171,7 +179,8 @@ const SearchEngines = {
     },
     ddg: {
         name: "DuckDuckGo",
-        imageSearchUrl: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}&atb=v73-5__&iar=images&iax=images&ia=images`,
+        imageSearchUrl: (q) =>
+            `https://duckduckgo.com/?q=${encodeURIComponent(q)}&atb=v73-5__&iar=images&iax=images&ia=images`,
     },
     yandex: {
         name: "Yandex",
@@ -186,12 +195,15 @@ const SearchEngines = {
 
     const TORRENT_ICO = "https://dyncdn.me/static/20/img/16x16/download.png";
     const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
-    const trackers = "http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710";
+    const trackers =
+        "http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710";
 
     const isOnSingleTorrentPage = !!matchSite(/\/torrent\//);
     const isOnThreatDefencePage = /threat_defence/i.test(location.href);
 
-    var title = createElement('<div><div><a href="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript">Rarbg-Enhancer-UserScript Settings</a><pre style=" font-size: medium; ">You can get to this options page by pressing "ctrl+/" or by navigating to the menu as shown bellow</pre></div><img src="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/screenshots/rarbg-options.png"></div>');
+    var title = createElement(
+        '<div><div><a href="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript">Rarbg-Enhancer-UserScript Settings</a><pre style=" font-size: medium; ">You can get to this options page by pressing "ctrl+/" or by navigating to the menu as shown bellow</pre></div><img src="https://github.com/FarisHijazi/Rarbg-Enhancer-UserScript/raw/master/screenshots/rarbg-options.png"></div>'
+    );
 
     GM_config.init({
         id: "GM_config",
@@ -199,7 +211,10 @@ const SearchEngines = {
         css: "#GM_config_section_1 .config_var, #GM_config_section_2 .config_var, #GM_config_section_3 .config_var { margin: 5% !important;display: inline !important; }",
         fields: {
             thumbnailLink: {
-                section: [GM_config.create("Rarbg Settings"), "here you can configure settings for the rarbg-enhancer-userscript. Be aware that the page will reload after saving"],
+                section: [
+                    GM_config.create("Rarbg Settings"),
+                    "here you can configure settings for the rarbg-enhancer-userscript. Be aware that the page will reload after saving",
+                ],
                 label: "thumbnailLink",
                 default: "torrentPageLink",
                 title: "where should clicking the thumbnail take you",
@@ -314,7 +329,13 @@ const SearchEngines = {
                 default: true,
             },
             // blocking
-            "block Movies": { label: "block Movies", default: false, type: "checkbox", title: "Movies", section: "Block categories" },
+            "block Movies": {
+                label: "block Movies",
+                default: false,
+                type: "checkbox",
+                title: "Movies",
+                section: "Block categories",
+            },
             "block TV shows": { label: "block TV shows", default: false, type: "checkbox", title: "TV shows" },
             "block Music": { label: "block Music", default: false, type: "checkbox", title: "Music" },
             "block Software": { label: "block Software", default: false, type: "checkbox", title: "Software" },
@@ -353,13 +374,21 @@ const SearchEngines = {
 
     const searchBox = document.querySelector("#searchinput");
     const isOnIndexPage = searchBox !== null;
-    const isOnWrongTorrentLinkPage = getElementsByXPath('(/html/body/table[3]/tbody/tr/td[2]/div/table/tbody/tr[2]/td/div[contains(., "The link you followed is wrong. Please try again!")])').length > 0;
+    const isOnWrongTorrentLinkPage =
+        getElementsByXPath(
+            '(/html/body/table[3]/tbody/tr/td[2]/div/table/tbody/tr[2]/td/div[contains(., "The link you followed is wrong. Please try again!")])'
+        ).length > 0;
 
     const getTorrentLinks = () => Array.from(document.querySelectorAll("table > tbody > tr.lista2 a[title]"));
 
     var row_others = getElementsByXPath('(//tr[contains(., "Others:")])[last()]').pop();
 
-    var tbodyEl = isOnSingleTorrentPage && row_others ? row_others.parentElement.querySelector("tbody") : document.querySelector('body > table > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table[class*="list"] > tbody');
+    var tbodyEl =
+        isOnSingleTorrentPage && row_others
+            ? row_others.parentElement.querySelector("tbody")
+            : document.querySelector(
+                  'body > table > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table[class*="list"] > tbody'
+              );
     if (!tbodyEl) console.warn("tbody element not found!");
 
     var thumbnailsCssBlock = addCss("");
@@ -404,7 +433,8 @@ a.search:active { color: blue; }
     margin: 0 auto;
 }
 .zoom:hover {
-    transform: scale(${GM_config.get("imgHoverPopupScale")}); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
+    /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
+    transform: scale(${GM_config.get("imgHoverPopupScale")});
 }
 
 a.extra-tb {
@@ -417,7 +447,7 @@ a.extra-tb {
     flex-wrap: wrap;
     justify-content: space-between;
   }
-`,
+`
     );
     updateCss();
 
@@ -441,7 +471,10 @@ a.extra-tb {
     if (GM_config.get("thumbnailHoverSound")) {
         // sound file from: http://freesound.org/data/previews/166/166186_3034894-lq.mp3
         // noinspection JSUnusedAssignment
-        snd = PlaySound("data:audio/wav;base64," + "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");
+        snd = PlaySound(
+            "data:audio/wav;base64," +
+                "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"
+        );
     }
 
     // === end of variable declarations ===
@@ -497,7 +530,9 @@ a.extra-tb {
         } else {
             // on torrent(s) page
             if (isOnSingleTorrentPage) {
-                let mainTorrentLink = document.querySelector("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)");
+                let mainTorrentLink = document.querySelector(
+                    "body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)"
+                );
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
 
                 const relatedTorrent = document.querySelector(".lista_related");
@@ -546,7 +581,9 @@ a.extra-tb {
                 replaceAllImageHosts();
 
                 // putting the "Description:" row before the "Others:" row
-                getElementsByXPath('(//tr[contains(., "Poster:")])[last()]')[0].after(getElementsByXPath('(//tr[contains(., "Description:")])[last()]')[0]);
+                getElementsByXPath('(//tr[contains(., "Poster:")])[last()]')[0].after(
+                    getElementsByXPath('(//tr[contains(., "Description:")])[last()]')[0]
+                );
 
                 void 0;
             } else if (isOnIndexPage) {
@@ -556,7 +593,11 @@ a.extra-tb {
 
                 // making checkbox (fixed searchbar)
                 const moreBtn = searchContainer.querySelector("tr:nth-child(1) > td:nth-child(3)");
-                moreBtn.after($('<td><input id="static-checkbox" type="checkbox"><label for="static-checkbox" style="display: block;">fixed searchbar</label></td>')[0]);
+                moreBtn.after(
+                    $(
+                        '<td><input id="static-checkbox" type="checkbox"><label for="static-checkbox" style="display: block;">fixed searchbar</label></td>'
+                    )[0]
+                );
 
                 const checkbox = document.querySelector("#static-checkbox");
                 checkbox.onchange = function (e) {
@@ -591,9 +632,11 @@ a.extra-tb {
                 if (GM_config.get("infiniteScrolling")) {
                     // infiniteScrolling
                     (function makeInfiniteScroll() {
-                        const tableLvl2 = "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)";
+                        const tableLvl2 =
+                            "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)";
                         const tbody = tableLvl2 + " > tbody";
-                        const nav = "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
+                        const nav =
+                            "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
 
                         const container = getElementsByXPath("//table[@class='lista2t']")[0];
                         const infScroll = new InfiniteScroll(container, {
@@ -654,7 +697,9 @@ a.extra-tb {
                 // remove annoying signup form that doesn't work
                 const signinForm = document.querySelector('form[action="/login"]');
                 if (signinForm) signinForm.remove();
-                const signinTab = document.querySelector("body > table:nth-child(5) > tbody > tr > td > table > tbody > tr > td.header4");
+                const signinTab = document.querySelector(
+                    "body > table:nth-child(5) > tbody > tr > td > table > tbody > tr > td.header4"
+                );
                 if (signinTab) signinTab.remove();
 
                 if (GM_config.get("hideRecommendedTorrents")) {
@@ -668,7 +713,9 @@ a.extra-tb {
                 if (recTitle) recTitle.remove();
 
                 // scroll the table to view (top of screen will be the first torrent)
-                const mainTable = document.querySelector("body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t");
+                const mainTable = document.querySelector(
+                    "body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t"
+                );
                 if (mainTable) mainTable.scrollIntoView();
 
                 // adding a dropdown list for mirrors
@@ -741,7 +788,9 @@ a.extra-tb {
 
                 // create settings tab
                 if (!document.querySelector("#settingsTab")) {
-                    var lastTab = document.querySelector("tbody > tr > td > table > tbody > tr > td:last-child.header3");
+                    var lastTab = document.querySelector(
+                        "tbody > tr > td > table > tbody > tr > td:last-child.header3"
+                    );
                     var settingsTab = lastTab.cloneNode();
                     settingsTab.id = "settingsTab";
                     settingsTab.onclick = function (e) {
@@ -759,10 +808,14 @@ a.extra-tb {
                 if (isOnIndexPage) {
                     const newCol = appendColumn("Thumbnails", "Cat.", addThumbnailColumn);
                     if (!newCol.header.querySelector(".decrementImageSizeBtn")) {
-                        var decrementImageSizeBtn = createElement('<a href="#" style="margin: 2px" class="decrementImageSizeBtn">(-)</a>');
+                        var decrementImageSizeBtn = createElement(
+                            '<a href="#" style="margin: 2px" class="decrementImageSizeBtn">(-)</a>'
+                        );
                         decrementImageSizeBtn.addEventListener("click", decrementImageSize);
 
-                        var incrementImageSizeBtn = createElement('<a href="#" style="margin: 2px" class="incrementImageSizeBtn">(+)</a>');
+                        var incrementImageSizeBtn = createElement(
+                            '<a href="#" style="margin: 2px" class="incrementImageSizeBtn">(+)</a>'
+                        );
                         incrementImageSizeBtn.addEventListener("click", incrementImageSize);
 
                         var nobr = document.createElement("nobr");
@@ -787,7 +840,9 @@ a.extra-tb {
                 }
 
                 // remove links for adds that cover the screen
-                for (const x of document.querySelectorAll('[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]')) {
+                for (const x of document.querySelectorAll(
+                    '[style*="2147483647"], a[href*="https://s4yxaqyq95.com/"]'
+                )) {
                     console.debug("removed redirect element:", x);
                     x.remove();
                 }
@@ -819,10 +874,12 @@ a.extra-tb {
 
         // saves an html and json file for all torrents on page
         Mousetrap.bind(["ctrl+s"], (e) => {
-            document.querySelectorAll("body > table > tbody > tr > td:nth-child(4) > a.torrent-ml").forEach((a) => (a.protocol = "magnet:"));
+            document
+                .querySelectorAll("body > table > tbody > tr > td:nth-child(4) > a.torrent-ml")
+                .forEach((a) => (a.protocol = "magnet:"));
 
             document.querySelectorAll("a").forEach(
-                (a) => a.setAttribute("href", relativeToAbsoluteURL(a.getAttribute("href"), "https://rarbgprx.org/")),
+                (a) => a.setAttribute("href", relativeToAbsoluteURL(a.getAttribute("href"), "https://rarbgprx.org/"))
                 // TODO: remove rarbgprx.org and put something more general
             );
 
@@ -836,8 +893,8 @@ a.extra-tb {
                                 .catch(reject);
 
                             setTimeout(resolve, 2000);
-                        }),
-                ),
+                        })
+                )
             )
                 .then((promises) => {
                     console.log("SUCCESSFULLY converted image urls to base64", promises);
@@ -868,7 +925,10 @@ a.extra-tb {
                     const tableOuterHTML = document.querySelector("table.lista2t, table.lista").outerHTML;
                     const summaryHTML = `<html lang="en">${document.head.outerHTML}<body>${tableOuterHTML}</body></html>`;
 
-                    anchorClick(makeTextFile(JSON.stringify(torrentsObject, null, 4)), document.title + " [" + rows.length + "]" + " info.json");
+                    anchorClick(
+                        makeTextFile(JSON.stringify(torrentsObject, null, 4)),
+                        document.title + " [" + rows.length + "]" + " info.json"
+                    );
                     anchorClick(makeTextFile(summaryHTML), document.title + " [" + rows.length + "]" + " summary.html");
                 });
         });
@@ -943,13 +1003,17 @@ a.extra-tb {
             }
         })();
 
-        if (thumbnailLink.href.indexOf("undefined") >= 0) console.warn("thumbnail Link:", thumbnailLink, "torrent:", torrent.innerText, "dl", dlurl);
+        if (thumbnailLink.href.indexOf("undefined") >= 0)
+            console.warn("thumbnail Link:", thumbnailLink, "torrent:", torrent.innerText, "dl", dlurl);
 
         // thumbnail
         thumbnailImg.onmouseover = function playSound() {
             if (GM_config.get("thumbnailHoverSound")) {
                 try {
-                    var snd = PlaySound("data:audio/wav;base64," + "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");
+                    var snd = PlaySound(
+                        "data:audio/wav;base64," +
+                            "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"
+                    );
                 } catch (e) {}
             }
         };
@@ -983,7 +1047,7 @@ a.extra-tb {
                         context.drawImage(image, 0, 0, canvas.width, canvas.height);
                         resolve(context.getImageData(0, 0, canvas.width, canvas.height));
                     },
-                    false,
+                    false
                 );
                 image.src = uri;
             });
@@ -1035,7 +1099,7 @@ a.extra-tb {
                     captcha.value = imageText;
                     submitBtn.display = "";
                     submitBtn.click();
-                }),
+                })
             )
             .catch((e) => {
                 console.error(e);
@@ -1069,10 +1133,17 @@ a.extra-tb {
 
         const regex = new RegExp(
             convertedQuery.replace(/-/g, "|").replace(/\|\|/g, "|").replace(/^\|/, ""), // '|' that is at the beginning of a word
-            "ig",
+            "ig"
         );
 
-        console.debug("regex:", regex, "\nconverted query:", convertedQuery, "\ncompletelyNegativeQuery:", completelyNegativeQuery);
+        console.debug(
+            "regex:",
+            regex,
+            "\nconverted query:",
+            convertedQuery,
+            "\ncompletelyNegativeQuery:",
+            completelyNegativeQuery
+        );
 
         for (const a of torrents) {
             var match = (a.title || a.innerText).match(regex);
@@ -1080,15 +1151,19 @@ a.extra-tb {
                 const matches = !!match ? Array.from(match) : [];
                 var negativeMatches = matches.filter(
                     (
-                        group, // tests if it's a negative match (if there is a '-' before the search term)
-                    ) => group && new RegExp("-" + group, "ig").test(query),
+                        group // tests if it's a negative match (if there is a '-' before the search term)
+                    ) => group && new RegExp("-" + group, "ig").test(query)
                 );
                 var positiveMatches = matches.filter(
                     (
-                        group, // tests if it's a negative match (if there is a '-' before the search term)
-                    ) => group && !new RegExp("-" + group, "ig").test(query),
+                        group // tests if it's a negative match (if there is a '-' before the search term)
+                    ) => group && !new RegExp("-" + group, "ig").test(query)
                 );
-                const hideCondition = query && (completelyNegativeQuery ? negativeMatches.length : negativeMatches.length || !positiveMatches.length);
+                const hideCondition =
+                    query &&
+                    (completelyNegativeQuery
+                        ? negativeMatches.length
+                        : negativeMatches.length || !positiveMatches.length);
                 a.closest(".lista2").style.display = hideCondition ? "none" : "";
             } // skip if empty title
 
@@ -1132,7 +1207,37 @@ a.extra-tb {
      * @returns {{string: HTMLAnchorElement[]}}
      */
     function updateTorrentGroups() {
-        const FILLER_WORDS = new Set(["AND", "2160P", "MP4", "THE", "COM", "WEIRD", "IN", "YAPG", "A", "TRASHBIN", "FOR", "TO", "WITH", "HER", "MY", "ON", "PART", "X264", "OF", "720P", "SEX", "XXX", "MP4", "KTR", "1080P", "SD", "KLEENEX"]);
+        const FILLER_WORDS = new Set([
+            "THE",
+            "SD",
+            "AND",
+            "2160P",
+            "MP4",
+            "THE",
+            "COM",
+            "WEIRD",
+            "IN",
+            "YAPG",
+            "A",
+            "TRASHBIN",
+            "FOR",
+            "TO",
+            "WITH",
+            "HER",
+            "MY",
+            "ON",
+            "PART",
+            "X264",
+            "OF",
+            "720P",
+            "SEX",
+            "XXX",
+            "MP4",
+            "KTR",
+            "1080P",
+            "SD",
+            "KLEENEX",
+        ]);
 
         const extractCleanTitle = (a) =>
             Array.from(
@@ -1141,13 +1246,16 @@ a.extra-tb {
                         .toUpperCase()
                         .replace(/\d{1,3}\.\d{1,3}\.\d{1,3}\.?/, "") // remove dates like 02.11.2019
                         .split(/[\s._\-\[\]]/g) // split on dots and dashes and spaces...
-                        .filter((word) => word), // remove empty words
-                ).difference(FILLER_WORDS), // remove filler words
+                        .filter((word) => word) // remove empty words
+                ).difference(FILLER_WORDS) // remove filler words
             )
                 .sort() // sort to maximize conflicts (we want the same title with different word orderings to be in the same group)
                 .join(" ");
 
-        const titleToLinkEntries = getTorrentLinks().map((a) => [(a.cleanTitle = a.cleanTitle || extractCleanTitle(a)), a]);
+        const titleToLinkEntries = getTorrentLinks().map((a) => [
+            (a.cleanTitle = a.cleanTitle || extractCleanTitle(a)),
+            a,
+        ]);
         /*
          * looks like:
          *
@@ -1163,7 +1271,7 @@ a.extra-tb {
          * @typedef {string: Element[]}
          */
         titleGroups = fromEntriesMultivalue(
-            titleToLinkEntries, //.concat(Object.entries(titleGroups))
+            titleToLinkEntries //.concat(Object.entries(titleGroups))
             // .map( ([k, v]) => [k, Array.from(new Set(v))] ) // remove duplicate links
         );
         /*
@@ -1265,7 +1373,9 @@ a.extra-tb {
         };
 
         // thumbnail.src = thumbnail.getAttribute((!GM_config.get('largeThumbnails') ? 'smallSrc' : 'bigSrc'));
-        thumbnail.src = GM_config.get("largeThumbnails") ? thumbnail.getAttribute("bigSrc") : thumbnail.getAttribute("smallSrc");
+        thumbnail.src = GM_config.get("largeThumbnails")
+            ? thumbnail.getAttribute("bigSrc")
+            : thumbnail.getAttribute("smallSrc");
 
         if (!GM_config.get("addThumbnails")) {
             thumbnail.src =
@@ -1288,7 +1398,12 @@ a.extra-tb {
         console.log("toggleThumbnailSize(" + newSize + ")");
         document.querySelectorAll(".preview-image").forEach(setThumbnail);
         updateCss();
-        if (debug) console.log("toggling thumbnail sizes. GM_config.set(largeThumbnails,", GM_config.get("largeThumbnails"), ")");
+        if (debug)
+            console.log(
+                "toggling thumbnail sizes. GM_config.set(largeThumbnails,",
+                GM_config.get("largeThumbnails"),
+                ")"
+            );
     }
 
     // gets the large thumbnail from the small thumbnail (works for rarbg thumbnails)
@@ -1311,7 +1426,10 @@ a.extra-tb {
         try {
             // thumbnailSrc = thumbnailSrc.match(/(?<=(return overlib('\<img src\=\')))(.*?)(?=(\' border\=0\>\'))/i)[0];
             thumbnailSrc = torrentAnchor.getAttribute("onmouseover") || "";
-            thumbnailSrc = thumbnailSrc.substring("return overlib('<img src='".length + 1, thumbnailSrc.length - "' border=0>'".length - 2);
+            thumbnailSrc = thumbnailSrc.substring(
+                "return overlib('<img src='".length + 1,
+                thumbnailSrc.length - "' border=0>'".length - 2
+            );
         } catch (r) {
             thumbnailSrc = MAGNET_ICO;
             console.error("extractThumbnailSrc error:", r);
@@ -1335,7 +1453,9 @@ a.extra-tb {
          * @return {string} the category of the torrent (Movies, XXX, TV Shows, Games, Music, Software, Non XXX)
          */
         function getCategory(torrentAnchor) {
-            const anchor = torrentAnchor.parentElement.parentElement.parentElement.querySelector('table.lista2t a[href^="/torrents.php?category="]');
+            const anchor = torrentAnchor.parentElement.parentElement.parentElement.querySelector(
+                'table.lista2t a[href^="/torrents.php?category="]'
+            );
             /*
              *  extracting the code of the category from the url.
              *  example:
@@ -1353,7 +1473,8 @@ a.extra-tb {
 
         searchLink.href = searchEngine.imageSearchUrl(searchQuery);
         try {
-            if (GM_config.get("addCategoryWithSearch") && !new RegExp(getCategory(torrentAnchor)).test(searchLink.href)) searchLink.href += " " + getCategory(torrentAnchor);
+            if (GM_config.get("addCategoryWithSearch") && !new RegExp(getCategory(torrentAnchor)).test(searchLink.href))
+                searchLink.href += " " + getCategory(torrentAnchor);
         } catch (e) {
             if (debug) console.warn("unable to get category", searchLink);
         }
@@ -1463,7 +1584,12 @@ a.extra-tb {
                         a.classList.add("zoom");
                         img.src = meta.ou;
                         //https://stackoverflow.com/a/70725756/7771202
-                        img.setAttribute("onerror", "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['" + meta.tu + "'])");
+                        img.setAttribute(
+                            "onerror",
+                            "function incrementFallbackSrc(img, srcs) {if (typeof img.fallbackSrcIndex === 'undefined') img.fallbackSrcIndex = 0;img.src = srcs[img.fallbackSrcIndex++];}; incrementFallbackSrc(this, ['" +
+                                meta.tu +
+                                "'])"
+                        );
 
                         a.append(img);
                         var subdiv = document.createElement("div");
@@ -1499,7 +1625,9 @@ a.extra-tb {
 
     function downloadAllTorrents() {
         console.log("downloadAllTorrents()");
-        const visibleTorrentAnchors = document.querySelectorAll('body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t > tbody > tr.lista2 .torrent-dl:not([style*="display: none;"])');
+        const visibleTorrentAnchors = document.querySelectorAll(
+            'body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t > tbody > tr.lista2 .torrent-dl:not([style*="display: none;"])'
+        );
 
         if (confirm(`Would you like to download all the torrents on the page? (${visibleTorrentAnchors.length})`)) {
             // click all magnet links
@@ -1513,7 +1641,11 @@ a.extra-tb {
      * @returns {number} the index of the column given the column header text
      */
     function getColumnIndex(headerTitle) {
-        var headerTitles = Array.from(document.querySelectorAll('td > table.lista2t > tbody > tr:nth-child(1) > td, body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table[class*="list"] > tbody > tr:nth-child(1) > td')).map((el) => el.innerText.trim());
+        var headerTitles = Array.from(
+            document.querySelectorAll(
+                'td > table.lista2t > tbody > tr:nth-child(1) > td, body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table[class*="list"] > tbody > tr:nth-child(1) > td'
+            )
+        ).map((el) => el.innerText.trim());
         if (!headerTitles) {
             console.warn("did not find header titles");
             headerTitles = ["Cat.", "Thumbnails", "File", "ML DL", "Added", "Size", "S.", "L.", "", "Uploader"];
@@ -1523,7 +1655,12 @@ a.extra-tb {
         if (idx >= 0) {
             return idx;
         } else {
-            console.warn("The passed headerTitle:", headerTitle, "is not a valid headerTitle, choose from:", headerTitles);
+            console.warn(
+                "The passed headerTitle:",
+                headerTitle,
+                "is not a valid headerTitle, choose from:",
+                headerTitles
+            );
             const allHeaders = tbodyEl.querySelectorAll("tr > td.header6");
             return [].map.call(allHeaders, (header) => header.innerText).indexOf(headerTitle);
         }
@@ -1567,7 +1704,9 @@ a.extra-tb {
 
         // the initial column, after of which the extra column will be appended
         let tbodySelector = ".lista2t > tbody";
-        const oldColumnEntries = document.querySelectorAll(tbodySelector + " > tr > td:nth-child(" + (colIndex + 1) + ")");
+        const oldColumnEntries = document.querySelectorAll(
+            tbodySelector + " > tr > td:nth-child(" + (colIndex + 1) + ")"
+        );
 
         // header: the first cell (the header cell) of the new column
         var header;
@@ -1640,7 +1779,11 @@ a.extra-tb {
         let anchor = row.querySelector("a[title]");
 
         // language=HTML
-        let downloadLink = createElement('<a  data-href="' + anchor.href + '" href="' + extractTorrentDL(anchor) + '" class="torrent-dl" target="_blank" >' + '<img src="' + TORRENT_ICO + '" alt="Torrent">' + "</a>");
+        let downloadLink = createElement(
+            `<a  data-href="${anchor.href}" href="${extractTorrentDL(
+                anchor
+            )}" class="torrent-dl" target="_blank" ><img src="${TORRENT_ICO}" alt="Torrent"></a>`
+        );
         cell.appendChild(downloadLink); // torrent download
 
         // real:
@@ -1650,13 +1793,17 @@ a.extra-tb {
 
         // matches anything containing "over/*.jpg" *: anything
         const anchorOuterHTML = anchor.outerHTML;
-        const hash = /over\/(.*)\.jpg\\/.test(anchorOuterHTML) ? anchorOuterHTML.match(/over\/(.*)\.jpg\\/)[1] : undefined;
+        const hash = /over\/(.*)\.jpg\\/.test(anchorOuterHTML)
+            ? anchorOuterHTML.match(/over\/(.*)\.jpg\\/)[1]
+            : undefined;
 
         const title = anchor.innerText;
 
         const magnetUriStr = `magnet:?xt=urn:btih:${hash}&dn=${title}&tr=${trackers}`;
 
-        const ml = createElement(`<a class="torrent-ml" data-href="${anchor.href}" href="${magnetUriStr}"><img src="${MAGNET_ICO}" alt=""></a>`);
+        const ml = createElement(
+            `<a class="torrent-ml" data-href="${anchor.href}" href="${magnetUriStr}"><img src="${MAGNET_ICO}" alt=""></a>`
+        );
         if (hash === undefined) {
             ml.href = "javascript:void(0);";
             addMouseoverListener(ml, "ml");
@@ -1668,7 +1815,9 @@ a.extra-tb {
     }
 
     function extractTorrentDL(anchor) {
-        return anchor.href.replace("torrent/", "download.php?id=") + "&f=" + encodeURI(anchor.innerText) + "-[rarbg.to].torrent" + "&tpageurl=" + encodeURIComponent(anchor.href.trim());
+        return `${anchor.href.replace("torrent/", "download.php?id=")}&f=${encodeURI(
+            anchor.innerText
+        )}-[rarbg.to].torrent&tpageurl=${encodeURIComponent(anchor.href.trim())}`;
     }
 
     function addMouseoverListener(link, type) {
@@ -1699,7 +1848,7 @@ a.extra-tb {
                     xhr.send();
                 }
             },
-            false,
+            false
         );
     }
 
@@ -1742,7 +1891,9 @@ class DDG {
     }
 
     static proxy(url) {
-        return DDG.test(url) || /^(javascript)/i.test(url) ? url : `https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(url)}&f=1`;
+        return DDG.test(url) || /^(javascript)/i.test(url)
+            ? url
+            : `https://proxy.duckduckgo.com/iu/?u=${encodeURIComponent(url)}&f=1`;
     }
 
     static reverse(url) {
@@ -1934,7 +2085,10 @@ function fromEntriesMultivalue(entries) {
  * @param {object|Function} replaceMethod - replaceMethod(src)->newSrc a function that passes back the new string or a replacement map
  */
 function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
-    const callback = typeof replaceMethod === "function" ? replaceMethod : (src) => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src); // if object
+    const callback =
+        typeof replaceMethod === "function"
+            ? replaceMethod
+            : (src) => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src); // if object
     for (const img of document.querySelectorAll('img[src*="' + imgCommonUrl + '"]')) {
         if (img) {
             const fullres = callback(img.src);
@@ -1976,7 +2130,10 @@ function clearSymbolsFromString(str) {
         removeDoubleSpaces(
             clearDatesFromString(str)
                 .replace(/[-!$%^&*()_+|~=`{}\[\]";'<>?,.\/]|(\s\s+)/gim, " ")
-                .replace(/rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi, " "),
+                .replace(
+                    /rarbg|\.com|#|x264|DVDRip|720p|1080p|2160p|MP4|IMAGESET|FuGLi|SD|KLEENEX|BRRip|XviD|MP3|XVID|BluRay|HAAC|WEBRip|DHD|rartv|KTR|YAPG|[^0-9a-zA-z]/gi,
+                    " "
+                )
         ).trim()
     );
 }

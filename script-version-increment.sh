@@ -1,13 +1,13 @@
 #!/bin/sh
 
-GIT_VERSION=`git describe --abbrev=0 --tags 2>/dev/null`
+GIT_VERSION=$(git describe --abbrev=0 --tags 2>/dev/null)
 GIT_VERSION=${GIT_VERSION:-'0.0.0'}
 
 
 VERSION_LINE=$(grep "@version" "${1}")
-VERSION=$(echo ${VERSION_LINE##* })
+VERSION="${VERSION_LINE##* }"
 
-if [[ "${GIT_VERSION}" != "v${VERSION}" ]]; then
+if [ "${GIT_VERSION}" != "v${VERSION}" ]; then
     echo "ERROR: Git version ($GIT_VERSION) not matching with script version ($VERSION), exiting ..."
     exit 1
 fi
@@ -20,7 +20,7 @@ PATCH="${VERSION%%.*}"; VERSION="${VERSION#*.}"
 PATCH=$((PATCH+1))
 
 NEW_TAG="$MAJOR.$MINOR.$PATCH"
-VERSION=$(echo ${VERSION_LINE##* })
+VERSION="${VERSION_LINE##* }"
 prefix="\/\/ @version      "
 cp "${1}" "${1}.bak"
 sed -i "s/\/\/ @version *${VERSION}/${prefix}${NEW_TAG}/" "${1}"

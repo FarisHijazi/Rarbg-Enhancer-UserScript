@@ -12,6 +12,9 @@ repos:
       - id: check-added-large-files  # check that no "large" files have been added
         args: ["--maxkb=10240"]      #  where large means 10MB+, as in Hugging Face's git server
       - id: debug-statements         # check for python debug statements (import pdb, breakpoint, etc.)
+      - id: mixed-line-ending
+      - id: end-of-file-fixer        # makes sure files end in a newline and only a newline
+
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: "v2.7.1" # Use the sha or tag you want to point at
     hooks:

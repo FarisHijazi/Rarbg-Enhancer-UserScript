@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.20
+// @version      1.6.23
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -373,7 +373,8 @@ const SearchEngines = {
     document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach((a) => a.click());
 
     const searchBox = document.querySelector("#searchinput");
-    const isOnIndexPage = searchBox !== null;
+    const isOnTop10page = location.pathname.startsWith("/top");
+    const isOnIndexPage = searchBox !== null || isOnTop10page;
     const isOnWrongTorrentLinkPage =
         getElementsByXPath(
             '(/html/body/table[3]/tbody/tr/td[2]/div/table/tbody/tr[2]/td/div[contains(., "The link you followed is wrong. Please try again!")])'
@@ -573,11 +574,6 @@ a.extra-tb {
                     // thumbnailImg.style['margin-bottom'] = '20px';
                 }
 
-                // remove VPN row
-                const vpnR = getElementsByXPath('(//tr[contains(., "VPN:")])[last()]');
-                if (vpnR) {
-                    vpnR[0].remove();
-                }
                 replaceAllImageHosts();
 
                 // putting the "Description:" row before the "Others:" row
@@ -585,36 +581,77 @@ a.extra-tb {
                     getElementsByXPath('(//tr[contains(., "Description:")])[last()]')[0]
                 );
 
+                // remove VPN row
+                const vpnR = getElementsByXPath('(//tr[contains(., "VPN:")])[last()]');
+                if (vpnR && vpnR[0]) {
+                    vpnR[0].remove();
+                }
+
                 void 0;
             } else if (isOnIndexPage) {
-                // if on torrent page (index)
-                searchBox.onkeyup = updateSearch;
-                const searchContainer = searchBox.closest("form").closest("div");
-
-                // making checkbox (fixed searchbar)
-                const moreBtn = searchContainer.querySelector("tr:nth-child(1) > td:nth-child(3)");
-                moreBtn.after(
-                    $(
-                        '<td><input id="static-checkbox" type="checkbox"><label for="static-checkbox" style="display: block;">fixed searchbar</label></td>'
-                    )[0]
-                );
-
-                const checkbox = document.querySelector("#static-checkbox");
-                checkbox.onchange = function (e) {
-                    const searchContainer = searchBox.closest("form").closest("div");
-
-                    if (checkbox.checked) {
-                        searchContainer.style.position = "fixed";
-                        searchContainer.style.top = "0";
-                        searchContainer.style.left = "702px";
-                    } else {
-                        searchContainer.style.position = "";
-                        searchContainer.style.top = "";
-                        searchContainer.style.left = "";
+                if (location.pathname === "/top10") {
+                    function removeTop100(catcodes) {
+                        try {
+                            var a = document.querySelector(
+                                'body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > a[href$="/top100.php?category[]=' +
+                                    catcodes.join("&category[]=") +
+                                    '"]'
+                            );
+                            // delete 3 elements before and 3 elements after and delete self
+                            a.previousElementSibling.previousElementSibling.previousElementSibling.remove();
+                            a.previousElementSibling.previousElementSibling.remove();
+                            a.previousElementSibling.remove();
+                            a.nextElementSibling.nextElementSibling.nextElementSibling.remove();
+                            a.nextElementSibling.nextElementSibling.remove();
+                            a.nextElementSibling.remove();
+                            a.remove();
+                            var h1Rss = document.querySelector(
+                                'body > table > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > h1 > a[href$="/rssdd.php?categories=' +
+                                    catcodes.join(";") +
+                                    '"]'
+                            ).parentElement;
+                            h1Rss.nextElementSibling.remove();
+                            h1Rss.remove();
+                        } catch (e) {
+                            console.warn(e);
+                        }
                     }
-                    GM_config.set("staticSearchbar", checkbox.checked);
-                    GM_config.write();
-                };
+                    if (GM_config.get("block Movies")) removeTop100("14;15;16;17;21;22;42;44;45;46;47;48".split(";"));
+                    if (GM_config.get("block XXX")) removeTop100("4".split(";"));
+                    if (GM_config.get("block TV shows")) removeTop100("18;19;41".split(";"));
+                    if (GM_config.get("block Music")) removeTop100("23;24;25;26".split(";"));
+                    if (GM_config.get("block Games")) removeTop100("27;28;29;30;31;32;40".split(";"));
+                }
+
+                // if on torrent page (index)
+                if (searchBox) {
+                    searchBox.onkeyup = updateSearch;
+                    const searchContainer = searchBox.closest("form").closest("div");
+                    // making checkbox (fixed searchbar)
+                    const moreBtn = searchContainer.querySelector("tr:nth-child(1) > td:nth-child(3)");
+                    moreBtn.after(
+                        $(
+                            '<td><input id="static-checkbox" type="checkbox"><label for="static-checkbox" style="display: block;">fixed searchbar</label></td>'
+                        )[0]
+                    );
+
+                    const checkbox = document.querySelector("#static-checkbox");
+                    checkbox.onchange = function (e) {
+                        const searchContainer = searchBox.closest("form").closest("div");
+
+                        if (checkbox.checked) {
+                            searchContainer.style.position = "fixed";
+                            searchContainer.style.top = "0";
+                            searchContainer.style.left = "702px";
+                        } else {
+                            searchContainer.style.position = "";
+                            searchContainer.style.top = "";
+                            searchContainer.style.left = "";
+                        }
+                        GM_config.set("staticSearchbar", checkbox.checked);
+                        GM_config.write();
+                    };
+                }
 
                 if (GM_config.get("staticSearchbar")) {
                     checkbox.click();

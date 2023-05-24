@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.23
+// @version      1.6.25
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -24,7 +24,7 @@ var meta = {
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // @require      https://raw.githubusercontent.com/mitchellmebane/GM_fetch/master/GM_fetch.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
-// @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
+// @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/2207c5c1322ebb56e401f03c2e581719f909762a/gm_config.js
 // @include      https://*rarbg.*
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
 // @include      /https?:\/\/.{0,8}rargb.*\.\/*/
@@ -387,9 +387,10 @@ const SearchEngines = {
     var tbodyEl =
         isOnSingleTorrentPage && row_others
             ? row_others.parentElement.querySelector("tbody")
-            : document.querySelector(
-                  'body > table > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > table[class*="list"] > tbody'
-              );
+            : Array.from(document.querySelectorAll("tbody")).filter((tbody) => {
+                  let tds = Array.from(tbody.querySelector("tr")?.querySelectorAll("td") || []);
+                  return tds.length >= 8 && tds[0].innerText.trim() === "Cat.";
+              })[0];
     if (!tbodyEl) console.warn("tbody element not found!");
 
     var thumbnailsCssBlock = addCss("");
@@ -675,9 +676,9 @@ a.extra-tb {
                         const nav =
                             "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
 
-                        const container = getElementsByXPath("//table[@class='lista2t']")[0];
+                        const container = tbodyEl.parentElement || getElementsByXPath("//table[@class='lista2t']")[0];
                         const infScroll = new InfiniteScroll(container, {
-                            path: 'a[title="next page"]',
+                            path: 'a[title="next page"], #pager_links > a:nth-child(2)',
                             append: tbody, // the table
                             hideNav: nav,
                             scrollThreshold: 600,
@@ -826,7 +827,7 @@ a.extra-tb {
                 // create settings tab
                 if (!document.querySelector("#settingsTab")) {
                     var lastTab = document.querySelector(
-                        "tbody > tr > td > table > tbody > tr > td:last-child.header3"
+                        "tbody > tr > td > table > tbody > tr > td:last-child[class^='header3']"
                     );
                     var settingsTab = lastTab.cloneNode();
                     settingsTab.id = "settingsTab";
@@ -1678,11 +1679,9 @@ a.extra-tb {
      * @returns {number} the index of the column given the column header text
      */
     function getColumnIndex(headerTitle) {
-        var headerTitles = Array.from(
-            document.querySelectorAll(
-                'td > table.lista2t > tbody > tr:nth-child(1) > td, body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table[class*="list"] > tbody > tr:nth-child(1) > td'
-            )
-        ).map((el) => el.innerText.trim());
+        var headerTitles = Array.from(tbodyEl.querySelectorAll("tr:nth-child(1) > td")).map((el) =>
+            el.innerText.trim()
+        );
         if (!headerTitles) {
             console.warn("did not find header titles");
             headerTitles = ["Cat.", "Thumbnails", "File", "ML DL", "Added", "Size", "S.", "L.", "", "Uploader"];
@@ -1740,10 +1739,8 @@ a.extra-tb {
         }
 
         // the initial column, after of which the extra column will be appended
-        let tbodySelector = ".lista2t > tbody";
-        const oldColumnEntries = document.querySelectorAll(
-            tbodySelector + " > tr > td:nth-child(" + (colIndex + 1) + ")"
-        );
+        // let tbodySelector = ".lista2t > tbody";
+        const oldColumnEntries = tbodyEl.querySelectorAll("tr > td:nth-child(" + (colIndex + 1) + ")");
 
         // header: the first cell (the header cell) of the new column
         var header;

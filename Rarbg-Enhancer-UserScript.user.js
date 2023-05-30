@@ -25,6 +25,7 @@ var meta = {
 // @require      https://raw.githubusercontent.com/mitchellmebane/GM_fetch/master/GM_fetch.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
 // @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/2207c5c1322ebb56e401f03c2e581719f909762a/gm_config.js
+// @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/2207c5c1322ebb56e401f03c2e581719f909762a/gm_config.js
 // @include      https://*rarbg.*
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
 // @include      /https?:\/\/.{0,8}rargb.*\.\/*/

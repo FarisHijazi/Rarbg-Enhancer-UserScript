@@ -1976,14 +1976,27 @@ function getGoogleImages(query) {
         });
 }
 
+// this parses the google images search results
 function parse_AF_initDataCallback(doc) {
+    var metasMap = {};
     var data = Array.from(doc.querySelectorAll("script[nonce]"))
         .map((s) => s.innerText)
         .filter((t) => /^AF_initDataCallback/.test(t))
         .map((t) => eval(t.replace(/^AF_initDataCallback/, "")).data)
         .filter((d) => d && d.length && d.reduce((acc, el) => acc || (el && el.length)));
     var entry = data.slice(-1)[0];
-    var imgMetas = entry[31][0][12][2].map((meta) => meta[1]); // confirmed
+    if (!entry) return metasMap;
+    try {
+        var imgMetas = entry[31][0][12][2].map((meta) => meta[1]); // confirmed
+    } catch (error) {
+        // var imgMetas = entry[56][1][0][0][1][0].map(x => x[0][0]['444383007'][1]);
+        try {
+            var imgMetas = entry[56][1][0][0][1][0].map((x) => Object.values(x[0][0])[0][1]);
+        } catch (error2) {
+            var imgMetas = entry[56][1][0].pop()[1][0].map((x) => Object.values(x[0][0])[0][1]);
+        }
+    }
+
     var metas = imgMetas
         .map((meta) => {
             try {
@@ -2006,24 +2019,29 @@ function parse_AF_initDataCallback(doc) {
                 [rg_meta.tu, rg_meta.th, rg_meta.tw] = meta[2];
                 [rg_meta.ou, rg_meta.oh, rg_meta.ow] = meta[3];
 
-                const siteAndNameInfo = meta[9] || meta[11];
-
-                if (siteAndNameInfo[2003]) {
-                    rg_meta.pt = siteAndNameInfo[2003][3];
-                } else {
-                    rg_meta.pt = siteAndNameInfo[2003][2];
-                }
-
                 try {
-                    rg_meta.st = siteAndNameInfo[183836587][0]; // infolink TODO: doublecheck
-                } catch (error) {
+                    const siteAndNameInfo = meta[9] || meta[11] || meta[23];
+                    if (siteAndNameInfo[2003]) {
+                        rg_meta.pt = siteAndNameInfo[2003][3];
+                    } else {
+                        rg_meta.pt = siteAndNameInfo[2003][2];
+                    }
+
                     try {
-                        rg_meta.st = siteAndNameInfo[2003][2]; // infolink TODO: doublecheck
-                    } catch (error) {}
+                        rg_meta.st = siteAndNameInfo[183836587][0]; // infolink TODO: doublecheck
+                    } catch (error) {
+                        try {
+                            rg_meta.st = siteAndNameInfo[2003][2]; // infolink TODO: doublecheck
+                        } catch (error) {}
+                    }
+                } catch (error) {
+                    console.warn(error);
                 }
 
                 return rg_meta;
-            } catch (e) {}
+            } catch (e) {
+                console.warn(e);
+            }
         })
         .filter((meta) => !!meta);
 

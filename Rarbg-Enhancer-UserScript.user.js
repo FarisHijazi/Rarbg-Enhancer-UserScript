@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.25
+// @version      1.6.26
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -581,6 +581,13 @@ a.extra-tb {
                 }
 
                 replaceAllImageHosts();
+
+                var badTorretLink = document.querySelector("a[onmouseover]");
+                var torrentLink = sanitizeHTML(torretLink.outerHTML);
+                badTorretLink.after(torrentLink);
+                badTorretLink.remove();
+
+                torrentLink.href = document.querySelector('[href^="magnet:"]').href;
 
                 // putting the "Description:" row before the "Others:" row
                 var poster = getElementsByXPath('(//tr[contains(., "Poster:")])[last()]')[0];
@@ -2297,6 +2304,10 @@ function addCss(cssStr, id = "") {
     }
     style.classList.add("addCss");
     return document.getElementsByTagName("head")[0].appendChild(style);
+}
+
+function sanitizeHTML(html) {
+    return new DOMParser().parseFromString(html, "text/html");
 }
 
 function fetchDoc(url) {

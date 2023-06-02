@@ -250,7 +250,7 @@ const SearchEngines = {
                 label: "alwaysFetchExtraThumbnails",
                 title: "automatically press fetch extra thumbnails",
                 type: "checkbox",
-                default: false,
+                default: true,
             },
             ImageSearchEngine: {
                 label: "ImageSearchEngine",
@@ -352,6 +352,10 @@ const SearchEngines = {
             },
         },
     });
+
+    // override fetching description images
+    // FIXME: maybe update this later
+    GM_config.set("alwaysFetchExtraThumbnails", true);
 
     if (!GM_config.get("mirrors")) {
         GM_config.save();
@@ -1568,7 +1572,7 @@ a.extra-tb {
 
         var div = document.createElement("div");
         div.classList.add("row");
-        torrentAnchor.parentNode.append(div);
+        torrentAnchor.parentNode.previousElementSibling.append(div);
 
         extraThumbnailsLink.addEventListener("click", async function (e) {
             if (moreIcon.src === ICON_DESCRIPTION) {
@@ -1577,14 +1581,14 @@ a.extra-tb {
                         .then((r) => r.text())
                         .then((html) => {
                             var doc = new DOMParser().parseFromString(html, "text/html");
-                            var imgs = doc.querySelectorAll("#description > a > img");
+                            var imgs = doc.querySelectorAll("#description > a > img, img.descrimg");
                             return Array.from(imgs).map((img) => [img.src, img.closest("a").href]);
                         });
                     for (var [descriptionSrc, descriptionHref] of descriptionSrcsDescriptionHrefs) {
                         var a = document.createElement("a");
                         a.href = descriptionHref;
                         // a.style.maxHeight = '400px';
-                        a.innerText = "Description";
+                        // a.innerText = "Description";
                         a.classList.add("description-tb");
                         a.style["font-size"] = "20px";
                         a.style["display"] = "grid";
@@ -1597,7 +1601,17 @@ a.extra-tb {
                         img.classList.add("zoom");
 
                         a.append(img);
-                        div.append(a);
+                        // have elements side by side
+                        var subdiv = document.createElement("div");
+                        // subdiv.style["display"] = "grid";
+                        // subdiv.style["grid-template-columns"] = "1fr 1fr";
+                        // subdiv.style["grid-gap"] = "10px";
+                        subdiv.append(a);
+
+                        div.append(subdiv);
+                        div.style["display"] = "grid";
+                        div.style["grid-template-columns"] = "1fr 1fr";
+                        div.style["grid-gap"] = "10px";
                     }
                     replaceAllImageHosts();
                 } catch (ee) {}
@@ -1649,7 +1663,7 @@ a.extra-tb {
             return false;
         });
 
-        if (GM_config.get("alwaysFetchExtraThumbnails")) {
+        if (GM_config.get("alwaysFetchExtraThumbnails") && !isOnSingleTorrentPage) {
             extraThumbnailsLink.click();
         }
     }

@@ -583,9 +583,8 @@ a.extra-tb {
                 replaceAllImageHosts();
 
                 // putting the "Description:" row before the "Others:" row
-                getElementsByXPath('(//tr[contains(., "Poster:")])[last()]')[0].after(
-                    getElementsByXPath('(//tr[contains(., "Description:")])[last()]')[0]
-                );
+                var poster = getElementsByXPath('(//tr[contains(., "Poster:")])[last()]')[0];
+                if (poster) poster.after(getElementsByXPath('(//tr[contains(., "Description:")])[last()]')[0]);
 
                 // remove VPN row
                 const vpnR = getElementsByXPath('(//tr[contains(., "VPN:")])[last()]');

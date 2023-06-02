@@ -2093,40 +2093,70 @@ function proxifyDescriptionThumbnails() {
 }
 
 function replaceAllImageHosts() {
+    const imgs = [];
+
     // fullres for imgprime.com
     // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
     // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-    replaceImageHostImageWithOriginal("https://imgprime.com/", {
-        "imga-": "",
-        ".html": "",
-        "/small/": "/big/",
-        "/u/s/": "/u/b/",
-    });
+    imgs.concat(
+        replaceImageHostImageWithOriginal("https://imgprime.com/", {
+            "imga-": "",
+            ".html": "",
+            "/small/": "/big/",
+            "/u/s/": "/u/b/",
+        })
+    );
     // imagecurl.com
-    replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { _thumb: "" });
+    imgs.concat(replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { _thumb: "" }));
     // imagefruit.com
-    replaceImageHostImageWithOriginal("/tn/t", { "/tn/t": "/tn/i" });
+    imgs.concat(replaceImageHostImageWithOriginal("/tn/t", { "/tn/t": "/tn/i" }));
     // 22pixx.xyz
-    replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
-        "22pixx.xyz/os/": "22pixx.xyz/o/",
-        "22pixx.xyz/s/": "22pixx.xyz/i/",
-        "22pixx.xyz/rs/": "22pixx.xyz/r/",
-        "22pixx.xyz/as/": "22pixx.xyz/a/",
-    });
+    imgs.concat(
+        replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
+            "22pixx.xyz/os/": "22pixx.xyz/o/",
+            "22pixx.xyz/s/": "22pixx.xyz/i/",
+            "22pixx.xyz/rs/": "22pixx.xyz/r/",
+            "22pixx.xyz/as/": "22pixx.xyz/a/",
+        })
+    );
     // trueimg.xyz
-    replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
-        "trueimg.xyz/s/": "trueimg.xyz/b/",
-    });
+    imgs.concat(
+        replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
+            "trueimg.xyz/s/": "trueimg.xyz/b/",
+        })
+    );
     // trueimg.xyz
-    replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
-        "https://imgtaxi.com/images/small/": "https://imgtaxi.com/images/big/",
-    });
+    imgs.concat(
+        replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
+            "https://imgtaxi.com/images/small/": "https://imgtaxi.com/images/big/",
+        })
+    );
 
-    replaceImageHostImageWithOriginal("http://pictureme.xyz/upload/big/", {
-        "http://pictureme.xyz/upload/small/": "http://pictureme.xyz/upload/big/",
-    });
-
-    proxifyDescriptionThumbnails();
+    imgs.concat(
+        replaceImageHostImageWithOriginal("http://pictureme.xyz/upload/big/", {
+            "http://pictureme.xyz/upload/small/": "http://pictureme.xyz/upload/big/",
+        })
+    );
+    imgs.concat(
+        replaceImageHostImageWithOriginal("/upload/small/", {
+            "/upload/small/": "/upload/big/",
+        })
+    );
+    imgs.concat(
+        replaceImageHostImageWithOriginal("https://", {
+            ".th.jpg": ".jpg",
+        })
+    );
+    imgs.concat(
+        replaceImageHostImageWithOriginal("http", {
+            "imga-": "",
+            ".html": "",
+            "/small/": "/big/",
+            "/u/s/": "/u/b/",
+        })
+    );
+    // proxifyDescriptionThumbnails();
+    return imgs;
 }
 
 function unsafeEval(func, ...arguments) {
@@ -2173,18 +2203,22 @@ function fromEntriesMultivalue(entries) {
  * @param {object|Function} replaceMethod - replaceMethod(src)->newSrc a function that passes back the new string or a replacement map
  */
 function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
+    const imgs = [];
     const callback =
         typeof replaceMethod === "function"
             ? replaceMethod
             : (src) => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src); // if object
     for (const img of document.querySelectorAll('img[src*="' + imgCommonUrl + '"]')) {
         if (img) {
+            imgs.push(img);
             const fullres = callback(img.src);
             console.log("replacing thumbnail:", img.src, "->", fullres, "\n", img);
             img.src = fullres;
-            img.closest("a").href = fullres;
+            a = img.closest("a");
+            if (a) a.href = fullres;
         }
     }
+    return imgs;
 }
 
 function matchSite(siteRegex) {

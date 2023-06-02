@@ -1688,7 +1688,10 @@ a.extra-tb {
         if (confirm(`Would you like to download all the torrents on the page? (${visibleTorrentAnchors.length})`)) {
             // click all magnet links
             // document.querySelectorAll("a.torrent-dl").-forEach(a => window.open(a.click(), '_blank'));
-            document.querySelectorAll("a.torrent-ml").forEach((a) => window.open(a.click(), "_blank"));
+            document.querySelectorAll("a.torrent-ml").forEach((a) => {
+                // invoke the onmouseover event to get the magnet link
+                a.fetchMagnetLink(null, true);
+            });
         }
     }
 
@@ -1873,32 +1876,47 @@ a.extra-tb {
     }
 
     function addMouseoverListener(link, type) {
-        link.addEventListener(
-            "mouseover",
-            function (event) {
-                event.preventDefault();
+        function listener(event, openAfterFetching = false) {
+            if (event) event.preventDefault();
 
-                if (this.href === "javascript:void(0);") {
-                    if (debug) console.log("actually addMouseoverListener()", link);
-                    let tUrl = this.getAttribute("data-href");
-                    console.log("fetching ", tUrl);
+            if (!this.href.startsWith("magnet:")) {
+                if (debug) console.log("actually addMouseoverListener()", link);
+                let tUrl = this.getAttribute("data-href");
+                console.log("fetching ", tUrl);
 
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("GET", tUrl, true); // XMLHttpRequest.open(method, url, async)
-                    xhr.onload = function () {
-                        let container = document.implementation.createHTMLDocument().documentElement;
-                        container.innerHTML = xhr.responseText;
-                        console.debug("xhr.responseText", xhr.responseText);
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", tUrl, true); // XMLHttpRequest.open(method, url, async)
+                xhr.onload = function () {
+                    let container = document.implementation.createHTMLDocument().documentElement;
+                    container.innerHTML = xhr.responseText;
+                    console.debug("xhr.responseText", xhr.responseText);
 
-                        let retrievedLink =
-                            type === "dl"
-                                ? container.querySelector('a[href^="/download.php"]') // download link
-                                : container.querySelector('a[href^="magnet:"]'); // magnet link
+                    let retrievedLink =
+                        type === "dl"
+                            ? container.querySelector('a[href^="/download.php"]') // download link
+                            : container.querySelector('a[href^="magnet:"]'); // magnet link
 
-                        if (retrievedLink) link.href = retrievedLink.href;
-                    };
-                    xhr.send();
+                    if (retrievedLink) {
+                        link.href = retrievedLink.href;
+                        if (openAfterFetching) {
+                            window.open(link.href, "_blank");
+                        }
+                    }
+                };
+                xhr.send();
+
+                if (openAfterFetching) {
+                    window.open(link.href, "_blank");
                 }
+            }
+        }
+
+        link.fetchMagnetLink = listener;
+        link.addEventListener("mouseover", listener, false);
+        link.addEventListener(
+            "mousedown",
+            function () {
+                listener(); // trigger the mouseover event
             },
             false
         );

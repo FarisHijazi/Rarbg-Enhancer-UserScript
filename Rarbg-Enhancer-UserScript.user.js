@@ -691,7 +691,10 @@ a.extra-tb {
                                 const lista2s = items[0].querySelectorAll(".lista2");
                                 for (const lista2 of lista2s) {
                                     tbodyEl.appendChild(lista2);
-                                    appendColumnCell(lista2.childNodes[1]);
+                                    const columnCells = Array.from(lista2.childNodes).filter(
+                                        (x) => x.nodeName !== "#text"
+                                    );
+                                    appendColumnCell(columnCells[1]);
                                 }
                             }
 

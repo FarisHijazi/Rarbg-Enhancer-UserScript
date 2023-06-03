@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.27
+// @version      1.6.28
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -396,14 +396,14 @@ const debug = false; // debugmode (setting this to false will disable the consol
 
     var row_others = getElementsByXPath('(//tr[contains(., "Others:")])[last()]').pop();
 
-    var tbodyEl =
+    var tbodyEls =
         isOnSingleTorrentPage && row_others
-            ? row_others.parentElement.querySelector("tbody")
+            ? [row_others.parentElement.querySelector("tbody")]
             : Array.from(document.querySelectorAll("tbody")).filter((tbody) => {
                   let tds = Array.from(tbody.querySelector("tr")?.querySelectorAll("td") || []);
                   return tds.length >= 8 && tds[0].innerText.trim() === "Cat.";
-              })[0];
-    if (!tbodyEl) console.warn("tbody element not found!");
+              });
+    if (!tbodyEls.length) console.warn("tbody element not found!");
 
     var thumbnailsCssBlock = addCss("");
     // language=CSS
@@ -605,7 +605,7 @@ a.extra-tb {
 
                 void 0;
             } else if (isOnIndexPage) {
-                if (location.pathname === "/top10") {
+                if (isOnTop10page) {
                     function removeTop100(catcodes) {
                         try {
                             var a = document.querySelector(
@@ -679,10 +679,12 @@ a.extra-tb {
                     GM_setValue("isFirstVisit", false);
                 }
 
-                const mldlCol = appendColumn("ML DL<br>Download all", "File", addDlAndMl);
-                mldlCol.header.addEventListener("click", downloadAllTorrents);
+                for (const tbodyEl of tbodyEls) {
+                    const mldlCol = appendColumn(tbodyEl, "ML DL<br>Download all", "File", addDlAndMl);
+                    mldlCol.header.addEventListener("click", downloadAllTorrents);
+                }
 
-                if (GM_config.get("infiniteScrolling")) {
+                if (GM_config.get("infiniteScrolling") && !isOnTop10page) {
                     // infiniteScrolling
                     (function makeInfiniteScroll() {
                         const tableLvl2 =
@@ -691,7 +693,8 @@ a.extra-tb {
                         const nav =
                             "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
 
-                        const container = tbodyEl.parentElement || getElementsByXPath("//table[@class='lista2t']")[0];
+                        const container =
+                            tbodyEls[0].parentElement || getElementsByXPath("//table[@class='lista2t']")[0];
                         const infScroll = new InfiniteScroll(container, {
                             path: 'a[title="next page"], #pager_links > a:nth-child(2)',
                             append: tbody, // the table
@@ -704,7 +707,7 @@ a.extra-tb {
                             if (items.length) {
                                 const lista2s = items[0].querySelectorAll(".lista2");
                                 for (const lista2 of lista2s) {
-                                    tbodyEl.appendChild(lista2);
+                                    tbodyEls[0].appendChild(lista2);
                                     const columnCells = Array.from(lista2.childNodes).filter(
                                         (x) => x.nodeName !== "#text"
                                     );
@@ -714,7 +717,7 @@ a.extra-tb {
 
                             try {
                                 // remove extra appended headers
-                                tbodyEl.nextElementSibling.remove();
+                                tbodyEls[0].nextElementSibling.remove();
                             } catch (error) {}
                             // filter the new torrents that just arrived
                             updateSearch();
@@ -862,22 +865,24 @@ a.extra-tb {
 
             observeDocument((target) => {
                 if (isOnIndexPage) {
-                    const newCol = appendColumn("Thumbnails", "Cat.", addThumbnailColumn);
-                    if (!newCol.header.querySelector(".decrementImageSizeBtn")) {
-                        var decrementImageSizeBtn = createElement(
-                            '<a href="#" style="margin: 2px" class="decrementImageSizeBtn">(-)</a>'
-                        );
-                        decrementImageSizeBtn.addEventListener("click", decrementImageSize);
+                    for (const tbodyEl of tbodyEls) {
+                        const newCol = appendColumn(tbodyEl, "Thumbnails", "Cat.", addThumbnailColumn);
+                        if (!newCol.header.querySelector(".decrementImageSizeBtn")) {
+                            var decrementImageSizeBtn = createElement(
+                                '<a href="#" style="margin: 2px" class="decrementImageSizeBtn">(-)</a>'
+                            );
+                            decrementImageSizeBtn.addEventListener("click", decrementImageSize);
 
-                        var incrementImageSizeBtn = createElement(
-                            '<a href="#" style="margin: 2px" class="incrementImageSizeBtn">(+)</a>'
-                        );
-                        incrementImageSizeBtn.addEventListener("click", incrementImageSize);
+                            var incrementImageSizeBtn = createElement(
+                                '<a href="#" style="margin: 2px" class="incrementImageSizeBtn">(+)</a>'
+                            );
+                            incrementImageSizeBtn.addEventListener("click", incrementImageSize);
 
-                        var nobr = document.createElement("nobr");
-                        newCol.header.appendChild(nobr);
-                        nobr.appendChild(decrementImageSizeBtn);
-                        nobr.appendChild(incrementImageSizeBtn);
+                            var nobr = document.createElement("nobr");
+                            newCol.header.appendChild(nobr);
+                            nobr.appendChild(decrementImageSizeBtn);
+                            nobr.appendChild(incrementImageSizeBtn);
+                        }
                     }
                 }
 
@@ -1348,27 +1353,32 @@ a.extra-tb {
             const row = torrentLink.closest("tr");
 
             // = adding relative time to columns
-            (function changeDateToRelativeTime() {
-                var column_Added = row.querySelector("td:nth-child(" + (getColumnIndex("Added") + 1) + ")");
+            for (const tbodyEl of tbodyEls) {
+                if (!isOnTop10page)
+                    (function changeDateToRelativeTime() {
+                        var column_Added = row.querySelector(
+                            "td:nth-child(" + (getColumnIndex(tbodyEl, "Added") + 1) + ")"
+                        );
 
-                const diffInMinutes = (Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60);
+                        const diffInMinutes = (Date.now() - Date.parse(column_Added.innerHTML)) / (1000 * 60);
 
-                var diffFinal = Math.round(diffInMinutes) + " minutes";
+                        var diffFinal = Math.round(diffInMinutes) + " minutes";
 
-                if (diffInMinutes / (60 * 24) >= 365 * 2) {
-                    // > 2years
-                    diffFinal = Math.round(diffInMinutes / (60 * 24 * 365)) + " years";
-                } else if (diffInMinutes / (60 * 24) >= 2) {
-                    // > 2days
-                    diffFinal = Math.round(diffInMinutes / (60 * 24)) + " days";
-                } else if (diffInMinutes / 60 >= 2) {
-                    diffFinal = Math.round(diffInMinutes / 60) + " hours";
-                }
+                        if (diffInMinutes / (60 * 24) >= 365 * 2) {
+                            // > 2years
+                            diffFinal = Math.round(diffInMinutes / (60 * 24 * 365)) + " years";
+                        } else if (diffInMinutes / (60 * 24) >= 2) {
+                            // > 2days
+                            diffFinal = Math.round(diffInMinutes / (60 * 24)) + " days";
+                        } else if (diffInMinutes / 60 >= 2) {
+                            diffFinal = Math.round(diffInMinutes / 60) + " hours";
+                        }
 
-                if (debug) console.log("column_Added:", column_Added);
-                column_Added.innerHTML = column_Added.innerHTML + "<br>\n" + (diffFinal + " ago").replace(" ", "&nbsp");
-            })();
-
+                        if (debug) console.log("column_Added:", column_Added);
+                        column_Added.innerHTML =
+                            column_Added.innerHTML + "<br>\n" + (diffFinal + " ago").replace(" ", "&nbsp");
+                    })();
+            }
             addImageSearchAnchor(torrentLink);
 
             torrentLink.classList.add("modded");
@@ -1635,25 +1645,26 @@ a.extra-tb {
                         div.style["grid-gap"] = "10px";
 
                         replaceAllImageHosts([img]);
-                    }
 
-                    // add rotating gallery for image
-                    img.srcs = descriptionSrcsDescriptionHrefs;
-                    img.addEventListener("mouseover", () => {
-                        function rotateImages() {
-                            var [src, href] = img.srcs.shift();
-                            img.srcs.push([src, href]);
-                            img.src = src;
-                            img.closest("a").href = href;
-                            console.log("rotating image", img.src);
-                            replaceAllImageHosts([img]);
-                        }
-                        rotateImages();
-                        img.interval = setInterval(rotateImages, 500);
-                    });
-                    img.addEventListener("mouseout", () => {
-                        clearInterval(img.interval);
-                    });
+                        // this section of the code should only run on a single image
+                        // add rotating gallery for image
+                        img.srcs = descriptionSrcsDescriptionHrefs;
+                        img.addEventListener("mouseover", () => {
+                            function rotateImages() {
+                                var [src, href] = img.srcs.shift();
+                                img.srcs.push([src, href]);
+                                img.src = src;
+                                img.closest("a").href = href;
+                                console.log("rotating image", img.src);
+                                replaceAllImageHosts([img]);
+                            }
+                            rotateImages();
+                            img.interval = setInterval(rotateImages, 500);
+                        });
+                        img.addEventListener("mouseout", () => {
+                            clearInterval(img.interval);
+                        });
+                    }
                 } catch (ee) {
                     console.error(ee);
                     // await onclick(e);
@@ -1743,7 +1754,7 @@ a.extra-tb {
      * @param {string} headerTitle - td.header6 element
      * @returns {number} the index of the column given the column header text
      */
-    function getColumnIndex(headerTitle) {
+    function getColumnIndex(tbodyEl, headerTitle) {
         var headerTitles = Array.from(tbodyEl.querySelectorAll("tr:nth-child(1) > td")).map((el) =>
             el.innerText.trim()
         );
@@ -1777,9 +1788,9 @@ a.extra-tb {
      * @param {Function} callback - paremeters: callback(newCell, anchor, row). will be called on the added cells, will not be called on cells that already exist.
      * @returns {HTMLTableDataCellElement[]} - returns the added elements (excluding the header, and excluding)
      */
-    function appendColumn(title, colIndex = 2, callback = (cell, anchor, row) => true) {
+    function appendColumn(tbodyEl, title, colIndex = 2, callback = (cell, anchor, row) => true) {
         if (typeof colIndex === "string") {
-            colIndex = getColumnIndex(colIndex);
+            colIndex = getColumnIndex(tbodyEl, colIndex);
         }
 
         const sanitizedTitle = $.escapeSelector(title.replace(/\s/g, "")).replace(/\s/g, "");

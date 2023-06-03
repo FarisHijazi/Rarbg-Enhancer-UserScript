@@ -189,6 +189,8 @@ const SearchEngines = {
     },
 };
 
+const debug = false; // debugmode (setting this to false will disable the console logging)
+
 // main
 (function () {
     "use strict";
@@ -585,13 +587,6 @@ a.extra-tb {
                 }
 
                 replaceAllImageHosts();
-
-                var badTorretLink = document.querySelector("a[onmouseover]");
-                var torrentLink = sanitizeHTML(torretLink.outerHTML);
-                badTorretLink.after(torrentLink);
-                badTorretLink.remove();
-
-                torrentLink.href = document.querySelector('[href^="magnet:"]').href;
 
                 // putting the "Description:" row before the "Others:" row
                 var poster = getElementsByXPath('(//tr[contains(., "Poster:")])[last()]')[0];

@@ -194,7 +194,6 @@ const debug = false; // debugmode (setting this to false will disable the consol
 // main
 (function () {
     "use strict";
-    const debug = false; // debugmode (setting this to false will disable the console logging)
 
     const TORRENT_ICO = "https://dyncdn.me/static/20/img/16x16/download.png";
     const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
@@ -240,6 +239,12 @@ const debug = false; // debugmode (setting this to false will disable the consol
                 label: "addCategoryWithSearch",
                 default: true,
                 title: 'when searching for a movie title like "X-men", will become "X-men movie"',
+                type: "checkbox",
+            },
+            showTorrentDownloadIcon: {
+                label: "showTorrentDownloadIcon",
+                default: false,
+                title: "show the .torrent file download icon next to the magnet link (this doesn't really work anymore)",
                 type: "checkbox",
             },
             largeThumbnails: {
@@ -1579,17 +1584,25 @@ a.extra-tb {
         div.classList.add("row");
         torrentAnchor.parentNode.previousElementSibling.append(div);
 
-        extraThumbnailsLink.addEventListener("click", async function (e) {
+        async function onclick(e) {
             if (moreIcon.src === ICON_DESCRIPTION) {
                 try {
+                    function tryToGetParentAnchorHref(img) {
+                        try {
+                            return img.closest("a").href;
+                        } catch (e) {
+                            return "";
+                        }
+                    }
                     var descriptionSrcsDescriptionHrefs = await GM_fetch(torrentAnchor.href)
                         .then((r) => r.text())
                         .then((html) => {
                             var doc = new DOMParser().parseFromString(html, "text/html");
-                            var imgs = doc.querySelectorAll("#description > a > img, img.descrimg");
-                            return Array.from(imgs).map((img) => [img.src, img.closest("a").href]);
+                            var imgs = doc.querySelectorAll("#description > a > img, a > img.descrimg, img.descrimg");
+                            return Array.from(imgs).map((img) => [img.src, tryToGetParentAnchorHref(img)]);
                         });
-                    for (var [descriptionSrc, descriptionHref] of descriptionSrcsDescriptionHrefs) {
+                    // FIXME: .slice(0) add an option for this later instead of forcefully only using a single image
+                    for (var [descriptionSrc, descriptionHref] of descriptionSrcsDescriptionHrefs.slice(0, 1)) {
                         var a = document.createElement("a");
                         a.href = descriptionHref;
                         // a.style.maxHeight = '400px';
@@ -1601,6 +1614,7 @@ a.extra-tb {
 
                         var img = document.createElement("img");
                         img.src = descriptionSrc;
+                        img.alt = "thumbnail";
                         img.style.maxWidth = GM_config.get("imgScale") + "px";
                         img.classList.add("description");
                         img.classList.add("zoom");
@@ -1608,18 +1622,42 @@ a.extra-tb {
                         a.append(img);
                         // have elements side by side
                         var subdiv = document.createElement("div");
-                        // subdiv.style["display"] = "grid";
-                        // subdiv.style["grid-template-columns"] = "1fr 1fr";
-                        // subdiv.style["grid-gap"] = "10px";
                         subdiv.append(a);
+
+                        // stop if already exists
+                        if (div.querySelector("a.description-tb")) {
+                            return;
+                        }
 
                         div.append(subdiv);
                         div.style["display"] = "grid";
                         div.style["grid-template-columns"] = "1fr 1fr";
                         div.style["grid-gap"] = "10px";
+
+                        replaceAllImageHosts([img]);
                     }
-                    replaceAllImageHosts();
-                } catch (ee) {}
+
+                    // add rotating gallery for image
+                    img.srcs = descriptionSrcsDescriptionHrefs;
+                    img.addEventListener("mouseover", () => {
+                        function rotateImages() {
+                            var [src, href] = img.srcs.shift();
+                            img.srcs.push([src, href]);
+                            img.src = src;
+                            img.closest("a").href = href;
+                            console.log("rotating image", img.src);
+                            replaceAllImageHosts([img]);
+                        }
+                        rotateImages();
+                        img.interval = setInterval(rotateImages, 500);
+                    });
+                    img.addEventListener("mouseout", () => {
+                        clearInterval(img.interval);
+                    });
+                } catch (ee) {
+                    console.error(ee);
+                    // await onclick(e);
+                }
                 // extraThumbnailsLink.textContent = STR_FETCH_EXTRA_THUMBNAILS;
                 moreIcon.src = ICON_MORE_BLUE;
                 moreIcon.alt = STR_FETCH_EXTRA_THUMBNAILS;
@@ -1666,7 +1704,8 @@ a.extra-tb {
             e.stopImmediatePropagation();
             e.stopPropagation();
             return false;
-        });
+        }
+        extraThumbnailsLink.addEventListener("click", onclick);
 
         if (GM_config.get("alwaysFetchExtraThumbnails") && !isOnSingleTorrentPage) {
             extraThumbnailsLink.click();
@@ -1838,13 +1877,15 @@ a.extra-tb {
 
         let anchor = row.querySelector("a[title]");
 
-        // language=HTML
-        let downloadLink = createElement(
-            `<a  data-href="${anchor.href}" href="${extractTorrentDL(
-                anchor
-            )}" class="torrent-dl" target="_blank" ><img src="${TORRENT_ICO}" alt="Torrent"></a>`
-        );
-        cell.appendChild(downloadLink); // torrent download
+        if (GM_config.get("showTorrentDownloadIcon")) {
+            // language=HTML
+            let downloadLink = createElement(
+                `<a  data-href="${anchor.href}" href="${extractTorrentDL(
+                    anchor
+                )}" class="torrent-dl" target="_blank" ><img src="${TORRENT_ICO}" alt="Torrent"></a>`
+            );
+            cell.appendChild(downloadLink); // torrent download
+        }
 
         // real:
         //     https://rarbgaccess.org/download.php?id=...&h=120&f=...-[rarbg.to].torrent
@@ -2119,71 +2160,86 @@ function proxifyDescriptionThumbnails() {
     });
 }
 
-function replaceAllImageHosts() {
-    const imgs = [];
-
+function replaceAllImageHosts(imgs = null) {
+    if (!imgs || !imgs.length) {
+        imgs = [];
+    }
+    const collectedImgs = [];
     // fullres for imgprime.com
     // link:    https://imgprime.com/imga-u/b/2019/04/02/5ca35d660e76e.jpeg.html
     // img:     https://imgprime.com/u/b/2019/04/02/5ca35d660e76e.jpeg
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("https://imgprime.com/", {
             "imga-": "",
             ".html": "",
             "/small/": "/big/",
             "/u/s/": "/u/b/",
+            imgs,
         })
     );
     // imagecurl.com
-    imgs.concat(replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { _thumb: "" }));
+    collectedImgs.concat(replaceImageHostImageWithOriginal("https://imagecurl.com/images/", { _thumb: "", imgs }));
     // imagefruit.com
-    imgs.concat(replaceImageHostImageWithOriginal("/tn/t", { "/tn/t": "/tn/i" }));
+    collectedImgs.concat(replaceImageHostImageWithOriginal("/tn/t", { "/tn/t": "/tn/i", imgs }));
     // 22pixx.xyz
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("https://22pixx.xyz/", {
             "22pixx.xyz/os/": "22pixx.xyz/o/",
             "22pixx.xyz/s/": "22pixx.xyz/i/",
             "22pixx.xyz/rs/": "22pixx.xyz/r/",
             "22pixx.xyz/as/": "22pixx.xyz/a/",
+            imgs,
         })
     );
     // trueimg.xyz
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("https://trueimg.xyz/s/", {
             "trueimg.xyz/s/": "trueimg.xyz/b/",
+            imgs,
         })
     );
     // trueimg.xyz
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("https://imgtaxi.com/images/small/", {
             "https://imgtaxi.com/images/small/": "https://imgtaxi.com/images/big/",
+            imgs,
         })
     );
 
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("http://pictureme.xyz/upload/big/", {
             "http://pictureme.xyz/upload/small/": "http://pictureme.xyz/upload/big/",
+            imgs,
         })
     );
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("/upload/small/", {
             "/upload/small/": "/upload/big/",
+            imgs,
         })
     );
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("https://", {
             ".th.jpg": ".jpg",
+            imgs,
         })
     );
-    imgs.concat(
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal("http", {
             "imga-": "",
             ".html": "",
             "/small/": "/big/",
             "/u/s/": "/u/b/",
+            imgs,
         })
     );
+
     // proxifyDescriptionThumbnails();
-    return imgs;
+    if (!!imgs && imgs.length) {
+        return imgs;
+    } else {
+        return collectedImgs;
+    }
 }
 
 function unsafeEval(func, ...arguments) {
@@ -2229,23 +2285,39 @@ function fromEntriesMultivalue(entries) {
  * @param {string} imgCommonUrl - the segment of the URL that's unique to this replacement, example: "https://imagecurl.com/images/"
  * @param {object|Function} replaceMethod - replaceMethod(src)->newSrc a function that passes back the new string or a replacement map
  */
-function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod) {
-    const imgs = [];
+
+function replaceImageHostImageWithOriginal(imgCommonUrl, replaceMethod, imgs = null) {
+    const collectedImgs = [];
+    if (!imgs || !imgs.length) {
+        imgs = Array.from(document.querySelectorAll('img[src*="' + imgCommonUrl + '"]'));
+    } else {
+        imgs = imgs.filter((img) => img.src.includes(imgCommonUrl));
+    }
     const callback =
         typeof replaceMethod === "function"
             ? replaceMethod
             : (src) => Object.entries(replaceMethod).reduce((acc, [k, v]) => acc.replace(k, v), src); // if object
-    for (const img of document.querySelectorAll('img[src*="' + imgCommonUrl + '"]')) {
+
+    if (imgs.length === 0) {
+        console.debug("no images found for", imgCommonUrl);
+        return imgs;
+    }
+
+    for (const img of imgs) {
         if (img) {
-            imgs.push(img);
+            collectedImgs.push(img);
             const fullres = callback(img.src);
-            console.log("replacing thumbnail:", img.src, "->", fullres, "\n", img);
+            if (debug) console.log("replacing thumbnail:", img.src, "->", fullres, "\n", img);
             img.src = fullres;
             a = img.closest("a");
             if (a) a.href = fullres;
         }
     }
-    return imgs;
+    if (!!imgs && imgs.length) {
+        return imgs;
+    } else {
+        return collectedImgs;
+    }
 }
 
 function matchSite(siteRegex) {

@@ -8,7 +8,7 @@ VERSION_LINE=$(grep "@version" "${1}")
 VERSION="${VERSION_LINE##* }"
 
 if [ "${GIT_VERSION}" != "v${VERSION}" ]; then
-    echo "ERROR: Git version ($GIT_VERSION) not matching with script version ($VERSION), exiting ..."
+    echo "ERROR: Git version ($GIT_VERSION) not matching with script version (v$VERSION), exiting ..."
     exit 1
 fi
 
@@ -27,4 +27,3 @@ sed -i "s/\/\/ @version *${VERSION}/${prefix}${NEW_TAG}/" "${1}"
 
 ./gittag-increment.sh
 git commit "${1}" --amend -m "Bump version to ${NEW_TAG} for ${1}"
-

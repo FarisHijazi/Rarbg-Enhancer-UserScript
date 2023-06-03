@@ -403,6 +403,10 @@ const SearchEngines = {
 
     addCss(
         `
+a.torrent-ml:not([href^=magnet]) {
+    filter: grayscale(0.6);
+}
+
 /*this keeps the tableCells in the groups at equal heights*/
 table.groupTable > tbody > tr > td {
     height: 10px !important;
@@ -1885,17 +1889,26 @@ a.extra-tb {
         function listener(event, openAfterFetching = false) {
             if (event) event.preventDefault();
 
-            if (!this.href.startsWith("magnet:")) {
+            if (link.magnetHref) {
+                link.href = link.magnetHref;
+            }
+
+            if (!link.href.startsWith("magnet:")) {
                 if (debug) console.log("actually addMouseoverListener()", link);
-                let tUrl = this.getAttribute("data-href");
+                let tUrl = link.getAttribute("data-href");
                 console.log("fetching ", tUrl);
 
                 var xhr = new XMLHttpRequest();
                 xhr.open("GET", tUrl, true); // XMLHttpRequest.open(method, url, async)
+                function onerror() {
+                    console.error("Error while fetching magnet link");
+                    link.style.display = "none";
+                    link.closest("tr").style.filter = "grayscale(1)";
+                }
                 xhr.onload = function () {
                     let container = document.implementation.createHTMLDocument().documentElement;
                     container.innerHTML = xhr.responseText;
-                    console.debug("xhr.responseText", xhr.responseText);
+                    // console.debug("xhr.responseText", xhr.responseText);
 
                     let retrievedLink =
                         type === "dl"
@@ -1904,16 +1917,26 @@ a.extra-tb {
 
                     if (retrievedLink) {
                         link.href = retrievedLink.href;
+                        link.magnetHref = retrievedLink.href;
+                        console.log("retrievedLink.href", retrievedLink.href);
                         if (openAfterFetching) {
                             window.open(link.href, "_blank");
                         }
+                    } else {
+                        onerror();
                     }
                 };
+                xhr.onerror = onerror;
                 xhr.send();
 
                 if (openAfterFetching) {
                     window.open(link.href, "_blank");
                 }
+            } else {
+                if (openAfterFetching) {
+                    window.open(link.href, "_blank");
+                }
+                return;
             }
         }
 
@@ -1921,11 +1944,14 @@ a.extra-tb {
         link.addEventListener("mouseover", listener, false);
         link.addEventListener(
             "mousedown",
-            function () {
-                listener(); // trigger the mouseover event
+            function (event) {
+                // if left mousebutton
+                if (event.button !== 0) return;
+                listener(event, true); // trigger the mouseover event
             },
             false
         );
+        link.fetchMagnetLink();
     }
 
     // Cat. | File | Added | Size | S. | L. | comments  |   Uploader

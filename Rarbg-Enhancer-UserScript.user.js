@@ -1631,6 +1631,7 @@ a.extra-tb {
                             let imgUrls = Array.from(imgs).map((img) => [img.src, tryToGetParentAnchorHref(img)]);
 
                             doc.querySelectorAll(".js-modal-url").forEach(async function (a) {
+                                if (!!a.querySelector("img")) return;
                                 new Set(await getImagesFromUrl(a.href)).forEach((url) => {
                                     imgUrls.push([url, url]);
                                     var img = doc.createElement("img");

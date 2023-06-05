@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.28
+// @version      1.6.29
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -173,6 +173,11 @@ const ICON_DESCRIPTION = "https://i.imgur.com/UxbSq2o.gif";
 const ICON_MORE_BLUE = "https://i.imgur.com/FGwOuVT.gif";
 const ICON_EXTRA_GREEN = "https://i.imgur.com/HU6J9kS.gif";
 
+const BLACKLISTED_IMG_URLS = new Set([
+    "https://shotcan.com/images/finalec40346aca02aa34.png",
+    "https://img.trafficimage.club/content/images/system/logo_1575804241329_3ec4e4.png",
+]);
+
 const SearchEngines = {
     google: {
         name: "Google",
@@ -196,7 +201,8 @@ const debug = false; // debugmode (setting this to false will disable the consol
     "use strict";
 
     const TORRENT_ICO = "https://dyncdn.me/static/20/img/16x16/download.png";
-    const MAGNET_ICO = "https://dyncdn.me/static/20/img/magnet.gif";
+    const MAGNET_ICO =
+        "data:image/png;base64,R0lGODlhDAAMAPcAAAAAAGNjY97e3v8AAP8ICP///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAUALAAAAAAMAAwAAAhMAAEIHEhwoICDAgQiTAhgoUKEDw9GZDhgAAEAAQIAIMBRYMWLBQps7Aig4gCMGjleLGlSoMqVJj++xMhSZscABTSyJIkzZE6CPQsEBAA7";
     const trackers =
         "http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2710&tr=udp%3A%2F%2F9.rarbg.to%3A2710";
 
@@ -560,6 +566,19 @@ a.extra-tb {
                     thumbsHeader.innerText = "thumbnail";
                     tr_tableHeader.firstElementChild.before(thumbsHeader);
                 }
+
+                document.querySelectorAll(".js-modal-url").forEach(async function (a) {
+                    if (!!a.querySelector("img")) return;
+                    (await getImagesFromUrl(a.href)).forEach((url) => {
+                        var img = document.createElement("img");
+                        img.src = url;
+                        img.classList.add("descrimg");
+                        var div = document.createElement("div");
+                        div.appendChild(img);
+                        a.appendChild(div);
+                    });
+                    replaceAllImageHosts();
+                });
 
                 // adding thumbnails
                 for (const torrent of document.querySelectorAll('a[href^="/torrent/"]')) {
@@ -1607,10 +1626,27 @@ a.extra-tb {
                     var descriptionSrcsDescriptionHrefs = await GM_fetch(torrentAnchor.href)
                         .then((r) => r.text())
                         .then((html) => {
-                            var doc = new DOMParser().parseFromString(html, "text/html");
-                            var imgs = doc.querySelectorAll("#description > a > img, a > img.descrimg, img.descrimg");
-                            return Array.from(imgs).map((img) => [img.src, tryToGetParentAnchorHref(img)]);
+                            let doc = new DOMParser().parseFromString(html, "text/html");
+                            let imgs = doc.querySelectorAll("#description > a > img, a > img.descrimg, img.descrimg");
+                            let imgUrls = Array.from(imgs).map((img) => [img.src, tryToGetParentAnchorHref(img)]);
+
+                            doc.querySelectorAll(".js-modal-url").forEach(async function (a) {
+                                new Set(await getImagesFromUrl(a.href)).forEach((url) => {
+                                    imgUrls.push([url, url]);
+                                    var img = doc.createElement("img");
+                                    img.src = url;
+                                    img.classList.add("descrimg");
+                                    var div = doc.createElement("div");
+                                    div.appendChild(img);
+                                    a.appendChild(div);
+                                });
+                            });
+
+                            return imgUrls;
                         });
+                    descriptionSrcsDescriptionHrefs = descriptionSrcsDescriptionHrefs.filter(
+                        (x) => !BLACKLISTED_IMG_URLS.has(x[0])
+                    );
                     // FIXME: .slice(0) add an option for this later instead of forcefully only using a single image
                     for (var [descriptionSrc, descriptionHref] of descriptionSrcsDescriptionHrefs.slice(0, 1)) {
                         var a = document.createElement("a");
@@ -2165,6 +2201,33 @@ function parse_AF_initDataCallback(doc) {
     return metasMap;
 }
 
+function getImagesFromUrl(url) {
+    // List of possible image extensions
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "tiff"];
+
+    // Get the extension of the URL
+    const urlExtension = url.split(".").pop();
+
+    // Check if the URL is an image URL
+    if (imageExtensions.includes(urlExtension)) {
+        return Promise.resolve([url]);
+    } else {
+        // If it's not an image URL, attempt to fetch images from the webpage
+        return GM_fetch(url)
+            .then((response) => response.text())
+            .then((html) => {
+                let parser = new DOMParser();
+                let doc = parser.parseFromString(html, "text/html");
+                let images = Array.from(doc.images).map((img) => img.src);
+                return images;
+            })
+            .catch((err) => {
+                console.error("Failed to fetch webpage: ", err);
+                return [];
+            });
+    }
+}
+
 function proxifyDescriptionThumbnails() {
     document.querySelectorAll("#description > a > img, a.description-tb > img").forEach((img) => {
         img.src = DDG.proxy(img.src);
@@ -2230,8 +2293,14 @@ function replaceAllImageHosts(imgs = null) {
         })
     );
     collectedImgs.concat(
-        replaceImageHostImageWithOriginal("https://", {
+        replaceImageHostImageWithOriginal(".th.jpg", {
             ".th.jpg": ".jpg",
+            imgs,
+        })
+    );
+    collectedImgs.concat(
+        replaceImageHostImageWithOriginal(".md.jpg", {
+            ".md.jpg": ".jpg",
             imgs,
         })
     );
@@ -2244,6 +2313,11 @@ function replaceAllImageHosts(imgs = null) {
             imgs,
         })
     );
+
+    // remove any image that is from the BLACKLISTED_IMG_URLS
+    [].filter
+        .call(document.querySelectorAll("img"), (img) => BLACKLISTED_IMG_URLS.has(img.src))
+        .forEach((img) => img.remove());
 
     // proxifyDescriptionThumbnails();
     if (!!imgs && imgs.length) {

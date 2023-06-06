@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.31
+// @version      1.6.32
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -176,6 +176,7 @@ const ICON_EXTRA_GREEN = "https://i.imgur.com/HU6J9kS.gif";
 const BLACKLISTED_IMG_URLS = new Set([
     "https://shotcan.com/images/finalec40346aca02aa34.png",
     "https://img.trafficimage.club/content/images/system/logo_1575804241329_3ec4e4.png",
+    "https://pacific.picturedent.org/images/archive/galaxxxylogo.png",
 ]);
 
 const SearchEngines = {
@@ -355,6 +356,12 @@ const debug = false; // debugmode (setting this to false will disable the consol
             "block Software": { label: "block Software", default: false, type: "checkbox", title: "Software" },
             "block XXX": { label: "block XXX", default: true, type: "checkbox", title: "XXX" },
             "block Games": { label: "block Games", default: false, type: "checkbox", title: "Games" },
+            hideEmptyTorrentLinks: {
+                label: "hide torrents without download or magnet",
+                default: true,
+                type: "checkbox",
+                title: "Removes the row of the torrent that has no magnet link or download link",
+            },
         },
         events: {
             open: function (doc) {},
@@ -626,7 +633,7 @@ a.extra-tb {
                 void 0;
             } else if (isOnIndexPage) {
                 if (isOnTop10page) {
-                    function removeTop100(catcodes) {
+                    function removeTop100(catcodes, slash_category) {
                         try {
                             var a = document.querySelector(
                                 'body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > a[href$="/top100.php?category[]=' +
@@ -652,11 +659,12 @@ a.extra-tb {
                             console.warn(e);
                         }
                     }
-                    if (GM_config.get("block Movies")) removeTop100("14;15;16;17;21;22;42;44;45;46;47;48".split(";"));
-                    if (GM_config.get("block XXX")) removeTop100("4".split(";"));
-                    if (GM_config.get("block TV shows")) removeTop100("18;19;41".split(";"));
-                    if (GM_config.get("block Music")) removeTop100("23;24;25;26".split(";"));
-                    if (GM_config.get("block Games")) removeTop100("27;28;29;30;31;32;40".split(";"));
+                    if (GM_config.get("block Movies"))
+                        removeTop100("14;15;16;17;21;22;42;44;45;46;47;48".split(";"), "movies");
+                    if (GM_config.get("block XXX")) removeTop100("4".split(";"), "xxx");
+                    if (GM_config.get("block TV shows")) removeTop100("18;19;41".split(";"), "tv");
+                    if (GM_config.get("block Music")) removeTop100("23;24;25;26".split(";"), "music");
+                    if (GM_config.get("block Games")) removeTop100("27;28;29;30;31;32;40".split(";"), "pc-games");
                 }
 
                 // if on torrent page (index)
@@ -2016,6 +2024,9 @@ a.extra-tb {
                     console.error("Error while fetching magnet link");
                     link.style.display = "none";
                     link.closest("tr").style.filter = "grayscale(1)";
+                    if (GM_config.get("hideEmptyTorrentLinks")) {
+                        link.closest("tr").style.display = "none";
+                    }
                 }
                 xhr.onload = function () {
                     let container = document.implementation.createHTMLDocument().documentElement;

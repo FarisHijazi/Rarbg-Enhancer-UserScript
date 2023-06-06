@@ -176,6 +176,7 @@ const ICON_EXTRA_GREEN = "https://i.imgur.com/HU6J9kS.gif";
 const BLACKLISTED_IMG_URLS = new Set([
     "https://shotcan.com/images/finalec40346aca02aa34.png",
     "https://img.trafficimage.club/content/images/system/logo_1575804241329_3ec4e4.png",
+    "https://pacific.picturedent.org/images/archive/galaxxxylogo.png",
 ]);
 
 const SearchEngines = {
@@ -355,6 +356,12 @@ const debug = false; // debugmode (setting this to false will disable the consol
             "block Software": { label: "block Software", default: false, type: "checkbox", title: "Software" },
             "block XXX": { label: "block XXX", default: true, type: "checkbox", title: "XXX" },
             "block Games": { label: "block Games", default: false, type: "checkbox", title: "Games" },
+            hideEmptyTorrentLinks: {
+                label: "hide torrents without download or magnet",
+                default: true,
+                type: "checkbox",
+                title: "Removes the row of the torrent that has no magnet link or download link",
+            },
         },
         events: {
             open: function (doc) {},
@@ -2016,6 +2023,9 @@ a.extra-tb {
                     console.error("Error while fetching magnet link");
                     link.style.display = "none";
                     link.closest("tr").style.filter = "grayscale(1)";
+                    if (GM_config.get("hideEmptyTorrentLinks")) {
+                        link.closest("tr").style.display = "none";
+                    }
                 }
                 xhr.onload = function () {
                     let container = document.implementation.createHTMLDocument().documentElement;

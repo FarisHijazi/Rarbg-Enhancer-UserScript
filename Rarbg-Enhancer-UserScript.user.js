@@ -569,7 +569,8 @@ a.extra-tb {
 
                 document.querySelectorAll(".js-modal-url").forEach(async function (a) {
                     if (!!a.querySelector("img")) return;
-                    (await getImagesFromUrl(a.href)).forEach((url) => {
+                    if (a.pathname.length < 2) return;
+                    new Set(await getImagesFromUrl(a.href)).forEach((url) => {
                         var img = document.createElement("img");
                         img.src = url;
                         img.classList.add("descrimg");
@@ -1686,20 +1687,47 @@ a.extra-tb {
                         // this section of the code should only run on a single image
                         // add rotating gallery for image
                         img.srcs = descriptionSrcsDescriptionHrefs;
-                        img.addEventListener("mouseover", () => {
-                            function rotateImages() {
-                                var [src, href] = img.srcs.shift();
-                                img.srcs.push([src, href]);
-                                img.src = src;
-                                img.closest("a").href = href;
-                                console.log("rotating image", img.src);
-                                replaceAllImageHosts([img]);
+                        function rotateImages() {
+                            if (img.srcs.length <= 1) return;
+                            var [src, href] = img.srcs.shift();
+                            img.srcs.push([src, href]);
+                            img.src = src;
+                            img.closest("a").href = href;
+                            console.log("rotating image", img.src);
+                            replaceAllImageHosts([img]);
+                        }
+                        function startRotation() {
+                            if (img.interval) {
+                                if (debug) console.log("already rotating", img.interval);
+                                return;
                             }
-                            rotateImages();
+
                             img.interval = setInterval(rotateImages, 500);
-                        });
-                        img.addEventListener("mouseout", () => {
+                        }
+                        function endRotation() {
                             clearInterval(img.interval);
+                            img.interval = null;
+                        }
+                        img.addEventListener("mouseover", function () {
+                            rotateImages();
+                            startRotation();
+                        });
+                        img.addEventListener("mouseout", endRotation);
+
+                        // keep rotating images while shift is held
+                        window.addEventListener("keydown", function (event) {
+                            if (event.key === "Alt") {
+                                // if item is in viewport
+                                if (isInViewport(img)) {
+                                    startRotation();
+                                }
+                            }
+                            setTimeout(endRotation, 3000);
+                        });
+                        window.addEventListener("keyup", function (event) {
+                            if (event.key === "Alt") {
+                                endRotation();
+                            }
                         });
                     }
                 } catch (ee) {
@@ -2642,4 +2670,11 @@ function fetchB64ImgUrl(url, opts) {
         }
         return output;
     }
+}
+function isInViewport(element) {
+    var rect = element.getBoundingClientRect();
+    var windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    var windowWidth = window.innerWidth || document.documentElement.clientWidth;
+
+    return rect.top >= 0 && rect.left >= 0 && rect.bottom <= windowHeight && rect.right <= windowWidth;
 }

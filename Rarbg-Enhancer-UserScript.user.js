@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.32
+// @version      1.6.33
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -177,6 +177,7 @@ const BLACKLISTED_IMG_URLS = new Set([
     "https://shotcan.com/images/finalec40346aca02aa34.png",
     "https://img.trafficimage.club/content/images/system/logo_1575804241329_3ec4e4.png",
     "https://pacific.picturedent.org/images/archive/galaxxxylogo.png",
+    "https://worldmkv.com/wp-content/uploads/2017/10/Icon.jpg",
 ]);
 
 const SearchEngines = {
@@ -1634,13 +1635,17 @@ a.extra-tb {
                     }
                     var descriptionSrcsDescriptionHrefs = await GM_fetch(torrentAnchor.href)
                         .then((r) => r.text())
-                        .then((html) => {
+                        .then(async function (html) {
                             let doc = new DOMParser().parseFromString(html, "text/html");
                             let imgs = doc.querySelectorAll("#description > a > img, a > img.descrimg, img.descrimg");
                             let imgUrls = Array.from(imgs).map((img) => [img.src, tryToGetParentAnchorHref(img)]);
 
-                            doc.querySelectorAll(".js-modal-url").forEach(async function (a) {
-                                if (!!a.querySelector("img")) return;
+                            for (const a of doc.querySelectorAll(".js-modal-url")) {
+                                console.log("a.js-modal-url", a);
+                                if (!!a.querySelector("img")) {
+                                    console.log("a.js-modal-url has no image", a);
+                                    return;
+                                }
                                 new Set(await getImagesFromUrl(a.href)).forEach((url) => {
                                     imgUrls.push([url, url]);
                                     var img = doc.createElement("img");
@@ -1650,7 +1655,7 @@ a.extra-tb {
                                     div.appendChild(img);
                                     a.appendChild(div);
                                 });
-                            });
+                            }
 
                             return imgUrls;
                         });
@@ -1893,7 +1898,7 @@ a.extra-tb {
 
         // header: the first cell (the header cell) of the new column
         var header;
-        header = document.querySelector("#" + sanitizedTitle + "-head");
+        header = tbodyEl.querySelector("#" + sanitizedTitle + "-head");
         // if this column has already been added
         if (!header) {
             header = document.createElement("td");

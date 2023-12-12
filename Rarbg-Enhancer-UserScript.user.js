@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.33
+// @version      1.6.34
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -24,7 +24,6 @@ var meta = {
 // @require      https://raw.githubusercontent.com/ccampbell/mousetrap/master/mousetrap.min.js
 // @require      https://raw.githubusercontent.com/mitchellmebane/GM_fetch/master/GM_fetch.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
-// @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/2207c5c1322ebb56e401f03c2e581719f909762a/gm_config.js
 // @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/2207c5c1322ebb56e401f03c2e581719f909762a/gm_config.js
 // @include      https://*rarbg.*
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
@@ -376,7 +375,7 @@ const debug = false; // debugmode (setting this to false will disable the consol
 
     // override fetching description images
     // FIXME: maybe update this later
-    GM_config.set("alwaysFetchExtraThumbnails", true);
+    // GM_config.set("alwaysFetchExtraThumbnails", true);
 
     if (!GM_config.get("mirrors")) {
         GM_config.save();

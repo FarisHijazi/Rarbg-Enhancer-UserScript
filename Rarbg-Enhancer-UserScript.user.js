@@ -1641,12 +1641,32 @@ a.extra-tb {
                             let imgUrls = Array.from(imgs).map((img) => [img.src, tryToGetParentAnchorHref(img)]);
 
                             for (const a of doc.querySelectorAll(".js-modal-url")) {
-                                console.log("a.js-modal-url", a);
-                                if (!!a.querySelector("img")) {
+                                let urls = [];
+                                if (!a.querySelector("img")) {
                                     console.log("a.js-modal-url has no image", a);
-                                    return;
+
+                                    // If it's not an image URL, attempt to fetch images from the webpage
+                                    urls = await GM_fetch(a.href)
+                                        .then((response) => response.text())
+                                        .then((html) => {
+                                            let parser = new DOMParser();
+                                            let doc = parser.parseFromString(html, "text/html");
+                                            const urls = [...doc.querySelectorAll("a > img")].map((img) => img.src);
+                                            if (urls.length > 5) {
+                                                console.warn("Too many images on page, skipping", a.href);
+                                                return [];
+                                            }
+                                            return urls;
+                                        })
+                                        .catch((err) => {
+                                            console.error("Failed to fetch webpage: ", err);
+                                            return [];
+                                        });
+                                } else {
+                                    console.log("a.js-modal-url has an image", a);
+                                    urls = [...a.querySelectorAll("img")].map((img) => img.src);
                                 }
-                                new Set(await getImagesFromUrl(a.href)).forEach((url) => {
+                                urls.forEach((url) => {
                                     imgUrls.push([url, url]);
                                     var img = doc.createElement("img");
                                     img.src = url;
@@ -1700,46 +1720,55 @@ a.extra-tb {
                         // this section of the code should only run on a single image
                         // add rotating gallery for image
                         img.srcs = descriptionSrcsDescriptionHrefs;
-                        function rotateImages() {
-                            if (img.srcs.length <= 1) return;
-                            var [src, href] = img.srcs.shift();
-                            img.srcs.push([src, href]);
+                        var lastImageIndex = -1; // Store the last displayed image index
+
+                        function calculateImageIndex(mouseX) {
+                            var rect = img.getBoundingClientRect();
+                            var width = rect.right - rect.left;
+                            var numOfImages = img.srcs.length;
+                            var imageWidth = width / numOfImages;
+                            var index = Math.min(
+                                numOfImages - 1,
+                                Math.max(0, Math.floor((mouseX - rect.left) / imageWidth))
+                            );
+                            return index;
+                        }
+
+                        function updateImage(mouseX) {
+                            var index = calculateImageIndex(mouseX);
+                            if (index !== lastImageIndex) {
+                                lastImageIndex = index;
+                                var [src, href] = img.srcs[index];
+                                img.src = src;
+                                img.closest("a").href = href;
+                                console.log("Updated image to", src);
+                                replaceAllImageHosts([img]);
+                            }
+                        }
+
+                        img.addEventListener("mouseover", function (event) {
+                            img.style.cursor =
+                                "url('https://cdn.icon-icons.com/icons2/1464/PNG/512/resizeleftright_100194.png'), auto"; // Replace with the path to your cursor image
+                            updateImage(event.clientX); // Initial update on mouseover
+                        });
+
+                        img.addEventListener("mousemove", function (event) {
+                            img.style.cursor =
+                                "url('https://cdn.icon-icons.com/icons2/1464/PNG/512/resizeleftright_100194.png'), auto"; // Replace with the path to your cursor image
+                            updateImage(event.clientX); // Update on mouse move
+                        });
+
+                        img.addEventListener("mouseout", function () {
+                            // Optionally reset the image to the first one or do nothing
+                            var [src, href] = img.srcs[0];
                             img.src = src;
                             img.closest("a").href = href;
-                            console.log("rotating image", img.src);
-                            replaceAllImageHosts([img]);
-                        }
-                        function startRotation() {
-                            if (img.interval) {
-                                if (debug) console.log("already rotating", img.interval);
-                                return;
-                            }
-
-                            img.interval = setInterval(rotateImages, 500);
-                        }
-                        function endRotation() {
-                            clearInterval(img.interval);
-                            img.interval = null;
-                        }
-                        img.addEventListener("mouseover", function () {
-                            rotateImages();
-                            startRotation();
+                            img.style.cursor = ""; // Replace with the path to your cursor image
                         });
-                        img.addEventListener("mouseout", endRotation);
 
-                        // keep rotating images while shift is held
-                        window.addEventListener("keydown", function (event) {
-                            if (event.key === "Alt") {
-                                // if item is in viewport
-                                if (isInViewport(img)) {
-                                    startRotation();
-                                }
-                            }
-                            setTimeout(endRotation, 3000);
-                        });
                         window.addEventListener("keyup", function (event) {
                             if (event.key === "Alt") {
-                                endRotation();
+                                endImageCycle();
                             }
                         });
                     }
@@ -2046,7 +2075,7 @@ a.extra-tb {
                     if (retrievedLink) {
                         link.href = retrievedLink.href;
                         link.magnetHref = retrievedLink.href;
-                        console.log("retrievedLink.href", retrievedLink.href);
+                        console.debug("retrievedLink.href", retrievedLink.href);
                         if (openAfterFetching) {
                             window.open(link.href, "_blank");
                         }

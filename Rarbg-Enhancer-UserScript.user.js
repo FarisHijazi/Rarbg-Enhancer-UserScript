@@ -398,7 +398,7 @@ const debug = false; // debugmode (setting this to false will disable the consol
     // click to verify browser
     document.querySelectorAll('a[href^="/threat_defence.php?defence=1"]').forEach((a) => a.click());
 
-    const searchBox = document.querySelector("#searchinput");
+    const searchBox = document.querySelector('#searchinput, input[id="keywords"]');
     const isOnTop10page = location.pathname.startsWith("/top");
     const isOnIndexPage = searchBox !== null || isOnTop10page;
     const isOnWrongTorrentLinkPage =
@@ -410,13 +410,18 @@ const debug = false; // debugmode (setting this to false will disable the consol
 
     var row_others = getElementsByXPath('(//tr[contains(., "Others:")])[last()]').pop();
 
-    var tbodyEls =
-        isOnSingleTorrentPage && row_others
-            ? [row_others.parentElement.querySelector("tbody")]
-            : Array.from(document.querySelectorAll("tbody")).filter((tbody) => {
-                  let tds = Array.from(tbody.querySelector("tr")?.querySelectorAll("td") || []);
-                  return tds.length >= 8 && tds[0].innerText.trim() === "Cat.";
-              });
+    if (!!document.querySelector("thead.table1head")) {
+        // therarbg: https://the.rarbg.club/get-posts/category:Movies:time:10D/
+        var tbodyEls = document.querySelectorAll("tbody");
+    } else {
+        var tbodyEls =
+            isOnSingleTorrentPage && row_others
+                ? [row_others.parentElement.querySelector("tbody")]
+                : Array.from(document.querySelectorAll("tbody")).filter((tbody) => {
+                      let tds = Array.from(tbody.querySelector("tr")?.querySelectorAll("td") || []);
+                      return tds.length >= 8 && tds[0].innerText.trim() === "Cat.";
+                  });
+    }
     if (!tbodyEls.length) console.warn("tbody element not found!");
 
     var thumbnailsCssBlock = addCss("");
@@ -673,12 +678,15 @@ a.extra-tb {
                     searchBox.onkeyup = updateSearch;
                     const searchContainer = searchBox.closest("form").closest("div");
                     // making checkbox (fixed searchbar)
-                    const moreBtn = searchContainer.querySelector("tr:nth-child(1) > td:nth-child(3)");
-                    moreBtn.after(
-                        $(
-                            '<td><input id="static-checkbox" type="checkbox"><label for="static-checkbox" style="display: block;">fixed searchbar</label></td>'
-                        )[0]
+                    const moreBtn = searchContainer.querySelector(
+                        'tr:nth-child(1) > td:nth-child(3), [id="filterBtn"]'
                     );
+                    moreBtn &&
+                        moreBtn.after(
+                            $(
+                                '<td><input id="static-checkbox" type="checkbox"><label for="static-checkbox" style="display: block;">fixed searchbar</label></td>'
+                            )[0]
+                        );
 
                     const checkbox = document.querySelector("#static-checkbox");
                     checkbox.onchange = function (e) {
@@ -716,20 +724,47 @@ a.extra-tb {
                 if (GM_config.get("infiniteScrolling") && !isOnTop10page) {
                     // infiniteScrolling
                     (function makeInfiniteScroll() {
-                        const tableLvl2 =
-                            "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9)";
-                        const tbody = tableLvl2 + " > tbody";
-                        const nav =
-                            "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)";
+                        const tbody = [
+                            "div.content-rounded table.lista-rounded tbody:nth-child(1) tr:nth-child(2) td:nth-child(1) > table.lista2t:nth-child(9) > tbody",
+                            ".lista2t > tbody",
+                        ];
+                        const nav = [
+                            "#pager_links",
+                            "td:nth-child(2) div.content-rounded table.lista-rounded tbody:nth-child(1) > tr:nth-child(3)",
+                        ];
+
+                        var nextPageSelectors = ['a[title="next page"]'];
+                        const indexOfCurrentPage = [...document.querySelectorAll("#pager_links > *")]
+                            .map((x) => x.tagName)
+                            .indexOf("B");
+                        if (indexOfCurrentPage >= 0) {
+                            nextPageSelectors = [
+                                ...nextPageSelectors,
+                                `#pager_links > a:nth-child(${indexOfCurrentPage + 2})`,
+                            ];
+                        }
+
+                        // finding the "next page" link
+                        const pageLinks = document.querySelectorAll("#pager_links > a");
+                        const pageTextsIndex = [...pageLinks].map((a) => a.innerText).indexOf(">>");
+                        if (pageTextsIndex >= 0) {
+                            nextPageSelectors = [
+                                ...nextPageSelectors,
+                                `#pager_links > a:nth-child(${pageTextsIndex + 1})`,
+                            ];
+                        }
+                        nextPageSelectors = [...nextPageSelectors, "#pager_links > a:last-child"];
 
                         const container =
                             tbodyEls[0].parentElement || getElementsByXPath("//table[@class='lista2t']")[0];
-                        const infScroll = new InfiniteScroll(container, {
-                            path: 'a[title="next page"], #pager_links > a:nth-child(2)',
-                            append: tbody, // the table
-                            hideNav: nav,
+                        const infscrollOptions = {
+                            path: nextPageSelectors.join(", "),
+                            append: tbody.join(", "), // the table
+                            hideNav: nav.join(", "),
                             scrollThreshold: 600,
-                        });
+                        };
+                        console.log("infinitescroll options:", infscrollOptions);
+                        const infScroll = new InfiniteScroll(container, infscrollOptions);
 
                         // upon appending a new page
                         infScroll.on("append", function (response, path, items) {
@@ -877,7 +912,8 @@ a.extra-tb {
                 // create settings tab
                 if (!document.querySelector("#settingsTab")) {
                     var lastTab = document.querySelector(
-                        "tbody > tr > td > table > tbody > tr > td:last-child[class^='header3']"
+                        "tbody > tr > td > table > tbody > tr > td:last-child[class^='header3']" +
+                            ", body > div.topnav > div.postContUp > button:last-child"
                     );
                     var settingsTab = lastTab.cloneNode();
                     settingsTab.id = "settingsTab";

@@ -626,6 +626,7 @@ a.extra-tb {
                 }
 
                 replaceAllImageHosts();
+                replaceAllImageHosts(document.querySelectorAll(".js-modal-url > img"));
 
                 // putting the "Description:" row before the "Others:" row
                 var poster = getElementsByXPath('(//tr[contains(., "Poster:")])[last()]')[0];
@@ -1811,6 +1812,7 @@ a.extra-tb {
                             img.src = src;
                             img.closest("a").href = href;
                             img.style.cursor = ""; // Replace with the path to your cursor image
+                            replaceAllImageHosts([img]);
                         });
 
                         window.addEventListener("keyup", function (event) {
@@ -1901,9 +1903,10 @@ a.extra-tb {
         if (confirm(`Would you like to download all the torrents on the page? (${visibleTorrentAnchors.length})`)) {
             // click all magnet links
             // document.querySelectorAll("a.torrent-dl").-forEach(a => window.open(a.click(), '_blank'));
-            document.querySelectorAll("a.torrent-ml").forEach((a) => {
+            document.querySelectorAll("a.torrent-ml").forEach(async function (a) {
                 // invoke the onmouseover event to get the magnet link
                 a.fetchMagnetLink(null, true);
+                await new Promise((resolve) => setTimeout(resolve, 100));
             });
         }
     }
@@ -2418,6 +2421,12 @@ function replaceAllImageHosts(imgs = null) {
         })
     );
     collectedImgs.concat(
+        replaceImageHostImageWithOriginal("/1s/", {
+            "/1s/": "/1/",
+            imgs,
+        })
+    );
+    collectedImgs.concat(
         replaceImageHostImageWithOriginal(".th.jpg", {
             ".th.jpg": ".jpg",
             imgs,
@@ -2439,12 +2448,12 @@ function replaceAllImageHosts(imgs = null) {
         })
     );
 
-    // remove any image that is from the BLACKLISTED_IMG_URLS
-    [].filter
-        .call(document.querySelectorAll("img"), (img) => BLACKLISTED_IMG_URLS.has(img.src))
-        .forEach((img) => img.remove());
+    // // remove any image that is from the BLACKLISTED_IMG_URLS
+    // [...document.querySelectorAll("img")].filter((img) => BLACKLISTED_IMG_URLS.has(img.src))
+    //     .forEach((img) => img.remove());
 
-    // proxifyDescriptionThumbnails();
+    proxifyDescriptionThumbnails(imgs);
+    proxifyDescriptionThumbnails(collectedImgs);
     if (!!imgs && imgs.length) {
         return imgs;
     } else {

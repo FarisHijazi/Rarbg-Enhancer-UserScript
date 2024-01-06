@@ -4,7 +4,7 @@ var meta = {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.34
+// @version      1.6.35
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -29,6 +29,7 @@ var meta = {
 // @include      /https?:\/\/.{0,8}rarbg.*\.\/*/
 // @include      /https?:\/\/.{0,8}rargb.*\.\/*/
 // @include      /https?:\/\/.*u=MTcyLjIxLjAuMXw6Ly9yYXJiZy50by90b3JyZW50LzIyMDg3MjYwfE1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS83OS4wLjM5NDUuMTMwIFNhZmFyaS81MzcuMzZ8ODc4MDQz.*/
+// @include      https://www.rarbggo.to/
 // @include      https://www.rarbg.is
 // @include      https://proxyrarbg.org
 // @include      https://rarbg.com
@@ -567,7 +568,7 @@ a.extra-tb {
             // on torrent(s) page
             if (isOnSingleTorrentPage) {
                 let mainTorrentLink = document.querySelector(
-                    "body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td.lista > a:nth-child(2)"
+                    "a[onmouseover], body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(1) > td > a:nth-child(2)"
                 );
                 addImageSearchAnchor(mainTorrentLink, mainTorrentLink.innerText);
 
@@ -749,6 +750,7 @@ a.extra-tb {
                         if (pageTextsIndex >= 0) {
                             nextPageSelectors = [
                                 ...nextPageSelectors,
+                                `#pager_links > a:nth-child(${pageTextsIndex + 2})`,
                                 `#pager_links > a:nth-child(${pageTextsIndex + 1})`,
                             ];
                         }
@@ -1413,7 +1415,12 @@ a.extra-tb {
     }
 
     function dealWithTorrents(node) {
-        for (const torrentLink of node.querySelectorAll('tr.lista2 > td > a[title][href^="/torrent/"]:not(.modded)')) {
+        for (const torrentLink of node.querySelectorAll(
+            [
+                'tbody tr.lista2 > td > a[title][href^="/torrent/"]:not(.modded)',
+                'tbody tr.table2ta > td > a[title][href^="/torrent/"]:not(.modded)',
+            ].join(",")
+        )) {
             const row = torrentLink.closest("tr");
 
             // = adding relative time to columns
@@ -1879,7 +1886,11 @@ a.extra-tb {
     function downloadAllTorrents() {
         console.log("downloadAllTorrents()");
         const visibleTorrentAnchors = document.querySelectorAll(
-            'body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t > tbody > tr.lista2 .torrent-dl:not([style*="display: none;"])'
+            [
+                'body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t > tbody > tr.lista2 .torrent-dl:not([style*="display: none;"])',
+                'body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(1) > td > table.lista2t > tbody > tr.table2ta .torrent-dl:not([style*="display: none;"])',
+                ".torrent-ml",
+            ].join(",")
         );
 
         if (confirm(`Would you like to download all the torrents on the page? (${visibleTorrentAnchors.length})`)) {
@@ -1980,7 +1991,7 @@ a.extra-tb {
             .call(oldColumnEntries, 1)
             // exclude rows that already have this column
             .filter((oldCol) => {
-                const row = oldCol.closest("tr.lista2");
+                const row = oldCol.closest("tr.lista2, tr.table2ta");
                 const selector = "." + $.escapeSelector(sanitizedTitle);
                 if (row) return !row.querySelector(selector);
             })
@@ -1988,7 +1999,7 @@ a.extra-tb {
 
         // fire callback
         for (let cell of newColumn) {
-            let row = cell.closest("tr.lista2");
+            let row = cell.closest("tr.lista2, tr.table2ta");
             let anchor = row.querySelector("a[title]");
             callback(cell, anchor, row);
         }
@@ -2001,7 +2012,7 @@ a.extra-tb {
      * @return {*}
      */
     function appendColumnCell(prevColCell) {
-        if (prevColCell.closest("tr.lista2").querySelector(".has-torrent-DL-ML"))
+        if (prevColCell.closest("tr.lista2, tr.table2ta").querySelector(".has-torrent-DL-ML"))
             // check that the same row doesn't already have DL-ML
             return;
         // the initial column 'Files' after of which the extra column will be appended
@@ -2026,7 +2037,7 @@ a.extra-tb {
      * @returns {string}
      */
     function addDlAndMl(cell, fileTd) {
-        var row = fileTd.closest("tr.lista2");
+        var row = fileTd.closest("tr.lista2, tr.table2ta");
 
         let anchor = row.querySelector("a[title]");
 

@@ -1761,7 +1761,7 @@ a.extra-tb {
 
                         // this section of the code should only run on a single image
                         // add rotating gallery for image
-                        img.srcs = descriptionSrcsDescriptionHrefs;
+                        img.srcs = Object.entries(Object.fromEntries(descriptionSrcsDescriptionHrefs));
                         var lastImageIndex = -1; // Store the last displayed image index
 
                         function calculateImageIndex(mouseX) {

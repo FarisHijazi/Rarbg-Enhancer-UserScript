@@ -178,6 +178,7 @@ const BLACKLISTED_IMG_URLS = new Set([
     "https://img.trafficimage.club/content/images/system/logo_1575804241329_3ec4e4.png",
     "https://pacific.picturedent.org/images/archive/galaxxxylogo.png",
     "https://worldmkv.com/wp-content/uploads/2017/10/Icon.jpg",
+    "https://torrentgalaxy.to", // not an image
 ]);
 
 const SearchEngines = {
@@ -1684,6 +1685,10 @@ a.extra-tb {
 
                             for (const a of doc.querySelectorAll(".js-modal-url")) {
                                 let urls = [];
+                                if (BLACKLISTED_IMG_URLS.has(a.href)) {
+                                    console.warn("Skipping TGX link");
+                                    continue;
+                                }
                                 if (!a.querySelector("img")) {
                                     console.log("a.js-modal-url has no image", a);
 

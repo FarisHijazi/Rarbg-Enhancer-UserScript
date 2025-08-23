@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
-// @version      1.6.35
+// @version      1.6.36
 // @description  Auto-solve CAPTCHA, infinite scroll, add a magnet link shortcut and thumbnails of torrents,
 // @description  adds a image search link in case you want to see more pics of the torrent, and more!
 // @author       Faris Hijazi
@@ -355,6 +355,12 @@ const debug = false; // debugmode (setting this to false will disable the consol
                 type: "checkbox",
                 title: "play sound when hovering over thumbnail",
                 default: true,
+            },
+            ENABLE_IMAGE_PROXY: {
+                label: "Enable Image Proxy",
+                default: false,
+                type: "checkbox",
+                title: "Enabling this might help unblocking some images"
             },
             // blocking
             "block Movies": {
@@ -2368,6 +2374,7 @@ function getImagesFromUrl(url) {
 }
 
 function proxifyDescriptionThumbnails() {
+    if (!GM_config.get('ENABLE_IMAGE_PROXY', false)) return;
     document.querySelectorAll("#description > a > img, a.description-tb > img").forEach((img) => {
         img.src = DDG.proxy(img.src);
     });
@@ -2432,7 +2439,7 @@ function replaceAllImageHosts(imgs = null) {
         })
     );
     collectedImgs.concat(
-        replaceImageHostImageWithOriginal("/1s/", {
+        replaceImageHostImageWithOriginal(".com/1/", {
             ".com/1/": ".com/i-1/",
             imgs,
         })

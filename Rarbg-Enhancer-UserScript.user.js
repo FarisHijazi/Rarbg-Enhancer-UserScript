@@ -1,6 +1,3 @@
-// prettier-ignore
-var meta = {
-    rawmdb: function () {
 // ==UserScript==
 // @name         RARBG Enhancer
 // @namespace    https://github.com/FarisHijazi
@@ -68,36 +65,6 @@ var meta = {
 // @include      https://www.rarbg.is
 // @noframes
 // ==/UserScript==
-    }
-};
-if (meta.rawmdb && meta.rawmdb.toString && (meta.rawmdb = meta.rawmdb.toString())) {
-    var kv,
-        row = /\/\/\s+@(\S+)\s+(.+)/g;
-    while ((kv = row.exec(meta.rawmdb)) !== null) {
-        if (meta[kv[1]]) {
-            if (typeof meta[kv[1]] == "string") meta[kv[1]] = [meta[kv[1]]];
-            meta[kv[1]].push(kv[2]);
-        } else meta[kv[1]] = kv[2];
-    }
-}
-meta.window = this;
-if (typeof unsafeWindow === "undefined") {
-    var unsafeWindow = window;
-}
-unsafeWindow.scriptMetas = unsafeWindow.scriptMetas || [];
-if (meta.hasOwnProperty("nodups")) {
-    if (new Set(unsafeWindow.scriptMetas.map((meta) => meta.namespace + meta.name)).has(meta.namespace + meta.name)) {
-        console.warn(
-            "Another script is trying to execute but @nodups is set. Stopping execution.\n",
-            meta.namespace + meta.name
-        );
-        throw new Error(
-            "Another script is trying to execute but @nodups is set. Stopping execution.\n" + meta.namespace + meta.name
-        );
-    }
-}
-unsafeWindow.scriptMetas.push(meta);
-console.log("Script:", meta.name, "meta:", meta);
 
 // AddColumn() and add magnetLinks() code taken from:      https://greasyfork.org/en/scripts/23493-rarbg-torrent-and-magnet-links/code
 
@@ -109,6 +76,50 @@ console.log("Script:", meta.name, "meta:", meta);
  *      -> addDlAndMl()
  * observeDocument(dealWithTorrents)
  * */
+
+const INCLUDES = [
+    "https://*rarbg.*",
+    "/https?:\/\/.{0,8}rarbg.*\.\/*/",
+    "/https?:\/\/.{0,8}rargb.*\.\/*/",
+    "/https?:\/\/.*u=MTcyLjIxLjAuMXw6Ly9yYXJiZy50by90b3JyZW50LzIyMDg3MjYwfE1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS83OS4wLjM5NDUuMTMwIFNhZmFyaS81MzcuMzZ8ODc4MDQz.*/",
+    "https://www.rarbggo.to/",
+    "https://www.rarbg.is",
+    "https://proxyrarbg.org",
+    "https://rarbg.com",
+    "https://rarbg.to",
+    "https://rarbg2018.org",
+    "https://rarbg2019.org",
+    "https://rarbg2020.org",
+    "https://rarbg2021.org",
+    "https://rarbgaccess.org",
+    "https://rarbgaccessed.org",
+    "https://rarbgcdn.org",
+    "https://rarbgcore.org",
+    "https://rarbgdata.org",
+    "https://rarbgenter.org",
+    "https://rarbgget.org",
+    "https://rarbggo.org",
+    "https://rarbgindex.org",
+    "https://rarbgmirror.com",
+    "https://rarbgmirror.org",
+    "https://rarbgmirrored.org",
+    "https://rarbgp2p.org",
+    "https://rarbgproxied.org",
+    "https://rarbgproxies.org",
+    "https://rarbgproxy.com",
+    "https://rarbgproxy.org",
+    "https://rarbgprx.org",
+    "https://rarbgto.org",
+    "https://rarbgtor.org",
+    "https://rarbgtorrents.org",
+    "https://rarbgunblock.com",
+    "https://rarbgunblock.org",
+    "https://rarbgunblocked.org",
+    "https://rarbgway.org",
+    "https://rarbgweb.org",
+    "https://unblockedrarbg.org",
+    "https://www.rarbg.is",
+];
 
 // pollyfill for Element.before() and Element.after(): (since some browsers like MS Edge don't already have them)
 if (Element.prototype.before === undefined) {
@@ -283,7 +294,7 @@ const debug = false; // debugmode (setting this to false will disable the consol
             },
             mirrors: {
                 label: "mirrors",
-                default: meta.include.join("\n"),
+                default: INCLUDES.join("\n"),
                 title: "",
                 type: "textarea",
             },
@@ -2417,6 +2428,12 @@ function replaceAllImageHosts(imgs = null) {
     collectedImgs.concat(
         replaceImageHostImageWithOriginal("/upload/small/", {
             "/upload/small/": "/upload/big/",
+            imgs,
+        })
+    );
+    collectedImgs.concat(
+        replaceImageHostImageWithOriginal("/1s/", {
+            ".com/1/": ".com/i-1/",
             imgs,
         })
     );

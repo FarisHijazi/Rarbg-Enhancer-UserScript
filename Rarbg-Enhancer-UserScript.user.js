@@ -2439,8 +2439,8 @@ function replaceAllImageHosts(imgs = null) {
         })
     );
     collectedImgs.concat(
-        replaceImageHostImageWithOriginal(".com/1/", {
-            ".com/1/": ".com/i-1/",
+        replaceImageHostImageWithOriginal(".com/i-1/", {
+            ".com/i-1/": ".com/1/",
             imgs,
         })
     );
